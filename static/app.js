@@ -46,10 +46,42 @@ function budgetHtml(y){
  ${metric('模型推估成功率 PoS',pos)}
  ${metric('換車專項預算',car)}
  </div><div class="progress-track"><div class="progress-bar" style="width:${Math.max(0,Math.min(100,y.pos_pct))}%"></div></div>
+ <div class="inflation-preview result-inflation">${inflationCards(Number(y.decision_cpi),Number(state?.plan?.cpi_2026),state?.years?.length>1?Number(state.years[state.years.length-2].decision_cpi):null,y.year)}</div>
  <div class="status-line">● ${y.b85_restored?'符合 B＋85 生活預算恢復條件':'按當年 Guardrail 狀態計算'}，年度 Sticky 乘數 ${esc(y.sticky_after)}</div>
  <p class="details-summary">熊市現金橋接：${twMoney(y.bridge_from_cash_twd)}　／　已核准其他必要支出：${twMoney(y.extra_authorized_twd)}。<br>費用與稅負使用模型既有整體淨報酬情境，年末核對不會重扣。成功率是模型條件下的估算，不是保證。</p>
  ${!y.closing?'<div class="result-buttons"><button class="primary-btn" data-go="closing">下一步：年末結算 →</button></div>':'<div class="result-buttons"><button class="secondary-btn" data-go="history">查看已結算紀錄</button></div>'}`;
 }
+
+function inflationChange(current,previous){
+ if(!(Number.isFinite(current)&&Number.isFinite(previous)&&current>0&&previous>0))return null;
+ return (current/previous-1)*100;
+}
+function signedPct(value){
+ if(value===null)return '尚無同期資料';
+ return (value>0?'+':'')+value.toFixed(2)+'%';
+}
+function inflationCards(current,reference,previous,year){
+ const cumulative=inflationChange(current,reference);
+ if(cumulative===null)return '<div class="inflation-hint">請輸入有效且相同基期的 CPI 資料，才可計算購買力。</div>';
+ const annual=inflationChange(current,previous);
+ const normal=650000*current/reference;
+ const priorText=annual===null
+ ? '首次使用尚未保存上一年度可比的 CPI；不能把 2026 至退休年的累計通膨當作今年通膨率。'
+ : '以本次與上次「年初決策時可用 CPI」比較，屬期間參考變動；若兩次 CPI 非相同月份，不能稱為官方年增率。';
+ return '<div class="inflation-head"><strong>'+esc(year||'本年度')+' 年物價與生活費</strong><span>以 2026 年的 65 萬元實質生活費為基準</span></div>'
+   +'<div class="inflation-cards">'
+   +'<div><small>最近一年物價變動（參考）</small><strong>'+esc(signedPct(annual))+'</strong></div>'
+   +'<div><small>自 2026 年累計物價變動</small><strong>'+esc(signedPct(cumulative))+'</strong></div>'
+   +'<div class="inflation-normal"><small>通膨換算後正常生活費</small><strong>'+esc(twMoney(normal))+'</strong></div>'
+   +'</div><p class="inflation-hint">'+esc(priorText)+' 正常生活費不是 B＋85 最終核准額；仍會依 Guardrail、PoS 和 Prosperity 調整。以上數值取決於手動輸入的 CPI，並非官方即時通膨率。</p>';
+}
+function renderInflationPreview(){
+ const el=$('inflation-preview');if(!el)return;
+ const previous=lastYear()?.decision_cpi??null;
+ const reference=state?.plan?.cpi_2026??Number($('cpi_2026').value);
+ el.innerHTML=inflationCards(Number($('decision_cpi').value),Number(reference),Number(previous),$('decision_date').value.slice(0,4));
+}
+
 function closeHtml(y){if(!y?.closing)return '';
  const c=y.closing;
  return `<div class="result-caption">${y.year} 年已完成年度結算 · 待真正來源驗證</div>
@@ -85,6 +117,7 @@ function render(){
  if(!$('living_paid_twd').value)$('living_paid_twd').value=Math.floor(last.living_authorized_twd);
  }
  fillNext();
+ renderInflationPreview();
  renderHistory();
 }
 function renderHistory(){
@@ -123,4 +156,8 @@ $('reset-btn').addEventListener('click',async()=>{
 });
 document.addEventListener('click',e=>{const b=e.target.closest('[data-go]');if(b&&!b.disabled){display(b.dataset.go);}});
 $('decision_date').addEventListener('change',()=>{$('first_year').value=$('decision_date').value.slice(0,4)});
+for(const id of ['decision_date','cpi_2026','decision_cpi']){
+ $(id).addEventListener('input',renderInflationPreview);
+}
+renderInflationPreview();
 load();

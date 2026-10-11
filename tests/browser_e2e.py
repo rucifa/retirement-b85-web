@@ -17,10 +17,17 @@ async def main():
             await page.goto('http://127.0.0.1:8766/',wait_until='domcontentloaded')
             await page.locator('#runtime-status.ready').wait_for(timeout=180000)
             print('BROWSER_PYODIDE_LOADED')
+            preview=await page.locator('#inflation-preview').inner_text()
+            assert '最近一年物價變動' in preview and '尚無同期資料' in preview
+            assert '738,636' in preview
+            print('BROWSER_CPI_INFLATION_PREVIEW_PASS')
             await page.locator('#approve-btn').click()
             await page.locator('#opening-tag').filter(has_text='等待年末結算').wait_for(timeout=180000)
             a=await page.locator('#opening-result').inner_text()
             assert 'PoS' in a and '核准生活費' in a
+            assert '通膨換算後正常生活費' in a
+            assert '今年核准生活費' in a
+            print('BROWSER_INFLATION_SPENDING_RESULT_PASS')
             print('BROWSER_2036_B85_APPROVAL_PASS')
             await page.locator('[data-go="closing"]').first.click()
             await page.locator('#demo-close-btn').click()
