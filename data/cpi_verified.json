@@ -3,7 +3,7 @@
   "source_authority": "行政院主計總處（DGBAS）",
   "index_base": "2021=100",
   "source_status": "RESEARCH_STAGED_NOT_ACTIVE",
-  "source_checked_at_utc": "2026-10-11T07:18:15.174586+00:00",
+  "source_checked_at_utc": "2026-10-11T23:48:58.267201+00:00",
   "primary_source_sha256": "b162edf6946f1e12d21090d56917f66edd59cb45a4cb197b9b4fe1a7305e511f",
   "primary_status": "RESEARCH_STAGED_NOT_ACTIVE",
   "primary_latest_month": "2026-07",
@@ -19,9 +19,9 @@
       "official_yoy_pct": 2.6,
       "publication_date": "2026-07-07",
       "verification": "HISTORICAL_VINTAGE_DIFFERENCE",
-      "primary_index": 112,
       "official_source_url": "https://www.stat.gov.tw/News_Content.aspx?n=2668&s=236430",
-      "bulletin_xlsx_sha256": "5276f8ce644593dadd7da6681c4cad26387ac6d6f80e28a72d63443c7120a13c"
+      "bulletin_xlsx_sha256": "5276f8ce644593dadd7da6681c4cad26387ac6d6f80e28a72d63443c7120a13c",
+      "primary_index": 112.0
     },
     {
       "month": "2026-07",
@@ -29,9 +29,9 @@
       "official_yoy_pct": 2.54,
       "publication_date": "2026-08-06",
       "verification": "CROSS_VERIFIED",
-      "primary_index": 112.35,
       "official_source_url": "https://www.stat.gov.tw/News_Content.aspx?n=2668&s=236540",
-      "bulletin_xlsx_sha256": "48091b18ad2cec35511a633b2d83ff8363662c35638c1cc3c46fdc2ca1f523ed"
+      "bulletin_xlsx_sha256": "48091b18ad2cec35511a633b2d83ff8363662c35638c1cc3c46fdc2ca1f523ed",
+      "primary_index": 112.35
     },
     {
       "month": "2026-08",
