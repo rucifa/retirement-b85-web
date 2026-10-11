@@ -17,6 +17,20 @@ async def main():
             await page.goto('http://127.0.0.1:8766/',wait_until='domcontentloaded')
             await page.locator('#runtime-status.ready').wait_for(timeout=180000)
             print('BROWSER_PYODIDE_LOADED')
+            await page.locator('#official-cpi-panel[data-status="no-year-data"]').wait_for(timeout=120000)
+            assert '2036 年尚未有' in (await page.locator('#official-cpi-panel').inner_text())
+            await page.locator('#decision_date').fill('2026-08-01')
+            assert '尚無當年官方資料' in (await page.locator('#official-cpi-panel').inner_text())
+            assert '2.54%' not in (await page.locator('#official-cpi-panel').inner_text())
+            await page.locator('#decision_date').fill('2026-10-11')
+            await page.locator('#official-cpi-panel[data-status="verified"]').wait_for(timeout=15000)
+            official=await page.locator('#official-cpi-panel').inner_text()
+            assert '+2.54%' in official and '2026-07' in official
+            assert '2026-09' in official and '待雙來源確認' in official
+            assert '尚無全年官方基準' in official
+            assert await page.locator('#cpi_2026').input_value()=='110'
+            await page.locator('#decision_date').fill('2036-01-15')
+            print('BROWSER_CPI_CROSSCHECK_PENDING_AND_ASOF_PASS')
             preview=await page.locator('#inflation-preview').inner_text()
             assert '最近一年物價變動' in preview and '尚無同期資料' in preview
             assert '738,636' in preview
@@ -51,6 +65,17 @@ async def main():
             print('BROWSER_LOCAL_JSON_IMPORT_PASS')
             assert '2036' in (await page.locator('#history-list').inner_text())
             print('B85_PAGES_BROWSER_PYODIDE_E2E_PASS')
+            await page.route('**/data/cpi_verified.json',lambda route:route.abort())
+            await page.reload(wait_until='domcontentloaded')
+            await page.locator('#official-cpi-panel[data-status="error"]').wait_for(timeout=15000)
+            assert '保留原手動輸入' in (await page.locator('#official-cpi-panel').inner_text())
+            await page.unroute('**/data/cpi_verified.json')
+            async def bad_json(route):
+                await route.fulfill(status=200,content_type='application/json',body='{}')
+            await page.route('**/data/cpi_verified.json',bad_json)
+            await page.reload(wait_until='domcontentloaded')
+            await page.locator('#official-cpi-panel[data-status="error"]').wait_for(timeout=15000)
+            print('BROWSER_CPI_OFFLINE_AND_INVALID_SCHEMA_PASS')
         except Exception:
             print('BROWSER_FAILURE_LAST_LOGS',json.dumps(logs[-15:],ensure_ascii=False))
             try: await page.screenshot(path='/tmp/b85_pages_browser_failure.png',full_page=True,timeout=2000)
