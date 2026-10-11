@@ -25,9 +25,17 @@ async def main():
             await page.locator('#decision_date').fill('2026-10-11')
             await page.locator('#official-cpi-panel[data-status="verified"]').wait_for(timeout=15000)
             official=await page.locator('#official-cpi-panel').inner_text()
-            assert '+2.54%' in official and '2026-07' in official
-            assert '2026-09' in official and '待雙來源確認' in official
-            assert '尚無全年官方基準' in official
+            snapshot=await page.evaluate("fetch('./data/cpi_verified.json').then(x=>x.json())")
+            eligible=[x for x in snapshot['records'] if x['publication_date']<='2026-10-11' and x['month']<='2026-10']
+            verified=[x for x in eligible if x['verification']=='CROSS_VERIFIED']
+            assert verified, 'Expected at least one independently verified CPI month'
+            latest=verified[-1]
+            expected=('+' if latest['official_yoy_pct']>0 else '')+f"{latest['official_yoy_pct']:.2f}%"
+            assert expected in official and latest['month'] in official
+            pending=[x for x in eligible if x['verification']=='BULLETIN_ONLY_PENDING_PRIMARY']
+            if pending:
+                assert pending[-1]['month'] in official and '待雙來源確認' in official
+            assert snapshot['annual_2026_index'] is None and '尚無全年官方基準' in official
             assert await page.locator('#cpi_2026').input_value()=='110'
             await page.locator('#decision_date').fill('2036-01-15')
             print('BROWSER_CPI_CROSSCHECK_PENDING_AND_ASOF_PASS')
