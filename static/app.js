@@ -1,0 +1,126 @@
+'use strict';
+let token='', state=null, active='opening', engineReady=false;
+const $=id=>document.getElementById(id);
+const num=x=>Number(x||0);
+const twd=n=>new Intl.NumberFormat('zh-TW',{maximumFractionDigits:0}).format(Math.round(Number(n)||0));
+const twMoney=n=>'NT$ '+twd(n);
+const pct=x=>num(x).toFixed(1)+'%';
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function flash(msg,kind='error'){const a=$('alert');a.textContent=msg;a.className='alert'+(kind==='success'?' success':'');a.hidden=false;window.scrollTo({top:70,behavior:'smooth'});}
+function clearFlash(){$('alert').hidden=true;}
+const dbName='B85-retirement-local-v1', dbStore='user-records', dbKey='annual';
+let database=null, worker=null, seq=0;
+const pending=new Map();
+function databaseOpen(){return new Promise((resolve,reject)=>{const r=indexedDB.open(dbName,1);r.onupgradeneeded=()=>{if(!r.result.objectStoreNames.contains(dbStore))r.result.createObjectStore(dbStore)};r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});}
+function dbRead(){return new Promise((res,rej)=>{const t=database.transaction(dbStore,'readonly');const q=t.objectStore(dbStore).get(dbKey);q.onsuccess=()=>res(q.result||null);q.onerror=()=>rej(q.error);});}
+function dbWrite(record){return new Promise((res,rej)=>{const t=database.transaction(dbStore,'readwrite');t.objectStore(dbStore).put(JSON.stringify(record),dbKey);t.oncomplete=()=>res();t.onerror=()=>rej(t.error);t.onabort=()=>rej(t.error||Error('瀏覽器資料儲存被拒絕'));});}
+function callWorker(op,data={}){return new Promise((resolve,reject)=>{if(!worker){reject(Error('計算引擎尚未啟動'));return;}const id=++seq;pending.set(id,{resolve,reject});worker.postMessage({id,op,data});});}
+function downloadJson(data){const a=document.createElement('a'),u=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json;charset=utf-8'}));a.href=u;a.download='B85_年度研究備份_'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),10000);}
+async function request(path,data={}){if(!engineReady)throw Error('瀏覽器計算環境尚未完成載入');const op=({'/api/state':'state','/api/approve':'approve','/api/close':'close','/api/demo-close':'demo-close','/api/export':'export','/api/reset':'reset','/api/import':'import'})[path];if(!op)throw Error('未允許的請求');return await callWorker(op,data);}
+function setLoadingStatus(message,error=false){const status=$('runtime-status');status.classList.toggle('ready',engineReady&&!error);status.classList.toggle('failed',error);$('runtime-title').textContent=error?'引擎載入失敗':engineReady?'瀏覽器計算環境已就緒':'正在準備退休年度工具';$('runtime-detail').textContent=message;}
+async function load(){try{
+  database=await databaseOpen();const saved=await dbRead();
+  worker=new Worker('./pyodide-worker.js',{name:'B85-policy-worker'});
+  worker.onmessage=async event=>{const m=event.data;if(m.type==='progress'){setLoadingStatus(m.message);return;}if(m.type!=='result')return;const job=pending.get(m.id);if(!job)return;pending.delete(m.id);
+   if(!m.ok){job.reject(Error(m.error||'模型計算失敗'));return;}
+   try{if(m.record){await dbWrite(m.record)}job.resolve(m.data)}catch(e){job.reject(Error('無法保存年度紀錄：'+e.message+'。本次操作不視為完成，請檢查瀏覽器儲存空間並重新開啟頁面。'));engineReady=false;setLoadingStatus('資料儲存發生錯誤，請重新整理並檢查備份。',true)}
+  };
+  worker.onerror=e=>{engineReady=false;setLoadingStatus('B＋85 背景運算錯誤；請重新整理並確認網路或瀏覽器設定。',true);flash('模型載入失敗：'+e.message)};
+  const result=await callWorker('init', {saved});
+  engineReady=true;setLoadingStatus('已就緒。資料保存在此瀏覽器，建議定期匯出 JSON 備份。');state=result;render();
+ }catch(e){engineReady=false;setLoadingStatus('載入失敗：'+e.message+'。請確認瀏覽器支援 WebAssembly、IndexedDB，並能連接 Pyodide CDN。',true);flash('退休工具無法啟動：'+e.message)}}
+function display(view){
+ active=view;for(const id of ['opening','closing','history']){$('panel-'+id).classList.toggle('hidden',id!==view)}
+ document.querySelectorAll('[data-go]').forEach(b=>b.classList.toggle('selected',b.dataset.go===view));
+ $('breadcrumb-current').textContent=({opening:'年初核准',closing:'年末結算',history:'歷年紀錄'})[view];
+ clearFlash();
+}
+function metric(k,v,feature=false){return `<div class="metric ${feature?'featured':''}"><small>${esc(k)}</small><strong class="money-strong">${esc(v)}</strong></div>`}
+function lastYear(){return state?.years?.length?state.years[state.years.length-1]:null}
+function budgetHtml(y){
+ if(!y)return '';
+ const total=twMoney(y.living_authorized_twd),car=twMoney(y.car_authorized_twd),pos=pct(y.pos_pct);
+ return `<div class="result-caption">${y.year} 年・${y.age} 歲・B＋85 政策計算結果</div>
+ <div class="result-grid">
+ ${metric('今年核准生活費',total,true)}
+ ${metric('模型推估成功率 PoS',pos)}
+ ${metric('換車專項預算',car)}
+ </div><div class="progress-track"><div class="progress-bar" style="width:${Math.max(0,Math.min(100,y.pos_pct))}%"></div></div>
+ <div class="status-line">● ${y.b85_restored?'符合 B＋85 生活預算恢復條件':'按當年 Guardrail 狀態計算'}，年度 Sticky 乘數 ${esc(y.sticky_after)}</div>
+ <p class="details-summary">熊市現金橋接：${twMoney(y.bridge_from_cash_twd)}　／　已核准其他必要支出：${twMoney(y.extra_authorized_twd)}。<br>費用與稅負使用模型既有整體淨報酬情境，年末核對不會重扣。成功率是模型條件下的估算，不是保證。</p>
+ ${!y.closing?'<div class="result-buttons"><button class="primary-btn" data-go="closing">下一步：年末結算 →</button></div>':'<div class="result-buttons"><button class="secondary-btn" data-go="history">查看已結算紀錄</button></div>'}`;
+}
+function closeHtml(y){if(!y?.closing)return '';
+ const c=y.closing;
+ return `<div class="result-caption">${y.year} 年已完成年度結算 · 待真正來源驗證</div>
+ <div class="result-grid">${metric('實際年度支出',twMoney(c.actual_paid_twd),true)}${metric('年底投資資產',twMoney(c.investment_end_twd))}${metric('年底安全現金',twMoney(c.cash_end_twd))}</div>
+ <div class="status-line">● 年初預算與真實支出分開；帳務守恆檢查通過</div>
+ <p class="details-summary">未花完預算依模型結轉到現金：${twMoney(c.unused_budget_at_close_twd)}。<br>從兩筆資產餘額推導的實質投資池報酬率：${pct(c.net_real_portfolio_return_pct)}（只用於本機演練，未獨立驗證交易、股息或資金轉帳）。</p>
+ <div class="result-buttons"><button class="primary-btn" data-go="opening">開始下一年度 →</button><button class="secondary-btn" data-go="history">檢視年度紀錄</button></div>`;
+}
+function fillNext(){
+ const last=lastYear();
+ if(!last){$('first-year-fields').classList.remove('hidden');$('reference_cpi_field').classList.remove('hidden');return;}
+ $('first-year-fields').classList.add('hidden');$('reference_cpi_field').classList.add('hidden');
+ if(last.closing){$('decision_date').value=(last.year+1)+'-01-15';$('decision_cpi').value=last.closing.cpi;
+ $('decision_cpi_release').value=(last.year+1)+'-01-10';$('planned_extra_twd').value=0;}
+}
+function render(){
+ const last=lastYear();
+ $('opening-result').classList.toggle('hidden',!last);if(last)$('opening-result').innerHTML=budgetHtml(last);
+ const pending=!!(last && !last.closing);
+ $('opening-form').classList.toggle('hidden',pending||!!(last&&last.age>=104));
+ $('opening-tag').textContent=pending?'等待年末結算':last?.closing?'可開始下一年':'準備建立';
+ $('closing-tag').textContent=pending?'可進行結算':last?.closing?'已完成結算':'尚未核准';
+ $('closing-readiness').classList.toggle('hidden',pending||!!(last?.closing));
+ $('closing-form-wrap').classList.toggle('hidden',!pending);
+ $('closing-result').classList.toggle('hidden',!last?.closing);
+ if(last?.closing)$('closing-result').innerHTML=closeHtml(last);
+ if(pending){
+ $('closing-budget').innerHTML='<span>本年度核准生活費 <strong>'+twMoney(last.living_authorized_twd)+'</strong></span><span>額外預算 '+twMoney(last.car_authorized_twd+last.extra_authorized_twd)+'</span>';
+ const today=last.year;
+ if(!$('closing_date').value||Number($('closing_date').value.slice(0,4))!==today)$('closing_date').value=today+'-12-31';
+ if(!$('closing_cpi').value)$('closing_cpi').value=last.decision_cpi;
+ if(!$('closing_cpi_release').value||Number($('closing_cpi_release').value.slice(0,4))!==today)$('closing_cpi_release').value=today+'-12-20';
+ if(!$('living_paid_twd').value)$('living_paid_twd').value=Math.floor(last.living_authorized_twd);
+ }
+ fillNext();
+ renderHistory();
+}
+function renderHistory(){
+ const list=$('history-list');if(!state?.years?.length){list.innerHTML='<div class="empty-state"><span class="empty-icon">▤</span><h3>還沒有年度紀錄</h3><p>先從年初核准建立第一個年度。</p></div>';return}
+ list.innerHTML=[...state.years].reverse().map(y=>`<div class="history-card"><div><strong>${y.year} 年　${y.age} 歲</strong><p>生活預算 ${twMoney(y.living_authorized_twd)} · ${y.closing?'年末已結算':'等待年末結算'} · PoS ${pct(y.pos_pct)}</p></div><div class="history-side"><strong>${y.closing?twMoney(y.closing.investment_end_twd+y.closing.cash_end_twd):'待結算'}</strong><small>${y.closing?'年度終了合計資產':'已核准金額未視為支出'}</small></div></div>`).join('');
+}
+async function refresh(){state=await request('/api/state');render();}
+const fieldVal=id=>$(id).value;
+function initPayload(){return {
+ decision_date:fieldVal('decision_date'),planned_extra_twd:fieldVal('planned_extra_twd'),start_age:fieldVal('start_age'),
+ investment_twd:fieldVal('investment_twd'),cash_twd:fieldVal('cash_twd'),stock_bond:fieldVal('stock_bond'),
+ cpi_2026:fieldVal('cpi_2026'),decision_cpi:fieldVal('decision_cpi'),decision_cpi_release:fieldVal('decision_cpi_release')};}
+function endPayload(){return {closing_date:fieldVal('closing_date'),closing_cpi:fieldVal('closing_cpi'),
+ closing_cpi_release:fieldVal('closing_cpi_release'),living_paid_twd:fieldVal('living_paid_twd'),
+ car_paid_twd:fieldVal('car_paid_twd'),extra_paid_twd:fieldVal('extra_paid_twd'),
+ investment_end_twd:fieldVal('investment_end_twd'),cash_end_twd:fieldVal('cash_end_twd'),
+ emergency_paid_twd:fieldVal('emergency_paid_twd'),external_flow_twd:fieldVal('external_flow_twd')};}
+function loading(id,flag){$(id).disabled=flag;$(id).classList.toggle('loading',flag)}
+$('opening-form').addEventListener('submit',async e=>{e.preventDefault();loading('approve-btn',true);try{await request('/api/approve',initPayload());await refresh();display('opening');flash('本年度預算已核准（研究演練），請核對後進行年末結算。','success')}catch(err){flash(err.message)}finally{loading('approve-btn',false)}});
+$('closing-form').addEventListener('submit',async e=>{e.preventDefault();loading('close-btn',true);try{await request('/api/close',endPayload());await refresh();display('closing');flash('年末帳務已對帳並保存；可以開始下一年度。','success')}catch(err){flash(err.message)}finally{loading('close-btn',false)}});
+$('demo-close-btn').addEventListener('click',async()=>{try{const x=await request('/api/demo-close',{});
+ for(const k of ['closing_date','closing_cpi','closing_cpi_release','investment_end_twd','cash_end_twd','living_paid_twd','car_paid_twd','extra_paid_twd','emergency_paid_twd','external_flow_twd'])$(k).value=x[k];
+ flash('已填入模擬年底餘額。'+x.simulation_note,'success')
+ }catch(e){flash(e.message)}});
+$('export-btn').addEventListener('click',async()=>{try{downloadJson(await request('/api/export',{}));flash('JSON 備份已下載，請保存到你自己的安全資料夾。','success')}catch(e){flash(e.message)}});
+$('import-btn').addEventListener('click',()=>{if(!engineReady){flash('計算引擎尚未就緒');return;}$('import-file').click();});
+$('import-file').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;
+ try{if(file.size>5_000_000)throw Error('備份檔案過大');const imported=JSON.parse(await file.text());
+ if(!confirm('匯入備份將覆蓋此瀏覽器目前的年度紀錄。建議先匯出現有資料。確定匯入？'))return;
+ await request('/api/import',imported);await refresh();display('history');flash('備份 SHA256 與年度連續性已驗證，匯入完成。','success');
+ }catch(err){flash('匯入失敗：'+err.message)}finally{e.target.value='';}});
+$('reset-btn').addEventListener('click',async()=>{
+ const p=prompt('確定清除演練紀錄？系統會先下載一份 JSON 備份。請輸入「清除演練」：');if(p!=='清除演練')return;
+ try{downloadJson(await request('/api/export',{}));await request('/api/reset',{confirm:p});await refresh();display('opening');flash('已下載備份並清除本瀏覽器年度演練。','success')}
+ catch(e){flash('清除操作尚未成功：'+e.message)}
+});
+document.addEventListener('click',e=>{const b=e.target.closest('[data-go]');if(b&&!b.disabled){display(b.dataset.go);}});
+$('decision_date').addEventListener('change',()=>{$('first_year').value=$('decision_date').value.slice(0,4)});
+load();

@@ -1,0 +1,50 @@
+<!doctype html><html lang="zh-Hant"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>B＋85｜免安裝退休年度規劃工具</title><link rel="stylesheet" href="./static/style.css"/></head>
+<body><div class="app-shell">
+<aside class="sidebar">
+ <div class="brand"><div class="brand-icon">85</div><div><strong>退休年度中心</strong><small>B＋85 · v3.4.0</small></div></div>
+ <div class="sidebar-kicker">操作流程</div>
+ <button class="nav-link selected" data-go="opening"><span class="nav-no">01</span><span>年初核准<small>今年能花多少？</small></span></button>
+ <button class="nav-link" data-go="closing"><span class="nav-no">02</span><span>年末結算<small>今年實際花多少？</small></span></button>
+ <button class="nav-link" data-go="history"><span class="nav-no">03</span><span>歷年紀錄<small>明年從哪裡開始？</small></span></button>
+ <div class="side-bottom"><div class="side-label"><span class="dot"></span> 此瀏覽器保存・無需帳號</div><p>不連接券商，不自動交易或提款。所有數字都是模擬與核對用途。</p><div class="fx-tag">USD/TWD 固定 30</div></div>
+</aside>
+<div class="main-col"><header class="topbar"><div class="breadcrumb">退休規劃 <span>／</span> <strong id="breadcrumb-current">年初核准</strong></div><div class="status-pill"><span class="status-dot"></span> 研究演練 · 尚未正式 ACTIVE</div></header>
+<main class="main-content">
+ <div class="hero"><div class="hero-copy"><div class="eyebrow">一年只需兩次確認</div><h1>把退休過成你想要的生活。</h1><p>不用計算複雜公式。年初看可以花多少，年末核對還剩多少，其他交給已驗證的 B＋85 引擎。</p></div><div class="hero-art" aria-hidden="true"><div class="orbit orbit-a"></div><div class="orbit orbit-b"></div><div class="orb-core">B<span>＋</span>85<small>ANNUAL PLAN</small></div></div></div>
+ <div class="notice"><span class="notice-icon">!</span><div><strong>目前為瀏覽器研究演練</strong><p>可實際輸入、儲存與匯出年度紀錄；但沒有連線驗證券商、官方 CPI 公布版本或實際支付，因此不會把結果標示為已核准的真實提款指令。</p></div></div>
+ <div id="runtime-status" class="notice" role="status"><span class="notice-icon">…</span><div><strong id="runtime-title">正在載入 B＋85 計算引擎</strong><p id="runtime-detail">第一次載入需下載瀏覽器版 Python 與 NumPy，請保持網路連線。</p></div></div>
+ <div id="alert" class="alert" hidden role="alert"></div>
+ <section id="panel-opening" class="panel"><div class="section-head"><div><div class="eyebrow green">STEP 01</div><h2>年初・確認今年的生活預算</h2><p>第一次建立退休起始資料，以後自動延續上一年結算紀錄。</p></div><span id="opening-tag" class="tag">準備輸入</span></div>
+ <div id="opening-result" class="results hidden"></div>
+ <form id="opening-form" class="form-card">
+ <h3>年度基本資料</h3><div class="grid-form"><label class="field"><span>決策日期 <em>必填</em></span><input id="decision_date" type="date" required value="2036-01-15"/><small>以每年 1 月、當時已知的資料評估。</small></label>
+ <label class="field"><span>預計額外必要支出（新台幣）</span><input id="planned_extra_twd" type="number" min="0" step="0.01" value="0" required/><small>例如已確定的大額醫療費用；定期換車由政策自動列入。</small></label></div>
+ <div id="first-year-fields"><div class="inner-divider"></div><h3>首次建立：退休起始條件</h3><div class="grid-form"><label class="field"><span>退休開始年</span><input id="first_year" type="number" value="2036" readonly/><small>與上方決策日期年份相同。</small></label>
+ <label class="field"><span>退休開始年齡</span><input id="start_age" type="number" min="45" max="90" value="54" required/><small>預設 54 歲；不代表你現在已退休。</small></label>
+ <label class="field"><span>投資資產總市值（新台幣）</span><input id="investment_twd" type="number" min="0" step="0.01" value="27000000" required/><small>股票＋債券，與安全現金分開。</small></label>
+ <label class="field"><span>安全現金（新台幣）</span><input id="cash_twd" type="number" min="0" step="0.01" value="2400000" required/><small>退休啟動日安全現金政策目標 240 萬元。</small></label>
+ <label class="field"><span>股／債配置</span><select id="stock_bond"><option value="70/30">股票 70%／債券 30%（首選）</option><option value="65/35">股票 65%／債券 35%（保守備選）</option></select><small>這是股債比例，不是美國／非美國的股票地域比例。</small></label></div></div>
+ <div class="inner-divider"></div><div class="hrow"><h3>物價基準</h3><span class="tag subdued">由系統換算購買力</span></div>
+ <div class="grid-form"><label class="field" id="reference_cpi_field"><span>2026 年 CPI 基準指數（2021＝100）</span><input id="cpi_2026" type="number" step="0.01" min="10" value="110" required/><small>110 為<span class="em-strong">示範假設</span>，不是已認證的 2026 全年指數。</small></label>
+ <label class="field"><span>決策時最近可用的 CPI 指數</span><input id="decision_cpi" type="number" step="0.01" min="10" value="125" required/><small>首次演練預設 125，同樣是假設。</small></label>
+ <label class="field"><span>該 CPI 的官方公布日期</span><input id="decision_cpi_release" type="date" required value="2036-01-10"/><small>不可晚於決策日期；未連線查證官方來源。</small></label></div>
+ <div class="form-footer"><div class="tiny-info">核准只保留一份額度，不等於資金已經支出。</div><button class="primary-btn" type="submit" id="approve-btn">計算今年可花多少 <span>→</span></button></div>
+ </form></section>
+ <section id="panel-closing" class="panel hidden"><div class="section-head"><div><div class="eyebrow green">STEP 02</div><h2>年末・確認實際花了多少</h2><p>不用填報酬率。只要記錄實際支出及年底投資／現金餘額。</p></div><span id="closing-tag" class="tag">尚未核准</span></div>
+ <div id="closing-readiness" class="empty-state"><span class="empty-icon">▧</span><h3>請先完成年初核准</h3><p>年初預算計算完成後，年末結算表單就會開放。</p><button class="secondary-btn" data-go="opening">回到年初核准</button></div>
+ <div id="closing-form-wrap" class="hidden"><div id="closing-budget" class="summary-strip"></div>
+ <form class="form-card" id="closing-form"><h3>實際年度支出</h3><div class="grid-form"><label class="field"><span>實際生活費（新台幣）</span><input id="living_paid_twd" type="number" min="0" step="0.01" required/><small>以全年實際付出去的金額為準，不是預算金額。</small></label>
+ <label class="field"><span>實際換車費用（新台幣）</span><input id="car_paid_twd" type="number" min="0" step="0.01" value="0" required/></label>
+ <label class="field"><span>其他已核准必要支出（新台幣）</span><input id="extra_paid_twd" type="number" min="0" step="0.01" value="0" required/></label></div>
+ <div class="inner-divider"></div><h3>年底帳戶餘額</h3><div class="grid-form"><label class="field"><span>年底投資資產總市值（新台幣）</span><input id="investment_end_twd" type="number" min="0" step="0.01" required/><small>包含 ETF、股票與債券的年底市值。</small></label>
+ <label class="field"><span>年底安全現金餘額（新台幣）</span><input id="cash_end_twd" type="number" min="0" step="0.01" required/><small>已考慮未花完預算回存的情況。</small></label>
+ <label class="field"><span>年末結算日期</span><input id="closing_date" type="date" required/></label>
+ <label class="field"><span>年末可用 CPI 指數</span><input id="closing_cpi" type="number" min="10" step="0.01" required/><small>用於將年底名目資產換算到退休起始購買力。</small></label>
+ <label class="field"><span>該 CPI 的官方公布日期</span><input id="closing_cpi_release" type="date" required/></label></div>
+ <details class="advanced"><summary>今年是否有緊急支出、額外入金或其他特殊狀況？</summary><p>不明資金流或一次性 Emergency 須另行核對，不能讓系統將它誤當市場報酬。</p><div class="grid-form"><label class="field"><span>一次性 Emergency（新台幣）</span><input id="emergency_paid_twd" type="number" min="0" step="0.01" value="0" required/></label>
+ <label class="field"><span>額外入金／轉帳（新台幣）</span><input id="external_flow_twd" type="number" min="0" step="0.01" value="0" required/></label></div></details>
+ <div class="form-footer"><button id="demo-close-btn" type="button" class="secondary-btn">填入示範年底數值</button><button class="primary-btn" type="submit" id="close-btn">完成年度結算 <span>→</span></button></div></form></div>
+ <div id="closing-result" class="results hidden"></div></section>
+ <section id="panel-history" class="panel hidden"><div class="section-head"><div><div class="eyebrow green">STEP 03</div><h2>歷年紀錄・從哪一年接續</h2><p>年初核准與年末實際紀錄分開保存，避免重複支出。</p></div><div class="history-actions"><button id="export-btn" class="secondary-btn">匯出 JSON 備份</button> <button id="import-btn" class="secondary-btn">匯入 JSON 備份</button><input id="import-file" type="file" accept="application/json,.json" class="hidden" aria-label="匯入已保存的年度備份 JSON"/></div></div><div id="history-list" class="history-list"></div><div class="history-footer"><p>重設之前請先匯出備份。重設之前會自動下載一份 JSON 備份。</p><button id="reset-btn" type="button" class="danger-link">清除演練並重新開始</button></div></section>
+ <div class="footnote">退休模型 B＋85 v3.4.0｜瀏覽器本機運算，資料僅儲存於此瀏覽器的網站空間｜研究演練｜非投資建議、稅務判定或真實提款授權。</div>
+</main></div></div><script src="./static/app.js" defer></script></body></html>
