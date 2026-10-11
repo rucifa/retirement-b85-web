@@ -4,8 +4,6 @@
   "index_base": "2021=100",
   "source_status": "RESEARCH_STAGED_NOT_ACTIVE",
   "source_checked_at_utc": "2026-10-11T07:18:15.174586+00:00",
-  "source_branch_commit": "91bfaa383d2123f01e1b9ef26798cd6288c847df",
-  "source_snapshot_blob_sha": "964d49d953dce6aa06ee8e38b155d5d6462a6392",
   "primary_source_sha256": "b162edf6946f1e12d21090d56917f66edd59cb45a4cb197b9b4fe1a7305e511f",
   "primary_status": "RESEARCH_STAGED_NOT_ACTIVE",
   "primary_latest_month": "2026-07",
