@@ -13,5 +13,8 @@
   "workflow.py": "130809eaf5863ed960a56bfc0596b18abb811cf9b5794b21682b526e6de58ffe",
   "tests/browser_e2e.py": "620f41b4cb89637dafd9e0bac117a91d249803edec13aae35e78ae1cb71cb615",
   "data/cpi_verified.json": "c88bba7d7db3eaea35343e6e27f51f213237f38b3a2f49ce2b04932c0071bdc0",
-  "static/cpi-official.js": "9d4a2489b5a202e28b4a5cdbb0436702fca804b93f755920de5928899ef54183"
+  "static/cpi-official.js": "9d4a2489b5a202e28b4a5cdbb0436702fca804b93f755920de5928899ef54183",
+  "scripts/public_cpi/cpi_sources.py": "adb9863318cfb462f5c2a35c9ebe928d40216a3142e7b586aa39592c5713e784",
+  "scripts/public_cpi/update.py": "2915dc02c130487d441de40491045d610fdd971f888c6585cb43cdf7d5f3be3d",
+  "scripts/public_cpi/tests/test_public_cpi.py": "7f503c46c00ca5bd1ca4532f3c03959a4c9d68a3fcc7dc987171c19b0bd16334"
 }
