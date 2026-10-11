@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "source_authority": "行政院主計總處（DGBAS）",
+  "index_base": "2021=100",
+  "source_status": "RESEARCH_STAGED_NOT_ACTIVE",
+  "source_checked_at_utc": "2026-10-11T07:18:15.174586+00:00",
+  "source_branch_commit": "91bfaa383d2123f01e1b9ef26798cd6288c847df",
+  "source_snapshot_blob_sha": "964d49d953dce6aa06ee8e38b155d5d6462a6392",
+  "primary_source_sha256": "b162edf6946f1e12d21090d56917f66edd59cb45a4cb197b9b4fe1a7305e511f",
+  "primary_status": "RESEARCH_STAGED_NOT_ACTIVE",
+  "primary_latest_month": "2026-07",
+  "bulletin_latest_month": "2026-09",
+  "latest_cross_verified_month": "2026-07",
+  "annual_2026_index": null,
+  "annual_2026_release_date": null,
+  "source_list_url": "https://www.stat.gov.tw/News.aspx?n=2668",
+  "records": [
+    {
+      "month": "2026-06",
+      "index": 112.01,
+      "official_yoy_pct": 2.6,
+      "publication_date": "2026-07-07",
+      "verification": "HISTORICAL_VINTAGE_DIFFERENCE",
+      "primary_index": 112,
+      "official_source_url": "https://www.stat.gov.tw/News_Content.aspx?n=2668&s=236430",
+      "bulletin_xlsx_sha256": "5276f8ce644593dadd7da6681c4cad26387ac6d6f80e28a72d63443c7120a13c"
+    },
+    {
+      "month": "2026-07",
+      "index": 112.35,
+      "official_yoy_pct": 2.54,
+      "publication_date": "2026-08-06",
+      "verification": "CROSS_VERIFIED",
+      "primary_index": 112.35,
+      "official_source_url": "https://www.stat.gov.tw/News_Content.aspx?n=2668&s=236540",
+      "bulletin_xlsx_sha256": "48091b18ad2cec35511a633b2d83ff8363662c35638c1cc3c46fdc2ca1f523ed"
+    },
+    {
+      "month": "2026-08",
+      "index": 112.32,
+      "official_yoy_pct": 2.04,
+      "publication_date": "2026-09-08",
+      "verification": "BULLETIN_ONLY_PENDING_PRIMARY",
+      "official_source_url": "https://www.stat.gov.tw/News_Content.aspx?n=2668&s=236675",
+      "bulletin_xlsx_sha256": "acc96eebda97a4c78a72b7fb9032456d96a2c3b5f2fe53dd649473c89d37d25d"
+    },
+    {
+      "month": "2026-09",
+      "index": 112.82,
+      "official_yoy_pct": 2.73,
+      "publication_date": "2026-10-07",
+      "verification": "BULLETIN_ONLY_PENDING_PRIMARY",
+      "official_source_url": "https://www.stat.gov.tw/News_Content.aspx?n=2668&s=236759",
+      "bulletin_xlsx_sha256": "60000410c1dac15e32ce94ce9fb05a5b846a59f7bd157814937277363fb692d0"
+    }
+  ]
+}
