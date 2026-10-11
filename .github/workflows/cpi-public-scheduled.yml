@@ -1,0 +1,146 @@
+name: Public CPI independent dual-source fetch and Pages refresh
+on:
+  schedule:
+    - cron: '32 2 1,15 * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/cpi-public-scheduled.yml'
+      - 'scripts/public_cpi/**'
+permissions:
+  contents: write
+  pages: write
+concurrency:
+  group: public-cpi-verified-single-writer
+  cancel-in-progress: false
+jobs:
+  cpi:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install official XLS and browser QA dependencies
+        run: |
+          python -m pip install 'xlrd==2.0.2' 'numpy>=1.26,<3' 'playwright==1.55.0'
+          python -m playwright install chromium --with-deps
+      - name: Verify public CPI collector and existing policy tests
+        run: |
+          python -m unittest discover -s scripts/public_cpi/tests -p 'test_*.py' -v
+          python -m unittest discover -s tests -p 'test_pages_bridge.py' -v
+      - name: Verify immutable assets and public-source checksums
+        run: |
+          python - <<'PY'
+          import json,hashlib,pathlib
+          repo=pathlib.Path('.')
+          manifest=json.loads((repo/'SOURCE_SHA256.json').read_text('utf-8'))
+          assert manifest['policy/retirement_model_v340.py']=='54dd2718a098c7f8182fcc44db980c523c2859fdaa276c50e81e8f8ea8712f10'
+          for path,want in manifest.items():
+              assert hashlib.sha256((repo/path).read_bytes()).hexdigest()==want, f'SOURCE_HASH_FAILED: {path}'
+          assert not (repo/'user_data/annual_records.json').exists()
+          print('PUBLIC_SOURCE_HASH_AND_POLICY_PASS')
+          PY
+      - name: Fetch DGBAS primary XLS and bulletin XLSX with verified TLS
+        run: python scripts/public_cpi/update.py --repo .
+      - name: Recheck manifest after verified CPI publication
+        run: |
+          python - <<'PY'
+          import json,hashlib,pathlib
+          repo=pathlib.Path('.')
+          manifest=json.loads((repo/'SOURCE_SHA256.json').read_text('utf-8'))
+          for path,want in manifest.items():
+              assert hashlib.sha256((repo/path).read_bytes()).hexdigest()==want, f'POST_CPI_HASH_FAILED: {path}'
+          print('CPI_JSON_AND_ASSET_HASHES_MATCH_PASS')
+          PY
+      - name: Full real Chromium Pyodide E2E with new CPI data
+        run: |
+          node --check static/app.js
+          node --check static/cpi-official.js
+          nohup python -m http.server 8766 --bind 127.0.0.1 > /tmp/public-cpi-http.log 2>&1 &
+          sleep 2
+          python tests/browser_e2e.py
+      - name: Commit only CPI data and SHA256 using this repository's built-in token
+        id: published
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- data/cpi_verified.json SOURCE_SHA256.json
+          git diff --cached --check
+          while IFS= read -r name; do
+            case "$name" in
+              "data/cpi_verified.json"|"SOURCE_SHA256.json") ;;
+              *) echo "UNAUTHORIZED_CPI_PUBLICATION: $name" >&2; exit 2 ;;
+            esac
+          done < <(git diff --cached --name-only)
+          if git diff --cached --quiet; then
+            echo 'changed=false' >> "$GITHUB_OUTPUT"
+            echo 'No CPI data changes.'
+          else
+            git commit -m 'data(cpi): refresh verified DGBAS public snapshot'
+            git push origin HEAD:main
+            echo 'changed=true' >> "$GITHUB_OUTPUT"
+            echo "PUBLIC_CPI_COMMIT $(git rev-parse HEAD)" >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Request branch-based Pages build explicitly
+        if: steps.published.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api -X POST "repos/$GITHUB_REPOSITORY/pages/builds" --jq '.status'
+          echo 'PAGES_BUILD_REQUESTED' >> "$GITHUB_STEP_SUMMARY"
+      - name: Verify Pages built the CPI commit
+        if: steps.published.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          expected="$(git rev-parse HEAD)"
+          for attempt in $(seq 1 24); do
+            info="$(gh api "repos/$GITHUB_REPOSITORY/pages/builds/latest")"
+            status="$(echo "$info" | python -c 'import json,sys;print(json.load(sys.stdin).get("status",""))')"
+            sha="$(echo "$info" | python -c 'import json,sys;print(json.load(sys.stdin).get("commit",""))')"
+            echo "Pages $attempt: $status $sha"
+            if [[ "$status" == 'built' && "$sha" == "$expected" ]]; then
+              echo 'PAGES_CPI_COMMIT_MATCH_PASS' >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            [[ "$status" != 'errored' && "$status" != 'failed' ]] || exit 2
+            sleep 10
+          done
+          echo 'PAGES_BUILD_NOT_VERIFIED' >&2
+          exit 2
+      - name: Confirm live public CPI is the committed JSON
+        if: steps.published.outputs.changed == 'true'
+        run: |
+          set -euo pipefail
+          expected="$(sha256sum data/cpi_verified.json | cut -d' ' -f1)"
+          for attempt in $(seq 1 24); do
+            observed="$(curl -fsSL --max-time 20 "https://rucifa.github.io/retirement-b85-web/data/cpi_verified.json" | sha256sum | cut -d' ' -f1)" || true
+            if [[ "$observed" == "$expected" ]]; then
+              echo 'LIVE_CPI_JSON_BYTES_MATCH_PASS' >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo 'LIVE_SITE_CPI_SNAPSHOT_NOT_YET_MATCHED' >&2
+          exit 2
+      - name: Preserve public-only diagnostics on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: public-cpi-failure-${{ github.run_id }}
+          path: |
+            /tmp/public-cpi-http.log
+            /tmp/b85_pages_browser_failure.png
+          if-no-files-found: ignore
+          retention-days: 7
+# Uses only built-in GITHUB_TOKEN. No PAT, no private repo access or personal data.
