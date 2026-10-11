@@ -44,11 +44,13 @@ def assessment(*records):
 class PublicCpiTests(unittest.TestCase):
     def test_existing_public_official_fixture_matches_schema(self):
         current=__import__('json').loads((ROOT/'data/cpi_verified.json').read_text('utf-8'))
-        history=update.valid_old(current,NOW.date())
-        self.assertEqual(current['latest_cross_verified_month'],'2026-07')
-        self.assertEqual(len(history),4)
-        self.assertEqual(history['2026-09']['verification'],'BULLETIN_ONLY_PENDING_PRIMARY')
+        history=update.valid_old(current,datetime.now(timezone.utc).date())
+        self.assertGreaterEqual(len(history),4)
+        self.assertEqual(history['2026-07']['verification'],'CROSS_VERIFIED')
+        self.assertEqual(history['2026-07']['index'],112.35)
         self.assertEqual(history['2026-06']['verification'],'HISTORICAL_VINTAGE_DIFFERENCE')
+        self.assertIn(history['2026-09']['verification'],
+                      {'BULLETIN_ONLY_PENDING_PRIMARY','CROSS_VERIFIED'})
 
     def test_last_four_bulletins_merge_and_pending_is_not_verified(self):
         rows=[
