@@ -18,3 +18,22 @@ button:disabled{opacity:.6;cursor:progress}.privacy-help{font-size:12px;color:#6
 .inflation-hint{font-size:.78rem;color:#4f6d65;line-height:1.6;margin:12px 0 0}
 .inflation-help{margin-top:12px}.result-inflation{margin:18px 0}
 @media(max-width:740px){.inflation-cards{grid-template-columns:1fr}.inflation-head span{width:100%}}
+
+/* Verified DGBAS CPI snapshot: read-only, distinct from exercise input and final approval. */
+.official-cpi-panel{border:1px solid #c4d8d1;background:#f7fbf8;border-radius:15px;margin:12px 0 20px;padding:19px;color:#204737}
+.official-cpi-panel[data-status="error"],.official-cpi-panel[data-status="stale"]{background:#fff9f0;border-color:#ead5ad}
+.cpi-heading{display:flex;justify-content:space-between;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:13px}
+.cpi-state-title{font-size:14px;font-weight:800}
+.cpi-status{color:#547d69;font-size:11px;font-weight:800}
+.cpi-public-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px}
+.cpi-public-grid>div{background:#fff;border:1px solid #e0e9e3;border-radius:10px;padding:13px;display:flex;flex-direction:column;gap:8px;min-height:90px}
+.cpi-public-grid small{color:#608076;font-size:11px;line-height:1.5}
+.cpi-public-grid strong{color:#245b43;font-size:15px;line-height:1.4}
+.cpi-caption,.cpi-pending,.cpi-warning{font-size:11px;line-height:1.75;color:#58746b;margin:13px 0 0}
+.cpi-pending,.cpi-warning{color:#86632d}
+.cpi-source-detail{font-size:11px;color:#526e62;margin-top:15px;border-top:1px solid #dbeae3;padding-top:12px;overflow-wrap:anywhere}
+.cpi-source-detail summary{cursor:pointer;font-weight:800}
+.cpi-source-detail li{padding:3px 0}
+.cpi-manual-input{margin:12px 0 18px}
+.cpi-manual-input .grid-form{margin-top:13px}
+@media(max-width:740px){.cpi-public-grid{grid-template-columns:1fr}}
