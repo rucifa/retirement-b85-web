@@ -1,15 +1,17 @@
 {
   ".nojekyll": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
   "bridge.py": "d1397517091fee07f9f608ef953b632bc633c9c63388ec7af9324790bcd07f1a",
-  "index.html": "14b0dd960983b066431bb7df5149f7fa29951c89edd4e6b10af5074341c52cf9",
+  "index.html": "ac2cec49f391e908ee01febdfc16f78573e5a5a95f3e2f9789943f7e93c255e7",
   "policy/__init__.py": "c351713828d38702d7b6562661a8e52511e0c63d370d55a77109263a4a7ea0e1",
   "policy/annual_execution_v340.py": "4e92b2a6b3d7166ca7536b6afdcb3ce6bffd90ac8f94d7a47e0231c266eee0df",
   "policy/retirement_model_v340.py": "54dd2718a098c7f8182fcc44db980c523c2859fdaa276c50e81e8f8ea8712f10",
   "policy/simple_annual_ledger.py": "297901aaf5b43cb18fc72870755e562148b170e7ef34c6b3f462f981a387a11c",
   "pyodide-worker.js": "397023dbcece709fbdd3e80b9d91e71011bc3f167333474413491c6bcd4f4e64",
   "static/app.js": "e514de53e502079e07001d6992a506936940a1ed3b44aee65e8186e47a8f441a",
-  "static/style.css": "141d6d6a44e7ecd2f8661848f97063548893a9df3bc683dd16b488675cf4b080",
+  "static/style.css": "36f229f3a94ece742274f4ca1bc7c95ff3c06f40346fb25b8da09d172b8561f8",
   "tests/test_pages_bridge.py": "b365c0a78815047f3fd9b3b5b560cc48802cdd9c0d48217a4ee31aa4d60e79e1",
   "workflow.py": "130809eaf5863ed960a56bfc0596b18abb811cf9b5794b21682b526e6de58ffe",
-  "tests/browser_e2e.py": "855ba24fabb755ff8f9febd50a78db343f1d2dd01d6307c04febd90fc382db6a"
+  "tests/browser_e2e.py": "620f41b4cb89637dafd9e0bac117a91d249803edec13aae35e78ae1cb71cb615",
+  "data/cpi_verified.json": "2cb6eee4c5bbad0f51688b7305340fcb378dacaf5f26cf28ef49b2c9cdda9c21",
+  "static/cpi-official.js": "9d4a2489b5a202e28b4a5cdbb0436702fca804b93f755920de5928899ef54183"
 }
