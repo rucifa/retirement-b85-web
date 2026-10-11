@@ -17,7 +17,7 @@
 - 本公開儲存庫只有靜態 UI 和通用退休政策演算法，**不包含個人持倉、年度紀錄、GitHub 密碼或私人研究備份**。
 - USD/TWD 假設固定 30；畫面上的 2036、27,000,000 及原始 CPI 輸入數字純屬演練假設，並非個人事實或官方查證值。
 - 網站會自動從同源 `./data/cpi_verified.json` **讀取**公開的主計總處 CPI 快照，區分雙來源查證、公告待核對及歷史修訂差異；不會把公告未核對月份或 2026 單月值當作已認證全年資料，也不會改寫已保存年度。
-- **自動同步程式已接入既有私人排程，但仍待啟用授權**：私人 repo 的每月 CPI 驗證 workflow 已加入資料白名單轉出、嚴格驗證與跨 repo 發布步驟；需在私人 repo 的 GitHub Actions Secrets 設定僅授權本 Public repo 的 `PUBLIC_CPI_WRITE_TOKEN` 後，才可能自動更新本站。正式生效前必須以實際 Actions 執行、PUBLIC 雙檔 commit、Pages CI 驗收為準。沒有新增第二個排程。
+- **公開網站改採獨立官方 CPI 排程**：`.github/workflows/cpi-public-scheduled.yml` 已設每月 1、15 日台灣時間 10:32（GitHub cron 為 UTC 02:32），直接在 `retirement-b85-web` 下載主計總處官方歷史 XLS＋新聞稿 Table-1 XLSX，驗證 TWCA HTTPS 憑證、811 個月歷史基準 SHA256、雙來源一致性、發布時間與資料安全後，用**本儲存庫內建 `GITHUB_TOKEN`** 只更新 `data/cpi_verified.json` 與 `SOURCE_SHA256.json`；再明確要求 Pages 重建並比對正式網站 JSON。**不需要私人 repo Token、不需要跨庫同步或額外費用**。程式已提交，但須以實際 Actions 執行綠燈與正式網頁快照更新，才能視為無人值守驗收成功。私人研究庫保留自己原有的獨立 CPI 排程。
 - 「2026 年全年 CPI」截至 2026-10-11 仍未正式產生；因此公開區暫無可用的 2026 年全年基準，官方累積物價變化與官方換算後生活費顯示不可計算；手動演練不受影響。
 
 ## GitHub Pages 一次性設定
