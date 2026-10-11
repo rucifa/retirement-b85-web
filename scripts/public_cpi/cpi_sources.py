@@ -119,6 +119,7 @@ def parse_official_xls(raw, as_of=None):
 
 # Read-only bulletin validation routines, copied from independently verified public-source parser.
 from html.parser import HTMLParser
+from io import BytesIO
 from urllib.parse import urljoin, parse_qs
 from xml.etree import ElementTree as ET
 from zipfile import ZipFile, BadZipFile
