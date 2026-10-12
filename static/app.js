@@ -109,21 +109,37 @@ function budgetHtml(y){
  const annual=part?`模型全年生活費參考為 ${twMoney(y.full_year_living_reference_twd)}；本次依起始日至年底按日換算為 ${total}。換車及額外必要支出不按天數縮減。`:'';
  const applicable=part?`適用期間：${String(y.period_start).replaceAll('-','/')}～${String(y.period_end).replaceAll('-','/')}（含起始日，共 ${y.calendar_days} 天）`:`適用期間：${y.year}/01/01～${y.year}/12/31（全年）`;
  const budgetExplanation='這是上述期間可安排的生活費總預算，不代表需要在起始日一次提領整筆，也不包含換車或其他必要支出。';
- const bridgeValid=y.bridge_from_cash_twd!==null&&y.bridge_from_cash_twd!==undefined&&Number.isFinite(Number(y.bridge_from_cash_twd))&&Number(y.bridge_from_cash_twd)>=0;
- const cashValid=y.cash_open_twd!==null&&y.cash_open_twd!==undefined&&Number.isFinite(Number(y.cash_open_twd))&&Number(y.cash_open_twd)>=0;
+ const amountOK=v=>v!==null&&v!==undefined&&v!==''&&Number.isFinite(Number(v))&&Number(v)>=0;
+ const bridgeValid=amountOK(y.bridge_from_cash_twd),refillValid=amountOK(y.cash_refill_twd),cashValid=amountOK(y.cash_open_twd);
  const bridge=bridgeValid?twMoney(y.bridge_from_cash_twd):'資料待確認';
+ const refill=refillValid?twMoney(y.cash_refill_twd):'資料待確認';
  const startingCash=cashValid?twMoney(y.cash_open_twd):'資料待確認';
- const bridgeNote=!bridgeValid?'舊年度資料缺少現金橋接金額，請核對備份來源。':
-  Number(y.bridge_from_cash_twd)>0?`本次使用安全現金 ${bridge} 支應生活費的一部分。`:'本次未動用安全現金橋接。';
+ const posValue=Number(y.pos_pct),hasPos=Number.isFinite(posValue);
+ const bridgeNote=!bridgeValid?'舊年度資料缺少安全現金橋接數據，請核對備份。':
+  Number(y.bridge_from_cash_twd)>0?`本次以安全現金 ${bridge} 支應部分生活費，已包含在生活費預算內。`:
+  hasPos&&posValue>75?`本次 PoS ${pct(posValue)} 高於橋接門檻 75%，因此不啟動；大額支出本身不會觸發熊市橋接。`:
+  '本次未動用橋接；即使 PoS 達到門檻，仍須受可用安全現金及緊急預備金限制。';
+ const refillNote=!refillValid?'舊年度資料缺少現金補回數據，請核對備份。':
+  Number(y.cash_refill_twd)>0?`本次由投資資產移回安全現金 ${refill}；屬資產間移轉，不是新增收入。`:
+  '本次未補回。只有 PoS 高於 75%、現金低於政策目標的 95%、必要支出可支付且仍有投資資產時，才會逐步補回；不是每逢多頭就自動補滿。';
+ const extraKnown=amountOK(y.extra_authorized_twd)&&Number(y.extra_authorized_twd)>0;
+ const extraPosWarning=extraKnown?
+  `<p class="policy-caveat"><strong>重要：本次新增必要支出 ${esc(twMoney(y.extra_authorized_twd))} 雖已列入年度預算，卻沒有加入本年度原始 PoS 的內層試算。</strong> 上方成功機率不能視為已包含這筆新增支出的完整終生風險評估；請勿因此認定資產已充分支應未來所有費用。</p>`:'';
+ const budgetTotal=amountOK(y.total_budget_twd)?twMoney(y.total_budget_twd):'資料待確認';
  return `<div class="result-caption">${y.year} 年・${y.age} 歲・${period}・B＋85 研究演練</div>
  <div class="result-grid result-grid-finance">
  ${metric('本次建議生活費預算',total,true)}
  ${metric('模型成功機率（PoS）',pos)}
  ${metric('本次安全現金橋接',bridge)}
- ${metric('試算開始時安全現金',startingCash)}
+ ${metric('本次安全現金補回',refill)}
  </div>
  <p class="details-summary budget-period-note">${esc(applicable)}。${esc(budgetExplanation)}</p>
- <div class="cash-bridge-explain" role="note"><strong>${esc(bridgeNote)}</strong> 現金橋接是生活費的資金來源，<strong>不是生活費之外可以再加領的金額</strong>。安全現金顯示的是本次試算的起始餘額，並非年底預估餘額。</div>
+ <div class="cash-bridge-explain" role="note">
+  <p><strong>本次試算開始時安全現金：${esc(startingCash)}</strong>；本次生活費、換車及其他必要支出的核准總預算：${esc(budgetTotal)}。</p>
+  <p><strong>安全現金橋接：</strong>${esc(bridgeNote)}</p>
+  <p><strong>安全現金補回：</strong>${esc(refillNote)}</p>
+  <p>橋接屬於生活費的資金來源，<strong>不是生活費之外可以再加領的金額</strong>；補回只是由投資資產轉入現金，不是新的投資報酬。安全現金起始額也不是年底預估額。</p>
+ </div>${extraPosWarning}
  <div class="progress-track"><div class="progress-bar" style="width:${Math.max(0,Math.min(100,y.pos_pct))}%"></div></div>
  <div class="status-line">● ${esc(cpiBasis)} ${esc(annual)} ${y.b85_restored?'符合 B＋85 生活預算恢復條件':'按當年 Guardrail 狀態計算'}，年度 Sticky 乘數 ${esc(y.sticky_after)}。</div>
  <p class="details-summary">換車專項預算：${car}　／　已核准其他必要支出：${twMoney(y.extra_authorized_twd)}。<br>費用與稅負使用模型既有整體淨報酬情境，年末核對不會重扣。PoS 採完整年度模型作參考，未針對首年短期間重新校準；成功率不是保證。</p>

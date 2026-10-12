@@ -61,7 +61,8 @@ function updateKpis(){
  text('dash-difference',value);
  text('dash-difference-sub',explanation);
  text('dash-pos',y&&Number.isFinite(Number(y.pos_pct))?Number(y.pos_pct).toFixed(1)+'%':'—');
- text('dash-pos-sub',y?'完整年度模型參考值（非首年短期間保證）':'完整年度模型參考值，非保證');
+ const extraOneOff=y&&fine(y.extra_authorized_twd)?Number(y.extra_authorized_twd):0;
+ text('dash-pos-sub',y?(extraOneOff>0?'尚未將本次另列必要支出 '+money(extraOneOff)+' 納入原始 PoS 估算；不是保證':'完整年度模型參考值（非首年短期間保證）'):'完整年度模型參考值，非保證');
  text('dash-years',years.length+' 年');
  text('dash-years-sub',years.length?'最早 '+years[0].year+' 年 · 最新 '+years[years.length-1].year+' 年':'僅保存在此瀏覽器');
  text('dash-policy-status',y?'已計算 '+y.year+' 年預算；'+(y.b85_restored?'符合 B＋85 恢復條件。':'以當年的 Guardrail／Sticky 結果為準。'):'目前尚無核准年度；請先執行年初試算。');
@@ -213,7 +214,8 @@ function updateGuardrail(y){
   RAISE_10_PERCENT:'PoS '+pos.toFixed(1)+'% ≥ 95%，已觸發本年度 Sticky 增支 10%（仍有上限）。',
   B85_RESTORED:'符合 B＋85 恢復條件，Sticky 恢復至正常額度。'
  };
- status.textContent=changes[action]||'本年度依 B＋85 政策 Guardrail／Sticky 規則核准。';
+ status.textContent=(changes[action]||'本年度依 B＋85 政策 Guardrail／Sticky 規則核准。')+
+  (Number(y.extra_authorized_twd)>0?' 已另列本次新增必要支出，但原始 PoS 未把這筆新增支出納入計算。':'');
  detail.replaceChildren();
  const rows=[];
  if(fine(y.normal_reference_twd))rows.push(['正常生活費參考（全年）',money(Number(y.normal_reference_twd))]);
@@ -235,7 +237,7 @@ function updateGuardrail(y){
 }
 let assetMode='actual',assetModeChanged=false;
 function updateChartMode(y,years){
- if(!assetModeChanged)assetMode=(y&&!years.some(x=>!!x.closing))?'scenarios':'actual';
+ if(!assetModeChanged)assetMode='actual';
  const scenario=assetMode==='scenarios';
  const history=$('dash-asset-chart'),pane=$('dash-scenario-pane');
  if(!history||!pane)return;
@@ -259,7 +261,9 @@ for(const id of ['dash-return-low','dash-return-mid','dash-return-high']){
 }
 function forecastScenario(y,annualPct){
  const annual=Number(y.full_year_living_reference_twd??y.living_authorized_twd);
- const first=Number(y.living_authorized_twd);
+ // Include THIS year's known approved one-off expenses in the first year.
+ // Future car/emergency/extra spending and annual B+85 decisions are NOT forecast.
+ const first=Number(y.living_authorized_twd)+Number(y.car_authorized_twd??0)+Number(y.extra_authorized_twd??0);
  const opening=Number(y.investment_open_twd)+Number(y.cash_open_twd);
  const firstShare=y.calendar_first_year?Number(y.calendar_fraction):1;
  if(!Number.isFinite(opening)||opening<=0||!Number.isFinite(annual)||annual<0||
@@ -279,14 +283,16 @@ function forecastScenario(y,annualPct){
  }
  return points;
 }
+// Pure, read-only QA hook to verify first-year known expenses are not omitted.
+window.B85_FIXED_RETURN_PREVIEW=Object.freeze({forecastScenario});
 function drawScenario(y){
  const box=$('dash-scenario-chart');if(!box)return;
- if(!y){box.textContent='先完成年度試算，才能以實際起始資產建立三種假設對照。';return;}
- const names=[['dash-return-low','逆風'],['dash-return-mid','中性'],['dash-return-high','順風']];
+ if(!y){box.textContent='完成年度試算後，才可自行比較三組固定報酬率假設；此圖不代表模型預測。';return;}
+ const names=[['dash-return-low','假設 A'],['dash-return-mid','假設 B'],['dash-return-high','假設 C']];
  const rates=names.map(([id])=>Number($(id)?.value));
  if(rates.some((rate,i)=>!$(names[i][0])?.value||!Number.isFinite(rate)||rate< -99||rate>30)
       || !(rates[0]<rates[1]&&rates[1]<rates[2])){
-  box.textContent='請輸入 −99%～＋30% 的實質年報酬假設，並保持逆風 ＜ 中性 ＜ 順風。';return;
+  box.textContent='請輸入 −99%～＋30% 的固定實質年報酬率，並保持 A ＜ B ＜ C。';return;
  }
  const lines=rates.map(rate=>forecastScenario(y,rate));
  if(lines.some(line=>line.length<2)||lines[0].length!==lines[1].length){
@@ -299,16 +305,14 @@ function drawScenario(y){
  const xx=i=>left+i/(count-1)*plotW;
  const yy=value=>top+(1-value/maximum)*plotH;
  const P=(line)=>line.map((p,i)=>(i?'L':'M')+xx(i).toFixed(2)+' '+yy(p.assets).toFixed(2)).join(' ');
- const lower=lines[0],upper=lines[2],middle=lines[1];
- const band=upper.map((p,i)=>xx(i).toFixed(2)+','+yy(p.assets).toFixed(2)).concat(
-    [...lower].reverse().map((p,i)=>xx(count-1-i).toFixed(2)+','+yy(p.assets).toFixed(2))).join(' ');
- let svg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+width+' '+height+'" role="img" aria-label="三組不同實質報酬假設的資產餘額，非機率分布或 B＋85 蒙地卡羅預測">';
+ // Deliberately no shaded band: these are three chosen inputs, not probability intervals.
+ let svg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+width+' '+height+'" role="img" aria-label="固定報酬率假設 A、B、C 的簡易資產情境示意，非機率分布或 B＋85 蒙地卡羅預測">';
  for(let i=0;i<=4;i++){
   const v=maximum*(1-i/4),yPx=top+plotH*i/4;
   svg+='<line x1="'+left+'" x2="'+(width-right)+'" y1="'+yPx+'" y2="'+yPx+'" stroke="#e2ecf0"/>'+
    '<text x="'+(left-7)+'" y="'+(yPx+4)+'" text-anchor="end" fill="#7b929c" font-size="11">'+safe(fmt(v))+'</text>';
  }
- svg+='<polygon points="'+band+'" fill="#c3dceb" opacity=".30"/>';
+ // No polygon: the gap between fixed inputs must not appear as a confidence band.
  const colors=['#d38d42','#159268','#4b9fda'];
  for(let k=0;k<3;k++){
   const line=lines[k];

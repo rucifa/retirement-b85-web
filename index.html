@@ -34,7 +34,7 @@
  <div id="opening-result" class="results hidden"></div>
  <form id="opening-form" class="form-card">
  <h3>年度基本資料</h3><div class="grid-form"><label class="field"><span>決策日期 <em>必填</em></span><input id="decision_date" type="date" required/><small>首次進入使用瀏覽器時鐘換算為台灣今天（非伺服器授時）；已儲存的年度接續日期不會覆寫。可自行選擇試算日期。</small><small id="decision-month-guidance" class="decision-month-guidance" role="status">首年可自選日期，生活費按剩餘曆年天數計算。</small><button type="button" id="use-january-date" class="dash-text-link" hidden>舊版一月試算快捷鍵</button></label>
- <label class="field"><span>預計額外必要支出（新台幣）</span><input id="planned_extra_twd" type="number" min="0" step="0.01" value="0" required/><small>例如已確定的大額醫療費用；定期換車由政策自動列入。</small></label></div>
+ <label class="field"><span>預計額外必要支出（新台幣）</span><input id="planned_extra_twd" type="number" min="0" step="0.01" value="0" required/><small>例如另外安排的醫療、購車等已確定費用。已由政策安排的定期換車請勿重複輸入。此金額會列入本年度支出，但原始 PoS 不會因本次額外輸入而重新校準。</small></label></div>
  <div id="first-year-fields"><div class="inner-divider"></div><h3>首次建立：退休起始條件</h3><div class="grid-form"><label class="field"><span>退休開始年</span><input id="first_year" type="number" readonly/><small>與上方決策日期年份相同。</small></label>
  <label class="field"><span>退休開始年齡</span><input id="start_age" type="number" min="45" max="90" value="65" required/><small>一般試算預設 65 歲（2026 起勞保老年年金法定請領年齡），並非強制退休年齡；可自行修改。</small></label>
  <label class="field"><span>投資資產總市值（新台幣）</span><input id="investment_twd" type="number" min="0" step="0.01" value="27000000" required/><small>股票＋債券，與安全現金分開。</small></label>
@@ -90,21 +90,21 @@
   </section>
  </div>
  <div class="dashboard-lower" id="dashboard-lower">
-   <section class="dash-widget dash-history-chart" aria-labelledby="dash-history-chart-title"><div class="dash-widget-head"><h3 id="dash-history-chart-title"><span class="dash-widget-icon" aria-hidden="true">↗</span> 資產走勢與年度預算</h3><small>本機紀錄・不冒充未來預測</small></div>
+   <section class="dash-widget dash-history-chart" aria-labelledby="dash-history-chart-title"><div class="dash-widget-head"><h3 id="dash-history-chart-title"><span class="dash-widget-icon" aria-hidden="true">↗</span> 歷年資產紀錄與報酬假設</h3><small>實際紀錄優先・假設圖僅為示意</small></div>
    <div class="dash-chart-tabs" role="group" aria-label="資產圖表內容">
     <button type="button" id="dash-actual-tab" class="dash-chart-tab selected" aria-pressed="true">已結算資產紀錄</button>
-    <button type="button" id="dash-scenario-tab" class="dash-chart-tab" aria-pressed="false">順風／逆風情境對照</button>
+    <button type="button" id="dash-scenario-tab" class="dash-chart-tab" aria-pressed="false">固定報酬情境（進階示意）</button>
    </div>
    <div id="dash-asset-chart" class="dash-asset-chart" role="img" aria-label="已結算年度的實際資產走勢">建立至少一筆年末結算後，即可查看實際資產走勢。</div>
    <div id="dash-scenario-pane" class="dash-scenario-pane hidden">
     <div class="dash-scenario-controls">
-     <label>逆風：年實質報酬 (%)<input id="dash-return-low" type="number" min="-99" max="30" step="0.5" value="-2"/></label>
-     <label>中性：年實質報酬 (%)<input id="dash-return-mid" type="number" min="-99" max="30" step="0.5" value="2"/></label>
-     <label>順風：年實質報酬 (%)<input id="dash-return-high" type="number" min="-99" max="30" step="0.5" value="5"/></label>
+     <label>假設 A：固定年實質報酬 (%)<input id="dash-return-low" type="number" min="-99" max="30" step="0.5" value="-2"/></label>
+     <label>假設 B：固定年實質報酬 (%)<input id="dash-return-mid" type="number" min="-99" max="30" step="0.5" value="2"/></label>
+     <label>假設 C：固定年實質報酬 (%)<input id="dash-return-high" type="number" min="-99" max="30" step="0.5" value="5"/></label>
     </div>
-    <div class="dash-scenario-legend"><span class="dash-scenario-key low">逆風假設</span><span class="dash-scenario-key mid">中性假設</span><span class="dash-scenario-key high">順風假設</span></div>
+    <div class="dash-scenario-legend"><span class="dash-scenario-key low">假設 A（較低）</span><span class="dash-scenario-key mid">假設 B（中間）</span><span class="dash-scenario-key high">假設 C（較高）</span></div>
     <div id="dash-scenario-chart" class="dash-scenario-chart" role="img" aria-label="三組可自行調整的固定實質報酬假設下之資產示意；非模型預測">尚未核准年度。核准後才會依本機金額顯示假設情境。</div>
-    <p class="dash-scenario-disclaimer">上方 −2%／＋2%／＋5% 是可調整的<strong>假設值</strong>，不是 B＋85 蒙地卡羅分位數或報酬預測。以當前核准生活費作為後續每年固定實質支出，未模擬未來 Guardrail、換車、稅務、臨時支出或逐年重新核准；不可作為正式提款決定。</p>
+    <p class="dash-scenario-disclaimer">這三組 −2%／＋2%／＋5% 是<strong>任意預填的數學示例</strong>，沒有使用歷史統計校準，並非保守／中性／樂觀的機率預測，也不是 B＋85 蒙地卡羅 P10／P50／P90。第一年度會扣除已核准的生活費、換車與新增必要支出；其後每年暫用相同的全年生活費及固定報酬率。<strong>未模擬未來 Guardrail、現金橋接與補回、後續換車、稅費細節、緊急支出或逐年重新核准</strong>，不可據此決定提款額。</p>
    </div>
   </section>
    <section class="dash-widget dash-history-summary" aria-labelledby="dash-history-title"><div class="dash-widget-head"><h3 id="dash-history-title"><span class="dash-widget-icon" aria-hidden="true">▤</span> 年度紀錄 <small id="dash-years" class="dash-years-count">0 年</small></h3><button type="button" class="dash-text-link" data-go="history">查看全部 →</button></div><div id="dash-recent-years">尚無已保存年度</div><p id="dash-years-sub" class="dash-years-help">僅保存在此瀏覽器</p></section>

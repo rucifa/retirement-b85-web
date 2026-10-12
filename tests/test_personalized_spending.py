@@ -85,4 +85,39 @@ class PersonalizedSpendingTests(unittest.TestCase):
     self.assertAlmostEqual(a["living_authorized_twd"],
       a["full_year_living_reference_twd"]*81/366,delta=.03)
 
+ def test_existing_policy_cash_bridge_refill_and_extra_expense_limitations(self):
+    # Frozen model parity, not a replacement success-probability algorithm.
+    from policy import personalized_research_engine as engine
+    from policy.personalized_research_annual import AnnualInput,decide_year
+    cfg=engine.ModelConfig(start_age=65,end_age=104,stock_weight=.7,
+      floor_spend=.4,personalized_normal_spend=.7,personalized_core_spend=.6,
+      use_prosperity=True,prosperity_spending_mode='recommended_target',
+      use_charity=False)
+    def run(invest,cash,extra=0):
+       x=AnnualInput(decision_date='2026-01-16',age=65,retirement_start_age=65,
+        investment_start_m=invest,safety_cash_start_m=cash,sticky_before=1,
+        emergency_pending=True,extra_mandatory_m=extra)
+       return decide_year(x,cfg,n_inner=256,seed=20261011)
+    baseline=run(27,2.4,0)
+    with_extra=run(27,2.4,1.5)
+    # UI must warn: the currently reported PoS does NOT incorporate the
+    # separately entered one-off expense, despite paying it from investments.
+    self.assertEqual(baseline.pos,with_extra.pos)
+    self.assertAlmostEqual(with_extra.extra_mandatory_paid_m,1.5,places=6)
+    self.assertGreater(with_extra.pos,.75)
+    self.assertAlmostEqual(with_extra.bridge_from_cash_m,0,places=9)
+    self.assertAlmostEqual(with_extra.cash_refill_m,0,places=9)
+    bear=run(3,2.4)
+    self.assertLessEqual(bear.pos,.75)
+    self.assertGreater(bear.bridge_from_cash_m,0)
+    self.assertLessEqual(bear.bridge_from_cash_m,bear.living_pool_required_m*.5+1e-9)
+    self.assertAlmostEqual(bear.cash_refill_m,0,places=9)
+    cash_gap=run(27,1.0)
+    self.assertGreater(cash_gap.pos,.75)
+    self.assertAlmostEqual(cash_gap.bridge_from_cash_m,0,places=9)
+    self.assertGreater(cash_gap.cash_refill_m,0)
+    self.assertLessEqual(cash_gap.cash_refill_m,.5+1e-9)
+    # Transfer to safety cash is not additional income or spending.
+    self.assertAlmostEqual(cash_gap.reconciliation_error_m,0,places=9)
+
 if __name__=="__main__":unittest.main()

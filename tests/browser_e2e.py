@@ -162,7 +162,9 @@ async def main():
             assert await page.locator('#opening-result .result-inflation').count()==0
             assert '本次建議生活費預算' in a
             assert '本次安全現金橋接' in a
-            assert '試算開始時安全現金' in a
+            assert '本次安全現金補回' in a
+            assert '本次試算開始時安全現金' in a
+            assert '現金補回' in a
             assert '現金橋接是生活費的資金來源' in a
             assert '不是生活費之外可以再加領的金額' in a
             assert await page.locator('#opening-result .result-grid-finance .metric').count()==4
@@ -178,18 +180,23 @@ async def main():
             assert abs(float(model_year['normal_reference_twd'])-converted)<2
             currency=await page.evaluate('''y => ({
               bridge: 'NT$ '+new Intl.NumberFormat('zh-TW',{maximumFractionDigits:0}).format(Math.round(y.bridge_from_cash_twd)),
-              cash: 'NT$ '+new Intl.NumberFormat('zh-TW',{maximumFractionDigits:0}).format(Math.round(y.cash_open_twd))
+              cash: 'NT$ '+new Intl.NumberFormat('zh-TW',{maximumFractionDigits:0}).format(Math.round(y.cash_open_twd)),
+              refill: 'NT$ '+new Intl.NumberFormat('zh-TW',{maximumFractionDigits:0}).format(Math.round(y.cash_refill_twd))
             })''',model_year)
             bridge_card=page.locator('#opening-result .result-grid-finance .metric').nth(2)
-            cash_card=page.locator('#opening-result .result-grid-finance .metric').nth(3)
+            refill_card=page.locator('#opening-result .result-grid-finance .metric').nth(3)
             assert await bridge_card.locator('strong').inner_text()==currency['bridge']
-            assert await cash_card.locator('strong').inner_text()==currency['cash']
+            assert await refill_card.locator('strong').inner_text()==currency['refill']
+            assert currency['cash'] in a
             if model_year['bridge_from_cash_twd']>0:
                 assert '本次使用安全現金' in a
             else:
                 assert '本次未動用安全現金橋接' in a
-            candidate_markup=await page.evaluate('y => budgetHtml({...y,bridge_from_cash_twd:123456.7,cash_open_twd:2000000})',model_year)
-            assert 'NT$ 123,457' in candidate_markup and 'NT$ 2,000,000' in candidate_markup
+            candidate_markup=await page.evaluate('y => budgetHtml({...y,bridge_from_cash_twd:123456.7,cash_refill_twd:50000,cash_open_twd:2000000,extra_authorized_twd:1500000,pos_pct:88.6})',model_year)
+            assert 'NT$ 123,457' in candidate_markup and 'NT$ 50,000' in candidate_markup
+            assert 'NT$ 2,000,000' in candidate_markup
+            assert '原始 PoS 的內層試算' in candidate_markup
+            assert '不是生活費之外可以再加領的金額' in candidate_markup
             print('BROWSER_CASH_BRIDGE_AND_OPENING_CASH_FROM_POLICY_NO_DOUBLE_COUNT_PASS')
             assert '適用期間：2036/10/12～2036/12/31（含起始日，共 81 天）' in a
             assert '不代表需要在起始日一次提領整筆' in a
@@ -233,13 +240,18 @@ async def main():
             assert await page.locator('[data-guardrail-zone].active').count()==1
             assert 'Guardrail 後全年額度' in (await page.locator('#dash-guardrail-breakdown').inner_text())
             assert '正常生活費參考' in (await page.locator('#dash-guardrail-breakdown').inner_text())
+            assert await page.locator('#dash-actual-tab').get_attribute('aria-pressed')=='true'
+            assert await page.locator('#dash-scenario-pane').is_hidden()
+            assert '固定報酬情境（進階示意）' in (await page.locator('#dash-scenario-tab').inner_text())
+            await page.locator('#dash-scenario-tab').click()
             await page.locator('#dash-scenario-chart svg').wait_for(timeout=15000)
             assert await page.locator('#dash-scenario-pane').is_visible()
-            assert await page.locator('#dash-actual-tab').get_attribute('aria-pressed')=='false'
             assert await page.locator('#dash-scenario-tab').get_attribute('aria-pressed')=='true'
+            assert await page.locator('#dash-scenario-chart svg polygon').count()==0
+            assert '任意預填的數學示例' in (await page.locator('.dash-scenario-disclaimer').inner_text())
             await page.locator('#dash-return-low').fill('-3')
             assert await page.locator('#dash-scenario-chart svg path').count()==3
-            assert '假設值' in (await page.locator('.dash-scenario-disclaimer').inner_text())
+            assert '不是 B＋85 蒙地卡羅 P10／P50／P90' in (await page.locator('.dash-scenario-disclaimer').inner_text())
             await page.locator('#dash-actual-tab').click()
             assert await page.locator('#dash-asset-chart').is_visible()
             await page.locator('#dash-scenario-tab').click()
@@ -361,6 +373,41 @@ async def main():
                 print('BROWSER_PERSONALIZED_SPENDING_MODEL_AND_DYNAMIC_BASELINE_PASS')
             finally:
                 await context_custom.close()
+            # Extra known spending does not change current original inner PoS,
+            # but MUST be included in first-year simplified cash-flow illustration.
+            context_extra=await browser.new_context()
+            extra_page=await context_extra.new_page()
+            try:
+                await extra_page.goto('http://127.0.0.1:8766/',wait_until='domcontentloaded')
+                await extra_page.locator('#runtime-status.ready').wait_for(timeout=180000)
+                await extra_page.locator('#decision_date').fill('2026-01-16')
+                await extra_page.locator('#cpi-decision-asof-note').filter(has_text='演練假設').wait_for(timeout=15000)
+                await extra_page.locator('#investment_twd').fill('27000000')
+                await extra_page.locator('#cash_twd').fill('2400000')
+                await extra_page.locator('#floor_spend_2026_twd').fill('700000')
+                await extra_page.locator('#planned_extra_twd').fill('1500000')
+                await extra_page.locator('#approve-btn').click()
+                await extra_page.locator('#opening-tag').filter(has_text='等待年末結算').wait_for(timeout=180000)
+                annual=await extra_page.evaluate('() => state.years.at(-1)')
+                assert annual['extra_authorized_twd']>=1499999
+                assert '原始 PoS 的內層試算' in (await extra_page.locator('#opening-result').inner_text())
+                assert '另列必要支出' in (await extra_page.locator('#dash-pos-sub').inner_text())
+                assert await extra_page.locator('#dash-actual-tab').get_attribute('aria-pressed')=='true'
+                first_scenario=await extra_page.evaluate('''() => {
+                  const y=state.years.at(-1);
+                  const normal=window.B85_FIXED_RETURN_PREVIEW.forecastScenario({...y,extra_authorized_twd:0},2);
+                  const extra=window.B85_FIXED_RETURN_PREVIEW.forecastScenario(y,2);
+                  return {normal:normal[1].assets,extra:extra[1].assets,annual:y.extra_authorized_twd,fraction:y.calendar_fraction};
+                }''')
+                import math
+                expected_drop=first_scenario['annual']/10000*math.pow(1.02,first_scenario['fraction'])
+                assert abs(first_scenario['normal']-first_scenario['extra']-expected_drop)<.05,first_scenario
+                if annual['pos_pct']>75:
+                    assert annual['bridge_from_cash_twd']==0
+                    assert '高於橋接門檻 75%' in (await extra_page.locator('#opening-result').inner_text())
+                print('BROWSER_ADDED_EXPENSE_POS_WARNING_AND_SCENARIO_FIRST_YEAR_DEDUCTION_PASS')
+            finally:
+                await context_extra.close()
             # Someone who only knows their minimum essential expenses must
             # still be able to complete a real annual approval.
             context_basic=await browser.new_context()

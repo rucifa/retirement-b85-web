@@ -67,3 +67,9 @@ button:disabled{opacity:.6;cursor:progress}.privacy-help{font-size:12px;color:#6
 .capacity-research-details .capacity-research{margin:12px 0 0}
 @media(max-width:1050px){.result-grid-finance{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:700px){.result-grid-finance{grid-template-columns:1fr}}
+
+/* Explain safety-cash sources and known one-off spending without overstating PoS. */
+.cash-bridge-explain p{margin:4px 0 9px}
+.cash-bridge-explain p:last-child{margin-bottom:0}
+.policy-caveat{border:1px solid #e9d3a5;background:#fff9ed;color:#6e5530;border-radius:11px;padding:12px 15px;margin:12px 0;line-height:1.7;font-size:12px}
+.policy-caveat strong{color:#875923}
