@@ -30,7 +30,7 @@ function validate(d){
  return d;
 }
 function paint(){
- if(loadError){box.innerHTML='<strong class="cpi-state-title">官方 CPI 暫時無法讀取</strong><p>'+safe(loadError)+'。資料無法驗證，保留手動演練欄位，不會提供虛構官方數字。</p>';box.dataset.status='error';return}
+ if(loadError){box.innerHTML='<strong class="cpi-state-title">官方 CPI 暫時無法讀取</strong><p>'+safe(loadError)+'。資料無法驗證，保留原手動輸入與演練欄位，不會提供虛構官方數字。</p>';box.dataset.status='error';return}
  if(!snapshot){box.innerHTML='<strong class="cpi-state-title">正在讀取官方 CPI 快照…</strong>';box.dataset.status='loading';return}
  const taiwan=window.B85_TAIWAN_TIME;
  if(!taiwan){box.textContent='台灣時間模組尚未載入；暫停官方資料時點判定。';box.dataset.status='error';return}
