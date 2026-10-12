@@ -47,6 +47,40 @@ class CalendarFirstYear(unittest.TestCase):
            app['spending_reserved_m']+p['investment_before_return_m']+p['safety_cash_before_return_m'])
         self.assertFalse(raw['data']['overview']['policy_active'])
         self.assertIn('全年政策',pub['pos_period_label'])
+    def test_policy_engine_exact_parity_and_released_funds(self):
+        from policy.simple_annual_ledger import approve_year
+        from workflow import hydrate_approval, policy_config
+        record=self.start()['record']
+        plan=record['plan']
+        adapted=hydrate_approval(record['years'][0]['approval'])
+        full=approve_year(adapted.opening,policy_config(plan),
+                          n_inner=workflow.INNER_DRAWS,seed=workflow.SEED)
+        before=full.policy_preview
+        after=adapted.policy_preview
+        days,total,share=fraction_for(adapted.opening.decision_date)
+        self.assertEqual((days,total),(81,366))
+        self.assertEqual(after.pos,before.pos)
+        self.assertEqual(after.normal_pos,before.normal_pos)
+        self.assertEqual(after.sticky_after,before.sticky_after)
+        self.assertEqual(after.b85_restored,before.b85_restored)
+        self.assertEqual(after.car_paid_m,before.car_paid_m)
+        self.assertEqual(after.extra_mandatory_paid_m,before.extra_mandatory_paid_m)
+        self.assertAlmostEqual(after.living_pool_paid_m,before.living_pool_paid_m*share)
+        self.assertAlmostEqual(after.bridge_from_cash_m,before.bridge_from_cash_m*share)
+        self.assertAlmostEqual(after.investment_before_return_m-before.investment_before_return_m,
+                               (before.living_pool_paid_m-before.bridge_from_cash_m)*(1-share))
+        self.assertAlmostEqual(after.safety_cash_before_return_m-before.safety_cash_before_return_m,
+                               before.bridge_from_cash_m*(1-share))
+        self.assertTrue(record['years'][0]['calendar_first_year']['pos_full_year_reference_only'])
+
+    def test_january_first_is_exact_full_year(self):
+        first=self.start(decision_date='2036-01-01',
+                         decision_cpi_release='2035-12-20')
+        self.assertEqual(first['data']['approval']['calendar_days'],366)
+        self.assertEqual(first['data']['approval']['calendar_fraction'],1)
+        self.assertAlmostEqual(first['data']['approval']['living_authorized_twd'],
+                               first['data']['approval']['full_year_living_reference_twd'],delta=.01)
+
     def test_december31_one_day_can_close_same_day(self):
         o=self.start(decision_date='2036-12-31',decision_cpi_release='2036-12-20')
         self.assertEqual(o['data']['approval']['calendar_days'],1)

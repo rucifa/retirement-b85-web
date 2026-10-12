@@ -21,5 +21,5 @@
   "static/dashboard.js": "cbe8546971a5c50d6b1d8ec4da1e3578e7a1b74927995cdfea76c22ff2b484e3",
   "static/taiwan-time.js": "2a0e63ba7eff9ee308db9bd2d7a8c65aa47f86654c67f5c34630bed7317a202c",
   "calendar_first_year.py": "32820dbc95b55944e50f1cd5ad6c426428418cfca55d124f8d0566166192c67e",
-  "tests/test_calendar_first_year.py": "e93c5f707f0a2e9cfb6fe3b121a5ce125b4334fc04bc259a7daa7167ea4cd585"
+  "tests/test_calendar_first_year.py": "a5eedfaf6800430a37454a96eee37da9ce4fda27c8c0733758129dfdb6222f49"
 }
