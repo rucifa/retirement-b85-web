@@ -165,7 +165,7 @@ async def main():
             assert '本次安全現金補回' in a
             assert '本次試算開始時安全現金' in a
             assert '現金補回' in a
-            assert '現金橋接是生活費的資金來源' in a
+            assert '橋接屬於生活費的資金來源' in a
             assert '不是生活費之外可以再加領的金額' in a
             assert await page.locator('#opening-result .result-grid-finance .metric').count()==4
             # A single primary annual result; no second large recommendation widget.
@@ -189,9 +189,11 @@ async def main():
             assert await refill_card.locator('strong').inner_text()==currency['refill']
             assert currency['cash'] in a
             if model_year['bridge_from_cash_twd']>0:
-                assert '本次使用安全現金' in a
+                assert '本次以安全現金' in a
+            elif model_year['pos_pct']>75:
+                assert '高於橋接門檻 75%' in a
             else:
-                assert '本次未動用安全現金橋接' in a
+                assert '本次未動用橋接' in a
             candidate_markup=await page.evaluate('y => budgetHtml({...y,bridge_from_cash_twd:123456.7,cash_refill_twd:50000,cash_open_twd:2000000,extra_authorized_twd:1500000,pos_pct:88.6})',model_year)
             assert 'NT$ 123,457' in candidate_markup and 'NT$ 50,000' in candidate_markup
             assert 'NT$ 2,000,000' in candidate_markup
