@@ -17,6 +17,6 @@
   "scripts/public_cpi/cpi_sources.py": "6e893e0bd5bb6330b14217ad26cce44ac590356d3231effdff1a1c63d26c7cf8",
   "scripts/public_cpi/update.py": "2915dc02c130487d441de40491045d610fdd971f888c6585cb43cdf7d5f3be3d",
   "scripts/public_cpi/tests/test_public_cpi.py": "614765dab403e83cbacc3c9e550dff7f22affd63d6f4ed7c0a601b7eef1bdb53",
-  "static/dashboard.css": "6c2f38a7da55a72cd844cc59c7c68734333e3720a00a49ccddcbf3f8f6f88f8c",
+  "static/dashboard.css": "57c9d99f9ba0c5c1073bc2aaad0ca0ea9fe83457a8d441b364687b94381edb04",
   "static/dashboard.js": "2bff3aaa03d01c138a3868e907aa65cac36f429b7ee37b0156aca322eff5e93a"
 }
