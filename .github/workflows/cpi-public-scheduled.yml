@@ -8,6 +8,9 @@ on:
     paths:
       - '.github/workflows/cpi-public-scheduled.yml'
       - 'scripts/public_cpi/**'
+      - 'tests/browser_e2e.py'
+      - 'SOURCE_SHA256.json'
+      - 'data/cpi_verified.json'
 permissions:
   contents: write
   pages: write
