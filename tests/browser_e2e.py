@@ -16,47 +16,51 @@ async def main():
         try:
             await page.goto('http://127.0.0.1:8766/',wait_until='domcontentloaded')
             await page.locator('#runtime-status.ready').wait_for(timeout=180000)
+            today=await page.evaluate('window.B85_TAIWAN_TIME.today()')
+            previous_month=await page.evaluate('window.B85_TAIWAN_TIME.prevMonth(window.B85_TAIWAN_TIME.today())')
+            assert await page.locator('#decision_date').input_value()==today
+            assert await page.locator('#first_year').input_value()==today[:4]
+            assert await page.locator('#start_age').input_value()=='65'
+            assert await page.locator('#dashboard-baseline').is_hidden()
+            assert await page.locator('#inflation-preview').is_hidden()
             assert await page.locator('#dashboard-kpis .dash-kpi').count()==4
             assert await page.locator('#dashboard-cpi-card').count()==1
             assert await page.locator('#dashboard-baseline article').count()==4
             assert await page.locator('#dashboard-lower .dash-widget').count()==4
             layout=await page.locator('.sidebar').evaluate('(el)=>getComputedStyle(el).flexDirection')
-            assert layout=='row', 'Desktop navigation should be horizontal'
+            assert layout=='row'
             assert '尚未試算' in (await page.locator('#dash-budget').inner_text())
+            print('BROWSER_TAIWAN_DEFAULT_DATE_AND_AGE_65_PASS')
             print('BROWSER_DASHBOARD_NAV_AND_LAYOUT_PASS')
             print('BROWSER_PYODIDE_LOADED')
-            await page.locator('#official-cpi-panel[data-status="no-year-data"]').wait_for(timeout=120000)
-            assert '2036 年尚未有' in (await page.locator('#official-cpi-panel').inner_text())
-            await page.locator('#decision_date').fill('2026-08-01')
-            assert '尚無當年官方資料' in (await page.locator('#official-cpi-panel').inner_text())
-            assert '2.54%' not in (await page.locator('#official-cpi-panel').inner_text())
-            await page.locator('#decision_date').fill('2026-10-11')
-            await page.locator('#official-cpi-panel[data-status="verified"]').wait_for(timeout=15000)
-            official=await page.locator('#official-cpi-panel').inner_text()
+            await page.locator('#official-cpi-panel').filter(has_text='查詢基準：台灣').wait_for(timeout=120000)
             snapshot=await page.evaluate("fetch('./data/cpi_verified.json').then(x=>x.json())")
-            eligible=[x for x in snapshot['records'] if x['publication_date']<='2026-10-11' and x['month']<='2026-10']
-            verified=[x for x in eligible if x['verification']=='CROSS_VERIFIED']
-            assert verified, 'Expected at least one independently verified CPI month'
-            latest=verified[-1]
-            expected=('+' if latest['official_yoy_pct']>0 else '')+f"{latest['official_yoy_pct']:.2f}%"
-            assert expected in official and latest['month'] in official
-            pending=[x for x in eligible if x['verification']=='BULLETIN_ONLY_PENDING_PRIMARY']
-            if pending:
-                assert pending[-1]['month'] in official and '待雙來源確認' in official
-            assert snapshot['annual_2026_index'] is None and '尚無全年官方基準' in official
-            assert await page.locator('#cpi_2026').input_value()=='110'
+            eligible=[x for x in snapshot['records']
+                      if x['publication_date']<=today and x['month']<=previous_month]
+            assert eligible, 'Expected at least one published historical CPI month'
+            assert previous_month in (await page.locator('#official-cpi-panel').inner_text())
+            assert '尚無全年官方基準' not in (await page.locator('#official-cpi-panel').inner_text())
+            # A simulation date is independent of the public as-of-Taiwan CPI snapshot.
             await page.locator('#decision_date').fill('2036-01-15')
-            print('BROWSER_CPI_CROSSCHECK_PENDING_AND_ASOF_PASS')
-            preview=await page.locator('#inflation-preview').inner_text()
-            assert '最近一年物價變動' in preview and '尚無同期資料' in preview
-            assert '738,636' in preview
-            print('BROWSER_CPI_INFLATION_PREVIEW_PASS')
+            assert previous_month in (await page.locator('#official-cpi-panel').inner_text())
+            assert await page.locator('#first_year').input_value()=='2036'
+            assert await page.locator('#dashboard-baseline').is_hidden()
+            await page.locator('#start_age').fill('54')
+            await page.locator('.cpi-manual-input summary').click()
+            await page.locator('#decision_cpi').fill('125')
+            await page.locator('#decision_cpi_release').fill('2036-01-10')
+            assert await page.locator('#cpi_2026').input_value()=='110'
+            assert await page.locator('#inflation-preview').is_hidden()
+            print('BROWSER_CPI_TAIWAN_ASOF_AND_SIMULATION_ISOLATION_PASS')
             await page.locator('#approve-btn').click()
             await page.locator('#opening-tag').filter(has_text='等待年末結算').wait_for(timeout=180000)
             a=await page.locator('#opening-result').inner_text()
             assert 'PoS' in a and '核准生活費' in a
             assert '通膨換算後正常生活費' in a
             assert '今年核准生活費' in a
+            assert '738,636' in a
+            assert await page.locator('#dashboard-baseline').is_visible()
+            print('BROWSER_SPENDING_BASELINE_AND_INFLATION_REVEAL_ONLY_AFTER_APPROVAL_PASS')
             print('BROWSER_INFLATION_SPENDING_RESULT_PASS')
             await page.locator('#dash-budget').filter(has_text='NT$').wait_for(timeout=15000)
             assert '2036' in (await page.locator('#dash-budget-sub').inner_text())
