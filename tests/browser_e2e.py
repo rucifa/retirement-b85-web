@@ -21,6 +21,15 @@ async def main():
             assert await page.locator('#decision_date').input_value()==today
             assert await page.locator('#first_year').input_value()==today[:4]
             assert await page.locator('#start_age').input_value()=='65'
+            assert await page.evaluate("window.B85_TAIWAN_TIME.prevMonth('2027-01-01')")=='2026-12'
+            assert await page.evaluate("window.B85_TAIWAN_TIME.prevMonth('2026-03-31')")=='2026-02'
+            if today[5:7]!='01':
+                assert await page.locator('#use-january-date').is_visible()
+                await page.locator('#use-january-date').click()
+                assert await page.locator('#decision_date').input_value()==today[:4]+'-01-15'
+                assert await page.locator('#decision_cpi_release').input_value() in ('',)
+                await page.locator('#decision_date').fill(today)
+
             assert await page.locator('#dashboard-baseline').is_hidden()
             assert await page.locator('#inflation-preview').is_hidden()
             assert await page.locator('#dashboard-kpis .dash-kpi').count()==4
