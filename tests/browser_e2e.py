@@ -200,6 +200,32 @@ async def main():
                 print('BROWSER_JANUARY_FIRST_NO_OFFICIAL_CPI_SCENARIO_APPROVED_PASS')
             finally:
                 await context_jan.close()
+            # Independent new user: personalized 2026-real spending must
+            # flow through the real browser worker into the saved plan and UI.
+            context_custom=await browser.new_context()
+            custom=await context_custom.new_page()
+            try:
+                await custom.goto('http://127.0.0.1:8766/',wait_until='domcontentloaded')
+                await custom.locator('#runtime-status.ready').wait_for(timeout=180000)
+                await custom.locator('#decision_date').fill('2026-01-01')
+                await custom.locator('#cpi-decision-asof-note').filter(has_text='演練假設').wait_for(timeout=15000)
+                await custom.locator('#normal_spend_2026_twd').fill('920000')
+                await custom.locator('#core_spend_2026_twd').fill('700000')
+                await custom.locator('#floor_spend_2026_twd').fill('520000')
+                assert await custom.locator('#spending-profile-preview').get_attribute('data-valid')=='true'
+                await custom.locator('#approve-btn').click()
+                await custom.locator('#opening-tag').filter(has_text='等待年末結算').wait_for(timeout=180000)
+                assert '920,000' in (await custom.locator('#dash-baseline-normal').inner_text())
+                assert '700,000' in (await custom.locator('#dash-baseline-core').inner_text())
+                assert '520,000' in (await custom.locator('#dash-baseline-floor').inner_text())
+                assert '920,000' in (await custom.locator('#dash-guardrail-breakdown').inner_text())
+                saved_profile=await custom.evaluate('() => state.plan.spending_profile')
+                assert saved_profile['normal_twd']==920000
+                assert saved_profile['core_twd']==700000
+                assert saved_profile['floor_twd']==520000
+                print('BROWSER_PERSONALIZED_SPENDING_MODEL_AND_DYNAMIC_BASELINE_PASS')
+            finally:
+                await context_custom.close()
         except Exception:
             print('BROWSER_FAILURE_LAST_LOGS',json.dumps(logs[-15:],ensure_ascii=False))
             try: await page.screenshot(path='/tmp/b85_pages_browser_failure.png',full_page=True,timeout=2000)
