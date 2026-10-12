@@ -169,7 +169,7 @@ async def main():
                 await jan.locator('#cpi-decision-asof-note').filter(has_text='演練假設').wait_for(timeout=15000)
                 assert await jan.locator('#decision_cpi').input_value()=='110'
                 assert await jan.locator('#decision_cpi_release').input_value()=='2026-01-01'
-                assert await jan.locator('#decision-cpi-date-caption').inner_text()=='演練假設生效日（非官方公布日）'
+                assert await jan.locator('#decision-cpi-date-caption').text_content()=='演練假設生效日（非官方公布日）'
                 assert await jan.locator('#decision_cpi').get_attribute('data-auto-source')=='SCENARIO_2026_BASELINE'
                 await jan.locator('#approve-btn').click()
                 await jan.locator('#opening-tag').filter(has_text='等待年末結算').wait_for(timeout=180000)
