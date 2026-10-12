@@ -73,6 +73,25 @@ class CalendarFirstYear(unittest.TestCase):
                                before.bridge_from_cash_m*(1-share))
         self.assertTrue(record['years'][0]['calendar_first_year']['pos_full_year_reference_only'])
 
+    def test_20_million_shows_guardrail_reduction_not_fixed_650k(self):
+        out=self.start(
+            decision_date='2026-02-25',start_age='65',
+            investment_twd='20000000',cash_twd='2400000',
+            decision_cpi='110',cpi_2026='110',
+            decision_cpi_release='2026-02-25',
+            decision_cpi_source='SCENARIO_2026_BASELINE',
+            planned_extra_twd='0'
+        )
+        y=out['data']['approval']
+        self.assertAlmostEqual(y['normal_reference_twd'],650000,delta=.01)
+        self.assertAlmostEqual(y['floor_reference_twd'],500000,delta=.01)
+        self.assertEqual((y['calendar_days'],y['calendar_year_days']),(310,365))
+        self.assertEqual(y['guardrail_action'],'CUT_10_PERCENT')
+        self.assertLessEqual(y['pos_pct'],75.0)
+        self.assertAlmostEqual(y['full_year_living_reference_twd'],585000,delta=.1)
+        self.assertAlmostEqual(y['living_authorized_twd'],585000*310/365,delta=.1)
+        self.assertAlmostEqual(y['sticky_after'],0.9,delta=1e-8)
+
     def test_january_first_as_explicit_2026_cpi_baseline_scenario(self):
         scenario=dict(BASE,decision_date='2026-01-01',start_age='65',
                       decision_cpi='110',decision_cpi_release='2026-01-01',

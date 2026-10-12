@@ -11,7 +11,7 @@
   "static/style.css": "36f229f3a94ece742274f4ca1bc7c95ff3c06f40346fb25b8da09d172b8561f8",
   "tests/test_pages_bridge.py": "47ab4ac8e3faa53442a307f0f27402b8cbc0f662657bfd46a98720e8fc394f06",
   "workflow.py": "a9a4f937192f98a18cdc979a125a6ad5f75e305b3a9747f21f3d678aeb349d23",
-  "tests/browser_e2e.py": "cb705344f75757ffb1e912aa83f6bf441414c96884376bc060a303b6cdca2e1f",
+  "tests/browser_e2e.py": "9d61e71fc83be0cfe5fb3df24882e9c50a4b3c3775d0273cd0f9d63565c3443b",
   "data/cpi_verified.json": "4f1cba70be72fa3aa93921a3bed946a8d5e1738cca8a1234ff826460e339059c",
   "static/cpi-official.js": "afbb60da7b52800eef5545521a27b0af1180522ab2de518ae690e8a8c5e3664d",
   "scripts/public_cpi/cpi_sources.py": "6e893e0bd5bb6330b14217ad26cce44ac590356d3231effdff1a1c63d26c7cf8",
@@ -21,5 +21,5 @@
   "static/dashboard.js": "5a08343d9b94516f9dd7d7cede09c9322f147bd16759b6bf839db8c24480ebd1",
   "static/taiwan-time.js": "2a0e63ba7eff9ee308db9bd2d7a8c65aa47f86654c67f5c34630bed7317a202c",
   "calendar_first_year.py": "32820dbc95b55944e50f1cd5ad6c426428418cfca55d124f8d0566166192c67e",
-  "tests/test_calendar_first_year.py": "a55d9677101feeb569d84a11fb78fede821e32ebbcd8f1c449d8c798fc875e2d"
+  "tests/test_calendar_first_year.py": "32126bf5570e0f811a11d13f4efac6fb3b140fd236edcb4ac1ce42492e322429"
 }

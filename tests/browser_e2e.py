@@ -102,6 +102,21 @@ async def main():
             assert '81/366' in a
             assert '全年模型參考 PoS' in a
             assert '首年' in (await page.locator('#dash-budget-sub').inner_text())
+            assert await page.locator('#dash-guardrail-pos').inner_text()!='—'
+            assert await page.locator('[data-guardrail-zone].active').count()==1
+            assert 'Guardrail 後全年額度' in (await page.locator('#dash-guardrail-breakdown').inner_text())
+            assert '正常生活費參考' in (await page.locator('#dash-guardrail-breakdown').inner_text())
+            await page.locator('#dash-scenario-chart svg').wait_for(timeout=15000)
+            assert await page.locator('#dash-scenario-pane').is_visible()
+            assert await page.locator('#dash-actual-tab').get_attribute('aria-pressed')=='false'
+            assert await page.locator('#dash-scenario-tab').get_attribute('aria-pressed')=='true'
+            await page.locator('#dash-return-low').fill('-3')
+            assert await page.locator('#dash-scenario-chart svg path').count()==3
+            assert '假設值' in (await page.locator('.dash-scenario-disclaimer').inner_text())
+            await page.locator('#dash-actual-tab').click()
+            assert await page.locator('#dash-asset-chart').is_visible()
+            await page.locator('#dash-scenario-tab').click()
+            print('BROWSER_GUARDRAIL_REAL_POLICY_AND_USER_EDITABLE_SCENARIOS_PASS')
             print('BROWSER_OCTOBER_FIRST_YEAR_ACTUAL_DAY_PRORATION_PASS')
             assert await page.locator('#dashboard-baseline').is_visible()
             print('BROWSER_SPENDING_BASELINE_AND_INFLATION_REVEAL_ONLY_AFTER_APPROVAL_PASS')
@@ -156,6 +171,14 @@ async def main():
             assert '1 年' in (await page.locator('#dash-years').inner_text())
             assert await page.locator('#decision_cpi').input_value()==saved_manual_cpi
             print('BROWSER_CPI_OFFLINE_AND_INVALID_SCHEMA_PASS')
+            await page.locator('[data-go="history"]').first.click()
+            async with page.expect_download() as backup:
+                await page.locator('#reset-btn').click()
+            downloaded=json.loads(Path(await (await backup.value).path()).read_text('utf-8'))
+            assert downloaded['payload']['years'] and downloaded['file_kind']=='local_yearly_research_export'
+            await page.locator('#dash-years').filter(has_text='0 年').wait_for(timeout=180000)
+            assert '還沒有年度紀錄' in (await page.locator('#history-list').inner_text())
+            print('BROWSER_RESET_BY_CONFIRM_BUTTON_AND_AUTO_JSON_BACKUP_PASS')
             # Fresh, separate IndexedDB state: Jan 1, 2026 has no historical
             # published record in the current public JSON; use explicitly
             # labeled 2026 baseline scenario, not a fabricated official index.
