@@ -215,6 +215,7 @@ async def main():
                 assert await custom.locator('#spending-profile-preview').get_attribute('data-valid')=='true'
                 await custom.locator('#approve-btn').click()
                 await custom.locator('#opening-tag').filter(has_text='等待年末結算').wait_for(timeout=180000)
+                assert '個人化生活費研究 v1' in (await custom.locator('#dash-engine-name').inner_text())
                 assert '920,000' in (await custom.locator('#dash-baseline-normal').inner_text())
                 assert '700,000' in (await custom.locator('#dash-baseline-core').inner_text())
                 assert '520,000' in (await custom.locator('#dash-baseline-floor').inner_text())

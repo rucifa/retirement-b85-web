@@ -103,6 +103,9 @@ function fillNext(){
  $('decision_cpi_release').value=(last.year+1)+'-01-10';$('planned_extra_twd').value=0;}
 }
 function render(){
+ const modelLabel=$('dash-engine-name');
+ if(modelLabel)modelLabel.textContent=state?.plan?.spending_profile?
+  '個人化生活費研究 v1 · B＋85 衍生版':'B＋85 基準 · v3.4.0';
  const last=lastYear();
  $('opening-result').classList.toggle('hidden',!last);if(last)$('opening-result').innerHTML=budgetHtml(last);
  const baseline=$('dashboard-baseline');if(baseline)baseline.classList.toggle('hidden',!last);

@@ -1,7 +1,7 @@
 <!doctype html><html lang="zh-Hant"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>B＋85｜免安裝退休年度規劃工具</title><link rel="stylesheet" href="./static/style.css"/><link rel="stylesheet" href="./static/dashboard.css"/></head>
 <body><div class="app-shell">
 <aside class="sidebar">
- <div class="brand"><div class="brand-icon">85</div><div><strong>安心退休計畫</strong><small>B＋85 · v3.4.0</small></div></div>
+ <div class="brand"><div class="brand-icon">85</div><div><strong>安心退休計畫</strong><small id="dash-engine-name">B＋85 基準 · v3.4.0</small></div></div>
  <div class="sidebar-kicker">年度操作</div>
  <button type="button" class="nav-link selected" data-go="opening"><span class="nav-no">▣</span><span>年度試算<small>年初核准</small></span></button>
  <button type="button" class="nav-link" data-go="closing"><span class="nav-no">◷</span><span>年末結算<small>核對年度支出</small></span></button>
@@ -11,7 +11,7 @@
 </aside>
 <div class="main-col"><header class="topbar"><div class="breadcrumb">退休規劃 <span>／</span> <strong id="breadcrumb-current">年初核准</strong></div><div class="status-pill"><span class="status-dot"></span> 研究演練 · 尚未正式 ACTIVE</div></header>
 <main class="main-content">
- <div class="hero"><div class="hero-copy"><div class="eyebrow">一年只需兩次確認</div><h1>把退休過成你想要的生活。</h1><p>不用計算複雜公式。年初看可以花多少，年末核對還剩多少，其他交給已驗證的 B＋85 引擎。</p></div><div class="hero-art" aria-hidden="true"><div class="orbit orbit-a"></div><div class="orbit orbit-b"></div><div class="orb-core">B<span>＋</span>85<small>ANNUAL PLAN</small></div></div></div>
+ <div class="hero"><div class="hero-copy"><div class="eyebrow">一年只需兩次確認</div><h1>把退休過成你想要的生活。</h1><p>不用計算複雜公式。年初看可以花多少，年末核對還剩多少，其他交給 B＋85 基準或個人化研究引擎；研究結果尚非正式提款建議。</p></div><div class="hero-art" aria-hidden="true"><div class="orbit orbit-a"></div><div class="orbit orbit-b"></div><div class="orb-core">B<span>＋</span>85<small>ANNUAL PLAN</small></div></div></div>
  <section class="dash-kpis" id="dashboard-kpis" aria-label="年度規劃摘要">
  <article class="dash-kpi dash-kpi-primary"><div class="dash-kpi-icon" aria-hidden="true">＄</div><div><small>本年度核准生活費</small><strong id="dash-budget">尚未試算</strong><p id="dash-budget-sub">完成年初核准後顯示</p></div></article>
  <article class="dash-kpi"><div class="dash-kpi-icon" aria-hidden="true">◇</div><div><small>PoS 模型成功機率</small><strong id="dash-pos">—</strong><p id="dash-pos-sub">依 B＋85 政策計算</p></div></article>
