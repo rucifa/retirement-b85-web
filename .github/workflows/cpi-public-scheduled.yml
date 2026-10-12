@@ -38,6 +38,7 @@ jobs:
           python -m unittest discover -s scripts/public_cpi/tests -p 'test_*.py' -v
           python -m unittest discover -s tests -p 'test_pages_bridge.py' -v
           python -m unittest discover -s tests -p 'test_calendar_first_year.py' -v
+          python -m unittest discover -s tests -p 'test_personalized_spending.py' -v
       - name: Verify immutable assets and public-source checksums
         run: |
           python - <<'PY'
