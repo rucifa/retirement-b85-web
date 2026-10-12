@@ -126,6 +126,22 @@ function renderHistory(){
  list.innerHTML=[...state.years].reverse().map(y=>`<div class="history-card"><div><strong>${y.year} 年　${y.age} 歲</strong><p>生活預算 ${twMoney(y.living_authorized_twd)} · ${y.closing?'年末已結算':'等待年末結算'} · PoS ${pct(y.pos_pct)}</p></div><div class="history-side"><strong>${y.closing?twMoney(y.closing.investment_end_twd+y.closing.cash_end_twd):'待結算'}</strong><small>${y.closing?'年度終了合計資產':'已核准金額未視為支出'}</small></div></div>`).join('');
 }
 async function refresh(){state=await request('/api/state');render();}
+function updateDecisionMonthHelp(){
+ const val=$('decision_date')?.value||'';
+ const hint=$('decision-month-guidance'),btn=$('use-january-date');
+ if(!hint||!btn)return;
+ const allowed=/^\d{4}-01-\d{2}$/.test(val);
+ hint.textContent=allowed?
+  '年度決策日在 1 月；CPI 公布日仍不得晚於這個日期。':
+  '台灣今天可作資料查詢基準；B＋85 年初一次提領規則只允許每年 1 月作年度決策。不能將其他月份當成整年年初。';
+ btn.hidden=allowed||!/^\d{4}-\d{2}-\d{2}$/.test(val);
+}
+$('use-january-date')?.addEventListener('click',()=>{
+ const d=$('decision_date').value;
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(d))return;
+ $('decision_date').value=d.slice(0,4)+'-01-15';
+ $('decision_date').dispatchEvent(new Event('change',{bubbles:true}));
+});
 const fieldVal=id=>$(id).value;
 function initPayload(){return {
  decision_date:fieldVal('decision_date'),planned_extra_twd:fieldVal('planned_extra_twd'),start_age:fieldVal('start_age'),
@@ -156,9 +172,10 @@ $('reset-btn').addEventListener('click',async()=>{
  catch(e){flash('清除操作尚未成功：'+e.message)}
 });
 document.addEventListener('click',e=>{const b=e.target.closest('[data-go]');if(b&&!b.disabled){display(b.dataset.go);}});
-$('decision_date').addEventListener('change',()=>{$('first_year').value=$('decision_date').value.slice(0,4)});
+$('decision_date').addEventListener('change',()=>{$('first_year').value=$('decision_date').value.slice(0,4);updateDecisionMonthHelp();});
 for(const id of ['decision_date','cpi_2026','decision_cpi']){
  $(id).addEventListener('input',renderInflationPreview);
 }
 renderInflationPreview();
+updateDecisionMonthHelp();
 load();
