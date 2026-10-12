@@ -155,6 +155,8 @@ async def main():
             await page.locator('#runtime-status.ready').wait_for(timeout=180000)
             await page.locator('#opening-form').wait_for()
             assert '2037-01-15' == await page.locator('#decision_date').input_value()
+            assert await page.locator('#decision_cpi_release').input_value()!='2037-01-10', 'Fabricated future CPI publication date'
+            print('BROWSER_CPI_NEXT_YEAR_NO_FABRICATED_RELEASE_DATE_PASS')
             await page.locator('#dash-asset-chart svg').wait_for(timeout=15000)
             assert '1 年' in (await page.locator('#dash-years').inner_text())
             print('BROWSER_DASHBOARD_REAL_CLOSED_YEAR_CHART_PASS')
@@ -273,6 +275,13 @@ async def main():
                 assert saved['floor_twd']==350000
                 assert '350,000' in (await essential.locator('#dash-baseline-floor').inner_text())
                 assert '今年核准生活費' in (await essential.locator('#opening-result').inner_text())
+                await essential.locator('.capacity-research .capacity-grid article').first.wait_for(timeout=180000)
+                inverse_text=await essential.locator('.capacity-research').inner_text()
+                assert '95%' in inverse_text and '99%' in inverse_text
+                assert '不是經完整動態驗證的最高安全提領額' in inverse_text
+                read_only=await essential.evaluate('() => state.years.length')
+                assert read_only==1
+                print('BROWSER_INVERSE_CAPACITY_RESEARCH_ONLY_AND_DUAL_THRESHOLD_PASS')
                 print('BROWSER_MINIMUM_ONLY_OPTIONAL_DESIRED_SPENDING_PASS')
             finally:
                 await context_basic.close()

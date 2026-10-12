@@ -110,6 +110,15 @@ def dispatch(source: str):
     op=p.get('op');data=p.get('data',{})
     if not isinstance(data,dict):raise InputError('請求資料必須是物件')
     if op=='state':result=ENGINE.overview()
+    elif op=='capacity':
+        from capacity_research import evaluate_saved_first_year
+        try:
+            result=evaluate_saved_first_year(ENGINE._state,
+                paths=int(data.get('paths',4096)),
+                validation_paths=int(data.get('validation_paths',0)),
+                validation_inner=int(data.get('validation_inner',256)))
+        except (ValueError,OverflowError) as e:
+            raise InputError('研究容量計算無法執行：'+str(e)) from e
     elif op=='approve':result=ENGINE.approve(data)
     elif op=='close':result=ENGINE.close(data)
     elif op=='demo-close':result=ENGINE.demo_closing_balances()

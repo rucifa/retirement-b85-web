@@ -11,12 +11,48 @@ function clearFlash(){$('alert').hidden=true;}
 const dbName='B85-retirement-local-v1', dbStore='user-records', dbKey='annual';
 let database=null, worker=null, seq=0;
 const pending=new Map();
+let capacityEstimate=null, capacityApprovalId=null;
+function capacityHtml(result){
+ if(result==='pending')return '<section class="capacity-research"><h3>資產支持的生活費容量（95%／99%）</h3><p>正在計算兩種初始 PoS 研究門檻；原本年度核准金額不受影響。</p></section>';
+ if(!result)return '<section class="capacity-research"><h3>資產支持的生活費容量</h3><p>完成年度核准後，這裡會另外顯示 95%／99% 研究容量候選值。</p></section>';
+ const tile=(r,label)=>{
+  const ok=Number.isFinite(r?.normal_2026_real_twd);
+  const amount=ok?twMoney(r.normal_2026_real_twd):'最低必要生活費未達該門檻';
+  const details=ok?'初始模型 PoS '+pct(100*r.inner_pos)+'；依候選生活費重跑 B＋85 首年，按日參考 '+twMoney(r.first_year_living_nominal_twd):'請檢視資產、退休年齡或降低風險門檻，不會擅自調低最低生活費。';
+  const v=r?.validation;
+  const risk=v?'<p class="capacity-risk">獨立動態研究抽樣 '+v.paths+' 條：完整計畫成功率 '+pct(100*v.model_full_policy_success)+'，模型未觸發 Floor Breach 比率 '+pct(100*v.model_no_floor_breach_fraction)+'，曾減支 '+pct(100*v.ever_cut_probability)+'。此樣本尚非外部校準。</p>':'';
+  return '<article><small>'+label+' 初始必要資產 PoS 門檻</small><strong>'+esc(amount)+'</strong><p>'+esc(details)+'</p>'+risk+'</article>';
+ };
+ return '<section class="capacity-research" aria-label="退休生活費容量雙門檻研究">'+
+  '<div class="capacity-heading"><h3>資產可支持的起始生活費（研究候選）</h3><span>2026 年實質金額 · 非核准提款</span></div>'+
+  '<div class="capacity-grid">'+tile(result.results.p95,'95%')+tile(result.results.p99,'99%')+'</div>'+
+  '<p>最低必要生活費 '+twMoney(result.floor_2026_real_twd)+' 固定不變。雙金額只是「初始、固定 Sticky 的必要資產 PoS」容量，<strong>不是經完整動態驗證的最高安全提領額</strong>，不能直接領走。實際年度預算依下方 B＋85 核准結果。</p>'+
+  '<button id="capacity-audit-btn" class="secondary-btn" type="button">追加獨立動態 MC 研究驗證（初步樣本）</button></section>';
+}
+async function showCapacity(withValidation=false){
+ const first=state?.years?.[0];
+ if(!first||!state?.plan?.spending_profile)return;
+ const key=first.approval_id;
+ if(!withValidation&&capacityApprovalId===key&&capacityEstimate)return;
+ capacityApprovalId=key;capacityEstimate='pending';render();
+ try{
+  const args=withValidation?{validation_paths:512,validation_inner:256}:{};
+  const result=await request('/api/capacity',args);
+  if(state?.years?.[0]?.approval_id!==key)return;
+  capacityEstimate=result;
+ }catch(e){capacityEstimate={results:{p95:null,p99:null},floor_2026_real_twd:0};
+  const panel=$('opening-result');if(panel)panel.dataset.capacityError=e.message;
+  flash('研究容量目前無法計算：'+e.message);
+ }
+ render();
+}
+
 function databaseOpen(){return new Promise((resolve,reject)=>{const r=indexedDB.open(dbName,1);r.onupgradeneeded=()=>{if(!r.result.objectStoreNames.contains(dbStore))r.result.createObjectStore(dbStore)};r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});}
 function dbRead(){return new Promise((res,rej)=>{const t=database.transaction(dbStore,'readonly');const q=t.objectStore(dbStore).get(dbKey);q.onsuccess=()=>res(q.result||null);q.onerror=()=>rej(q.error);});}
 function dbWrite(record){return new Promise((res,rej)=>{const t=database.transaction(dbStore,'readwrite');t.objectStore(dbStore).put(JSON.stringify(record),dbKey);t.oncomplete=()=>res();t.onerror=()=>rej(t.error);t.onabort=()=>rej(t.error||Error('瀏覽器資料儲存被拒絕'));});}
 function callWorker(op,data={}){return new Promise((resolve,reject)=>{if(!worker){reject(Error('計算引擎尚未啟動'));return;}const id=++seq;pending.set(id,{resolve,reject});worker.postMessage({id,op,data});});}
 function downloadJson(data){const a=document.createElement('a'),u=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json;charset=utf-8'}));a.href=u;a.download='B85_年度研究備份_'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),10000);}
-async function request(path,data={}){if(!engineReady)throw Error('瀏覽器計算環境尚未完成載入');const op=({'/api/state':'state','/api/approve':'approve','/api/close':'close','/api/demo-close':'demo-close','/api/export':'export','/api/reset':'reset','/api/import':'import'})[path];if(!op)throw Error('未允許的請求');return await callWorker(op,data);}
+async function request(path,data={}){if(!engineReady)throw Error('瀏覽器計算環境尚未完成載入');const op=({'/api/state':'state','/api/approve':'approve','/api/close':'close','/api/demo-close':'demo-close','/api/export':'export','/api/reset':'reset','/api/import':'import','/api/capacity':'capacity'})[path];if(!op)throw Error('未允許的請求');return await callWorker(op,data);}
 function setLoadingStatus(message,error=false){const status=$('runtime-status');status.classList.toggle('ready',engineReady&&!error);status.classList.toggle('failed',error);$('runtime-title').textContent=error?'引擎載入失敗':engineReady?'瀏覽器計算環境已就緒':'正在準備退休年度工具';$('runtime-detail').textContent=message;}
 async function load(){try{
   database=await databaseOpen();const saved=await dbRead();
@@ -27,7 +63,7 @@ async function load(){try{
   };
   worker.onerror=e=>{engineReady=false;setLoadingStatus('B＋85 背景運算錯誤；請重新整理並確認網路或瀏覽器設定。',true);flash('模型載入失敗：'+e.message)};
   const result=await callWorker('init', {saved});
-  engineReady=true;setLoadingStatus('已就緒。資料保存在此瀏覽器，建議定期匯出 JSON 備份。');state=result;render();
+  engineReady=true;setLoadingStatus('已就緒。資料保存在此瀏覽器，建議定期匯出 JSON 備份。');state=result;render();void showCapacity();
  }catch(e){engineReady=false;setLoadingStatus('載入失敗：'+e.message+'。請確認瀏覽器支援 WebAssembly、IndexedDB，並能連接 Pyodide CDN。',true);flash('退休工具無法啟動：'+e.message)}}
 function display(view){
  active=view;for(const id of ['opening','closing','history']){$('panel-'+id).classList.toggle('hidden',id!==view)}
@@ -101,15 +137,20 @@ function fillNext(){
  const last=lastYear();
  if(!last){$('first-year-fields').classList.remove('hidden');$('reference_cpi_field').classList.remove('hidden');return;}
  $('first-year-fields').classList.add('hidden');$('reference_cpi_field').classList.add('hidden');
- if(last.closing){$('decision_date').value=(last.year+1)+'-01-15';$('decision_cpi').value=last.closing.cpi;
- $('decision_cpi_release').value=(last.year+1)+'-01-10';$('planned_extra_twd').value=0;}
+ if(last.closing&&$('decision_date').value.slice(0,4)!==String(last.year+1)){
+ $('decision_date').value=(last.year+1)+'-01-15';
+ $('decision_cpi').value='';$('decision_cpi_release').value='';
+ $('decision_cpi').dataset.autoSource='';
+ $('planned_extra_twd').value=0;
+ $('decision_date').dispatchEvent(new Event('change',{bubbles:true}));
+}
 }
 function render(){
  const modelLabel=$('dash-engine-name');
  if(modelLabel)modelLabel.textContent=state?.plan?.spending_profile?
   '個人化生活費研究 v1 · B＋85 衍生版':'B＋85 基準 · v3.4.0';
  const last=lastYear();
- $('opening-result').classList.toggle('hidden',!last);if(last)$('opening-result').innerHTML=budgetHtml(last);
+ $('opening-result').classList.toggle('hidden',!last);if(last)$('opening-result').innerHTML=capacityHtml(capacityEstimate)+budgetHtml(last);
  const baseline=$('dashboard-baseline');if(baseline)baseline.classList.toggle('hidden',!last);
  const sp=state?.plan?.spending_profile;
  const refs=sp||{normal_twd:650000,core_twd:600000,floor_twd:500000};
@@ -132,7 +173,8 @@ function render(){
  const today=last.year;
  if(!$('closing_date').value||Number($('closing_date').value.slice(0,4))!==today)$('closing_date').value=today+'-12-31';
  if(!$('closing_cpi').value)$('closing_cpi').value=last.decision_cpi;
- if(!$('closing_cpi_release').value||Number($('closing_cpi_release').value.slice(0,4))!==today)$('closing_cpi_release').value=today+'-12-20';
+ // Do not invent an official CPI release date; user must provide verified provenance.
+ if(!$('closing_cpi_release').value||Number($('closing_cpi_release').value.slice(0,4))!==today)$('closing_cpi_release').value='';
  if(!$('living_paid_twd').value)$('living_paid_twd').value=Math.floor(last.living_authorized_twd);
  }
  fillNext();
@@ -171,7 +213,7 @@ function endPayload(){return {closing_date:fieldVal('closing_date'),closing_cpi:
 function loading(id,flag){$(id).disabled=flag;$(id).classList.toggle('loading',flag)}
 $('opening-form').addEventListener('submit',async e=>{e.preventDefault();renderSpendingProfileInput();
  if(!state?.years?.length&&$('spending-profile-preview').dataset.valid!=='true'){flash($('spending-profile-preview').textContent);return;}
- loading('approve-btn',true);try{await request('/api/approve',initPayload());await refresh();display('opening');flash('本年度預算已核准（研究演練），請核對後進行年末結算。','success')}catch(err){flash(err.message)}finally{loading('approve-btn',false)}});
+ loading('approve-btn',true);try{await request('/api/approve',initPayload());await refresh();display('opening');void showCapacity();flash('本年度預算已核准（研究演練），請核對後進行年末結算。','success')}catch(err){flash(err.message)}finally{loading('approve-btn',false)}});
 $('closing-form').addEventListener('submit',async e=>{e.preventDefault();loading('close-btn',true);try{await request('/api/close',endPayload());await refresh();display('closing');flash('年末帳務已對帳並保存；可以開始下一年度。','success')}catch(err){flash(err.message)}finally{loading('close-btn',false)}});
 $('demo-close-btn').addEventListener('click',async()=>{try{const x=await request('/api/demo-close',{});
  for(const k of ['closing_date','closing_cpi','closing_cpi_release','investment_end_twd','cash_end_twd','living_paid_twd','car_paid_twd','extra_paid_twd','emergency_paid_twd','external_flow_twd'])$(k).value=x[k];
@@ -182,7 +224,7 @@ $('import-btn').addEventListener('click',()=>{if(!engineReady){flash('計算引�
 $('import-file').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;
  try{if(file.size>5_000_000)throw Error('備份檔案過大');const imported=JSON.parse(await file.text());
  if(!confirm('匯入備份將覆蓋此瀏覽器目前的年度紀錄。建議先匯出現有資料。確定匯入？'))return;
- await request('/api/import',imported);await refresh();display('history');flash('備份 SHA256 與年度連續性已驗證，匯入完成。','success');
+ await request('/api/import',imported);capacityEstimate=null;capacityApprovalId=null;await refresh();void showCapacity();display('history');flash('備份 SHA256 與年度連續性已驗證，匯入完成。','success');
  }catch(err){flash('匯入失敗：'+err.message)}finally{e.target.value='';}});
 $('reset-btn').addEventListener('click',async()=>{
  if(!engineReady){flash('計算引擎尚未就緒，暫時無法清除');return;}
@@ -192,11 +234,11 @@ $('reset-btn').addEventListener('click',async()=>{
   const backup=await request('/api/export',{});
   downloadJson(backup);
   await request('/api/reset',{confirm:'清除演練'});
-  await refresh();display('opening');flash('已先下載 JSON 備份，並清除本瀏覽器的演練紀錄。','success');
+  capacityEstimate=null;capacityApprovalId=null;await refresh();display('opening');flash('已先下載 JSON 備份，並清除本瀏覽器的演練紀錄。','success');
  }catch(e){flash('清除未完成：'+e.message+'。請使用先前備份復原。')}
  finally{btn.disabled=false;}
 });
-document.addEventListener('click',e=>{const b=e.target.closest('[data-go]');if(b&&!b.disabled){display(b.dataset.go);}});
+document.addEventListener('click',e=>{if(e.target.closest('#capacity-audit-btn')){void showCapacity(true);return;}const b=e.target.closest('[data-go]');if(b&&!b.disabled){display(b.dataset.go);}});
 $('decision_date').addEventListener('change',()=>{$('first_year').value=$('decision_date').value.slice(0,4);updateDecisionMonthHelp();});
 function renderSpendingProfileInput(){
  const floorEl=$('floor_spend_2026_twd'),wishEl=$('normal_spend_2026_twd'),

@@ -111,7 +111,7 @@ function prefillInitialMonthlyCpi(){
  const base=document.getElementById('cpi_2026'),notice=document.getElementById('cpi-decision-asof-note');
  const caption=document.getElementById('decision-cpi-date-caption');
  if(!input||!release||!base||!decision||!window.B85_TAIWAN_TIME)return;
- try{if(typeof state!=='undefined'&&state?.years?.length)return}catch{return}
+ try{if(typeof state!=='undefined'&&state?.years?.length&&!state.years.at(-1)?.closing)return}catch{return}
  const day=decision.value;if(!validDate(day))return;
  if(input.dataset.userEdited==='true'||release.dataset.userEdited==='true'){
   input.dataset.autoSource='MANUAL';
@@ -125,7 +125,8 @@ function prefillInitialMonthlyCpi(){
  }
  const today=window.B85_TAIWAN_TIME.today(),lastMonth=window.B85_TAIWAN_TIME.prevMonth(day);
  const eligible=snapshot?.records?.filter(r=>r.month<=lastMonth&&r.publication_date<=day&&r.publication_date<=today).at(-1);
- const recent=eligible&&days(day,eligible.publication_date)>=0&&days(day,eligible.publication_date)<=120;
+ // A stale 3+ month index is not automatically the right next-year index.
+ const recent=eligible&&days(day,eligible.publication_date)>=0&&days(day,eligible.publication_date)<=65;
  const help=input.closest('label')?.querySelector('small');
  if(recent){
   input.value=Number(eligible.index).toFixed(2);release.value=eligible.publication_date;
@@ -149,7 +150,7 @@ function prefillInitialMonthlyCpi(){
   if(help)help.textContent='使用自行設定的 2026 CPI 基準；非官方 CPI 資料。';
  }else{
   input.value='';release.value='';input.dataset.autoSource='MISSING_HISTORICAL_CPI';
-  if(notice)notice.textContent='找不到 '+day+' 當時可用的 CPI；請在進階欄位提供 CPI 與公布日期。系統不會捏造未來指數。';
+  if(notice)notice.textContent='無法在 GitHub 快照找到 '+day+' 當日近期已公布 CPI。請從官方來源確認月份、指數與真正公布日期後手動輸入；不得沿用上一年結算的 CPI 並製造公布日期。';
   if(caption)caption.textContent='CPI 官方公布日期';
   if(help)help.textContent='目前缺少當日可用的 CPI，請手動補充。';
  }
