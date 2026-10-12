@@ -50,7 +50,7 @@ function budgetHtml(y){
  ${metric('全年模型參考 PoS',pos)}
  ${metric('換車專項預算',car)}
  </div><div class="progress-track"><div class="progress-bar" style="width:${Math.max(0,Math.min(100,y.pos_pct))}%"></div></div>
- <div class="inflation-preview result-inflation">${inflationCards(Number(y.decision_cpi),Number(state?.plan?.cpi_2026),state?.years?.length>1?Number(state.years[state.years.length-2].decision_cpi):null,y.year)}</div>
+ <div class="inflation-preview result-inflation">${inflationCards(Number(y.decision_cpi),Number(state?.plan?.cpi_2026),state?.years?.length>1?Number(state.years[state.years.length-2].decision_cpi):null,y.year,Number(state?.plan?.spending_profile?.normal_twd??650000))}</div>
  <div class="status-line">● ${esc(cpiBasis)} ${esc(annual)} ${y.b85_restored?'符合 B＋85 生活預算恢復條件':'按當年 Guardrail 狀態計算'}，年度 Sticky 乘數 ${esc(y.sticky_after)}。</div>
  <p class="details-summary">熊市現金橋接：${twMoney(y.bridge_from_cash_twd)}　／　已核准其他必要支出：${twMoney(y.extra_authorized_twd)}。<br>費用與稅負使用模型既有整體淨報酬情境，年末核對不會重扣。PoS 採完整年度模型作參考，未針對首年短期間重新校準；成功率不是保證。</p>
  ${!y.closing?'<div class="result-buttons"><button class="primary-btn" data-go="closing">下一步：年末結算 →</button></div>':'<div class="result-buttons"><button class="secondary-btn" data-go="history">查看已結算紀錄</button></div>'}`;
@@ -64,15 +64,15 @@ function signedPct(value){
  if(value===null)return '尚無同期資料';
  return (value>0?'+':'')+value.toFixed(2)+'%';
 }
-function inflationCards(current,reference,previous,year){
+function inflationCards(current,reference,previous,year,normalBase){
  const cumulative=inflationChange(current,reference);
  if(cumulative===null)return '<div class="inflation-hint">請輸入有效且相同基期的 CPI 資料，才可計算購買力。</div>';
  const annual=inflationChange(current,previous);
- const normal=650000*current/reference;
+ const normal=normalBase*current/reference;
  const priorText=annual===null
  ? '首次使用尚未保存上一年度可比的 CPI；不能把 2026 至退休年的累計通膨當作今年通膨率。'
  : '以本次與上次「年初決策時可用 CPI」比較，屬期間參考變動；若兩次 CPI 非相同月份，不能稱為官方年增率。';
- return '<div class="inflation-head"><strong>'+esc(year||'本年度')+' 年物價與生活費</strong><span>以 2026 年的 65 萬元實質生活費為基準</span></div>'
+ return '<div class="inflation-head"><strong>'+esc(year||'本年度')+' 年物價與生活費</strong><span>以 2026 年設定的正常生活費 '+esc(twMoney(normalBase))+' 為基準</span></div>'
    +'<div class="inflation-cards">'
    +'<div><small>最近一年物價變動（參考）</small><strong>'+esc(signedPct(annual))+'</strong></div>'
    +'<div><small>自 2026 年累計物價變動</small><strong>'+esc(signedPct(cumulative))+'</strong></div>'
@@ -83,7 +83,8 @@ function renderInflationPreview(){
  const el=$('inflation-preview');if(!el)return;
  const previous=lastYear()?.decision_cpi??null;
  const reference=state?.plan?.cpi_2026??Number($('cpi_2026').value||'110');
- el.innerHTML=inflationCards(Number($('decision_cpi').value),Number(reference),Number(previous),$('decision_date').value.slice(0,4));
+ const normal=Number(state?.plan?.spending_profile?.normal_twd??$('normal_spend_2026_twd')?.value??650000);
+ el.innerHTML=inflationCards(Number($('decision_cpi').value),Number(reference),Number(previous),$('decision_date').value.slice(0,4),normal);
 }
 
 function closeHtml(y){if(!y?.closing)return '';
@@ -105,6 +106,14 @@ function render(){
  const last=lastYear();
  $('opening-result').classList.toggle('hidden',!last);if(last)$('opening-result').innerHTML=budgetHtml(last);
  const baseline=$('dashboard-baseline');if(baseline)baseline.classList.toggle('hidden',!last);
+ const sp=state?.plan?.spending_profile;
+ const refs=sp||{normal_twd:650000,core_twd:600000,floor_twd:500000};
+ for(const [field,key] of [['normal','normal_twd'],['core','core_twd'],['floor','floor_twd']]){
+  const target=$('dash-baseline-'+field),sub=$('dash-baseline-'+field+'-month');
+  if(target)target.textContent=twMoney(refs[key]);
+  if(sub)sub.textContent='2026 年實質・每月約 '+twMoney(refs[key]/12);
+ }
+ if(baseline)baseline.setAttribute('data-profile-mode',sp?'GENERALIZED_RESEARCH_SPENDING_V1':'FROZEN_BASELINE');
  const pending=!!(last && !last.closing);
  $('opening-form').classList.toggle('hidden',pending||!!(last&&last.age>=104));
  $('opening-tag').textContent=pending?'等待年末結算':last?.closing?'可開始下一年':'準備建立';
@@ -144,14 +153,20 @@ function initPayload(){return {
  decision_date:fieldVal('decision_date'),planned_extra_twd:fieldVal('planned_extra_twd'),start_age:fieldVal('start_age'),
  investment_twd:fieldVal('investment_twd'),cash_twd:fieldVal('cash_twd'),stock_bond:fieldVal('stock_bond'),
  cpi_2026:fieldVal('cpi_2026')||'110',decision_cpi:fieldVal('decision_cpi'),decision_cpi_release:fieldVal('decision_cpi_release'),
- decision_cpi_source:$('decision_cpi').dataset.autoSource||'MANUAL'};}
+ decision_cpi_source:$('decision_cpi').dataset.autoSource||'MANUAL',
+ spending_profile_mode:'GENERALIZED_RESEARCH_SPENDING_V1',
+ normal_spend_2026_twd:fieldVal('normal_spend_2026_twd'),
+ core_spend_2026_twd:fieldVal('core_spend_2026_twd'),
+ floor_spend_2026_twd:fieldVal('floor_spend_2026_twd')};}
 function endPayload(){return {closing_date:fieldVal('closing_date'),closing_cpi:fieldVal('closing_cpi'),
  closing_cpi_release:fieldVal('closing_cpi_release'),living_paid_twd:fieldVal('living_paid_twd'),
  car_paid_twd:fieldVal('car_paid_twd'),extra_paid_twd:fieldVal('extra_paid_twd'),
  investment_end_twd:fieldVal('investment_end_twd'),cash_end_twd:fieldVal('cash_end_twd'),
  emergency_paid_twd:fieldVal('emergency_paid_twd'),external_flow_twd:fieldVal('external_flow_twd')};}
 function loading(id,flag){$(id).disabled=flag;$(id).classList.toggle('loading',flag)}
-$('opening-form').addEventListener('submit',async e=>{e.preventDefault();loading('approve-btn',true);try{await request('/api/approve',initPayload());await refresh();display('opening');flash('本年度預算已核准（研究演練），請核對後進行年末結算。','success')}catch(err){flash(err.message)}finally{loading('approve-btn',false)}});
+$('opening-form').addEventListener('submit',async e=>{e.preventDefault();renderSpendingProfileInput();
+ if(!state?.years?.length&&$('spending-profile-preview').dataset.valid!=='true'){flash($('spending-profile-preview').textContent);return;}
+ loading('approve-btn',true);try{await request('/api/approve',initPayload());await refresh();display('opening');flash('本年度預算已核准（研究演練），請核對後進行年末結算。','success')}catch(err){flash(err.message)}finally{loading('approve-btn',false)}});
 $('closing-form').addEventListener('submit',async e=>{e.preventDefault();loading('close-btn',true);try{await request('/api/close',endPayload());await refresh();display('closing');flash('年末帳務已對帳並保存；可以開始下一年度。','success')}catch(err){flash(err.message)}finally{loading('close-btn',false)}});
 $('demo-close-btn').addEventListener('click',async()=>{try{const x=await request('/api/demo-close',{});
  for(const k of ['closing_date','closing_cpi','closing_cpi_release','investment_end_twd','cash_end_twd','living_paid_twd','car_paid_twd','extra_paid_twd','emergency_paid_twd','external_flow_twd'])$(k).value=x[k];
@@ -178,6 +193,27 @@ $('reset-btn').addEventListener('click',async()=>{
 });
 document.addEventListener('click',e=>{const b=e.target.closest('[data-go]');if(b&&!b.disabled){display(b.dataset.go);}});
 $('decision_date').addEventListener('change',()=>{$('first_year').value=$('decision_date').value.slice(0,4);updateDecisionMonthHelp();});
+function renderSpendingProfileInput(){
+ const n=Number($('normal_spend_2026_twd').value),c=Number($('core_spend_2026_twd').value),
+   f=Number($('floor_spend_2026_twd').value),out=$('spending-profile-preview');
+ if(!out)return;
+ if(![n,c,f].every(x=>Number.isInteger(x)&&x>=12000&&x<=10000000)){
+  out.textContent='請填三個每年整數金額，範圍 12,000～10,000,000 元。';
+  out.dataset.valid='false';return;
+ }
+ if(!(f<=c&&c<=n)){
+  out.textContent='支出金額需符合：Floor 最低必要支出 ≤ 核心生活費 ≤ 正常生活費。';
+  out.dataset.valid='false';return;
+ }
+ out.dataset.valid='true';
+ out.textContent='正常每月約 '+twMoney(n/12)+'；核心每月約 '+twMoney(c/12)+
+  '；Floor 每月約 '+twMoney(f/12)+
+  '。核心層僅供參考；PoS 與 Guardrail 使用個人正常支出與 Floor 重新試算。安全現金政策目標仍為 240 萬。';
+}
+for(const id of ['normal_spend_2026_twd','core_spend_2026_twd','floor_spend_2026_twd']){
+ $(id).addEventListener('input',()=>{renderSpendingProfileInput();renderInflationPreview();});
+}
+renderSpendingProfileInput();
 for(const id of ['decision_date','cpi_2026','decision_cpi']){
  $(id).addEventListener('input',renderInflationPreview);
 }
