@@ -34,40 +34,36 @@ function paint(){
  if(!snapshot){box.innerHTML='<strong class="cpi-state-title">正在讀取官方 CPI 快照…</strong>';box.dataset.status='loading';return}
  const taiwan=window.B85_TAIWAN_TIME;
  if(!taiwan){box.textContent='台灣時間模組尚未載入；暫停官方資料時點判定。';box.dataset.status='error';return}
- const today=taiwan.today();
- const previousMonth=taiwan.prevMonth(today);
- const releaseEligible=snapshot.records.filter(r=>r.publication_date<=today&&r.month<=previousMonth);
- const cross=releaseEligible.filter(r=>r.verification==='CROSS_VERIFIED').at(-1);
- const pending=releaseEligible.filter(r=>r.verification==='BULLETIN_ONLY_PENDING_PRIMARY').at(-1);
- const lastMonth=releaseEligible.find(r=>r.month===previousMonth);
- const lastReleaseAge=cross?days(today,cross.publication_date):Infinity;
- const fresh=!!cross&&lastReleaseAge<=120&&lastReleaseAge>=0;
+ const today=taiwan.today(),previousMonth=taiwan.prevMonth(today);
+ // Every number below was checked against its official bulletin and attached Table-1 XLSX
+ // by GitHub before publishing. The historical XLS may trail the publication.
+ const eligible=snapshot.records.filter(r=>r.publication_date<=today&&r.month<=previousMonth);
+ const latest=eligible.at(-1);
  const snapshotAge=days(today,snapshot.source_checked_at_utc.slice(0,10));
  const staleSnapshot=snapshotAge>75;
- const yoy=fresh?(cross.official_yoy_pct>0?'+':'')+cross.official_yoy_pct.toFixed(2)+'%':'尚無近期已查證資料';
- const heading=fresh?'已查證月度資料（非全年 CPI）':cross?'最近已查證月份已過期':'尚無雙來源已查證月份';
- const lastMonthText=lastMonth?
-  (lastMonth.verification==='CROSS_VERIFIED'?'上個月（'+previousMonth+'）已完成雙來源核對。':
-   lastMonth.verification==='BULLETIN_ONLY_PENDING_PRIMARY'?'上個月（'+previousMonth+'）已公布，但尚待主資料核對。':
-   '上個月（'+previousMonth+'）出現不同資料版本，須進一步確認。'):
-  '上個月（'+previousMonth+'）目前沒有可供使用的官方公告紀錄；不以其他月份冒充上個月。';
- const extra=cross?
-  '最近可用的已查證月份：'+safe(cross.month)+'（公布 '+safe(cross.publication_date)+'）。'+safe(lastMonthText):
-  '截至台灣 '+safe(today)+'，'+safe(lastMonthText)+'目前沒有可用的雙來源已查證月度資料。';
- const pendingHtml=pending?
-  '<p class="cpi-pending">最新待核對月份：'+safe(pending.month)+'；公告年增率 '+safe(pending.official_yoy_pct.toFixed(2))+
-  '%（'+safe(pending.publication_date)+' 公布）。此數字不能視為已完成雙來源查證。 <a href="'+safe(pending.official_source_url)+'" target="_blank" rel="noopener noreferrer">查看官方公告</a></p>':'';
- const details=releaseEligible.map(r=>'<li>'+safe(r.month)+'：'+safe(r.verification)+
-  '；CPI '+safe(r.index.toFixed(2))+(r.verification==='HISTORICAL_VINTAGE_DIFFERENCE'?'／主資料修訂值 '+safe(r.primary_index.toFixed(2)):'')+
-  '；發布 '+safe(r.publication_date)+'</li>').join('');
- box.dataset.status=staleSnapshot?'stale':fresh?'verified':'pending';
- box.innerHTML='<div class="cpi-heading"><strong class="cpi-state-title">主計總處 CPI 公開快照</strong><span class="cpi-status">'+safe(heading)+'</span></div>'+
-  '<div class="cpi-public-grid"><div><small>最近已查證月份年增率</small><strong>'+safe(yoy)+'</strong></div>'+
-  '<div><small>上個月官方資料狀態</small><strong>'+safe(lastMonth?lastMonth.verification==='CROSS_VERIFIED'?'已查證':lastMonth.verification==='BULLETIN_ONLY_PENDING_PRIMARY'?'待雙來源核對':'資料版本差異':'尚未取得公告')+'</strong></div></div>'+
-  '<p class="cpi-caption">'+extra+'</p>'+pendingHtml+
-  (staleSnapshot?'<p class="cpi-warning">此公開快照已逾 75 天未重新核對，請查主計總處最新公告。</p>':'')+
-  '<p class="cpi-caption">查詢基準：台灣 '+safe(today)+'，統計月份最多截至 '+safe(previousMonth)+'。2026 全年 CPI 年平均尚無已確認基準，因此不提供官方累積物價變化或官方換算生活費。模擬年度的 CPI 輸入不會因本卡自動改寫。</p>'+
-  '<details class="cpi-source-detail"><summary>進階資料：原始 CPI、來源與核對紀錄</summary>'+
+ const rate=latest?(latest.official_yoy_pct>0?'+':'')+latest.official_yoy_pct.toFixed(2)+'%':'尚無官方公告';
+ const month=latest?latest.month:'尚無可用月份';
+ const released=latest?latest.publication_date:'—';
+ const lastMonth=eligible.find(r=>r.month===previousMonth);
+ const ageText=latest?.month===previousMonth?
+  '上個月的官方 CPI 公告已收錄；歷史資料庫同步進度請見進階資料。':
+  '上個月（'+safe(previousMonth)+'）尚未收錄公告，以下顯示 GitHub 已保存的最近一次官方公告。';
+ const statusLabel=latest?'已收錄官方公告':'尚未收錄官方公告';
+ const details=eligible.map(r=>'<li>'+safe(r.month)+'：'+safe(r.verification)+
+  '；公告年增率 '+safe((r.official_yoy_pct>0?'+':'')+r.official_yoy_pct.toFixed(2))+'%'+
+  '；公告 CPI 指數 '+safe(r.index.toFixed(2))+
+  (r.verification==='HISTORICAL_VINTAGE_DIFFERENCE'?'／歷史主資料 '+safe(r.primary_index.toFixed(2)):'')+
+  '；公布 '+safe(r.publication_date)+
+  '；<a href="'+safe(r.official_source_url)+'" target="_blank" rel="noopener noreferrer">官方公告</a></li>').join('');
+ box.dataset.status=staleSnapshot?'stale':latest?'published':'pending';
+ box.innerHTML='<div class="cpi-heading"><strong class="cpi-state-title">主計總處 CPI 公開快照</strong><span class="cpi-status">'+safe(statusLabel)+'</span></div>'+
+  '<div class="cpi-public-grid"><div><small>最新官方公告年增率（'+safe(month)+'）</small><strong>'+safe(rate)+'</strong></div>'+
+  '<div><small>官方公告月份／日期</small><strong>'+safe(month)+'</strong><small>'+safe(released)+'</small></div></div>'+
+  '<p class="cpi-caption">'+ageText+' 網站直接呈現 GitHub 上的最新官方公告數字；如有後續修訂，依下一次資料更新為準。</p>'+
+  (staleSnapshot?'<p class="cpi-warning">GitHub 的 CPI 快照超過 75 天未重新核對，請確認自動排程是否正常執行。</p>':'')+
+  '<p class="cpi-caption">查詢基準：台灣 '+safe(today)+'，最多顯示到 '+safe(previousMonth)+'。月度「年增率」不等於 2026 全年 CPI 年平均，也不會直接修改已核准的退休計算紀錄。</p>'+
+  '<details class="cpi-source-detail"><summary>進階資料：原始 CPI、來源與雙來源核對紀錄</summary>'+
+  '<p>此區保留完整查證狀態：BULLETIN_ONLY_PENDING_PRIMARY 代表正式新聞稿及附表已核對、但歷史主表尚未同步；CROSS_VERIFIED 代表兩份來源一致。此狀態不影響主畫面呈現已正式公布的年增率。</p>'+
   '<p>統一基期：'+safe(snapshot.index_base)+'。來源最後核對 '+safe(snapshot.source_checked_at_utc.slice(0,10))+
   '（UTC）。來源狀態：'+safe(snapshot.source_status)+'。<a href="'+safe(snapshot.source_list_url)+'" target="_blank" rel="noopener noreferrer">主計總處物價新聞稿</a></p>'+
   '<ul>'+details+'</ul><p>來源原始檔 SHA256：<code>'+safe(snapshot.primary_source_sha256)+'</code></p></details>';
@@ -85,15 +81,15 @@ function prefillInitialMonthlyCpi(){
  const day=decision.value;
  if(!validDate(day))return;
  const now=window.B85_TAIWAN_TIME.today(),lastMonth=window.B85_TAIWAN_TIME.prevMonth(day);
- const checked=snapshot.records.filter(r=>
-  r.verification==='CROSS_VERIFIED'&&r.month<=lastMonth&&r.publication_date<=day&&r.publication_date<=now
+ const published=snapshot.records.filter(r=>
+  r.month<=lastMonth&&r.publication_date<=day&&r.publication_date<=now
  ).at(-1);
- if(!checked||days(day,checked.publication_date)>120||days(day,checked.publication_date)<0)return;
- manual.value=checked.index.toFixed(2);
- release.value=checked.publication_date;
- manual.dataset.officialMonth=checked.month;
+ if(!published||days(day,published.publication_date)>120||days(day,published.publication_date)<0)return;
+ manual.value=published.index.toFixed(2);
+ release.value=published.publication_date;
+ manual.dataset.officialMonth=published.month;
  const note=manual.closest('label')?.querySelector('small');
- if(note)note.textContent='已帶入 '+checked.month+' 的雙來源已查證月度 CPI（公布 '+checked.publication_date+'）。此數值不是 2026 全年 CPI；可改為手動假設。';
+ if(note)note.textContent='已帶入 '+published.month+' 的官方新聞稿及附表 CPI（公布 '+published.publication_date+'；來源由 GitHub 核對）。此數值不是 2026 全年 CPI；可改為手動假設。';
  manual.dispatchEvent(new Event('input',{bubbles:true}));
 }
 const manualCpi=document.getElementById('decision_cpi'),manualRelease=document.getElementById('decision_cpi_release');

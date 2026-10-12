@@ -108,19 +108,19 @@ function trend(records){
  const vals=rows.map(r=>r.yoy),low=Math.min(...vals)-.6,high=Math.max(...vals)+.6;
  const w=390,h=135,l=34,r=10,t=17,b=24,pw=w-l-r,ph=h-t-b;
  const points=rows.map((v,i)=>({x:l+i*pw/(rows.length-1),y:t+(high-v.yoy)/(high-low)*ph,...v}));
- let html='<p>官方公告 CPI 同月年增率（%）｜虛線代表待核對</p>';
- let svg='<svg viewBox="0 0 '+w+' '+h+'" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="已公布月度 CPI 年增率走勢；部分月份仍待來源核對">';
+ let html='<p>官方公告 CPI 同月年增率（%）</p>';
+ let svg='<svg viewBox="0 0 '+w+' '+h+'" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="已公布月度 CPI 年增率走勢">';
  for(let i=0;i<3;i++){
    const y=t+i*ph/2,axis=high-(high-low)*i/2;
    svg+='<line x1="'+l+'" x2="'+(w-r)+'" y1="'+y+'" y2="'+y+'" stroke="#e1edf0"/>'+
    '<text x="'+(l-5)+'" y="'+(y+4)+'" text-anchor="end" fill="#7894a1" font-size="10">'+safe(axis.toFixed(1))+'</text>';
  }
  for(let i=1;i<points.length;i++){
-  const a=points[i-1],b=points[i],pending=a.verification!=='CROSS_VERIFIED'||b.verification!=='CROSS_VERIFIED';
-  svg+='<path d="M'+a.x.toFixed(1)+' '+a.y.toFixed(1)+' L'+b.x.toFixed(1)+' '+b.y.toFixed(1)+'" fill="none" stroke="'+(pending?'#86a9b5':'#168f9d')+'" stroke-width="2.4" '+(pending?'stroke-dasharray="5 4"':'')+'/>';
+  const a=points[i-1],b=points[i];
+  svg+='<path d="M'+a.x.toFixed(1)+' '+a.y.toFixed(1)+' L'+b.x.toFixed(1)+' '+b.y.toFixed(1)+'" fill="none" stroke="#168f9d" stroke-width="2.4"/>';
  }
  for(const p of points){
-  svg+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="3.1" fill="'+(p.verification==='CROSS_VERIFIED'?'#0b9a8d':'#9eb0b9')+'"><title>'+safe(p.month)+' '+safe(p.yoy.toFixed(2))+'% '+safe(p.verification)+'</title></circle>';
+  svg+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="3.1" fill="#0b9a8d"><title>'+safe(p.month)+' '+safe(p.yoy.toFixed(2))+'%</title></circle>';
  }
  svg+='<text x="'+l+'" y="'+(h-6)+'" font-size="10" fill="#678496">'+safe(rows[0].month)+'</text>'+
  '<text x="'+(w-r)+'" y="'+(h-6)+'" font-size="10" text-anchor="end" fill="#678496">'+safe(rows.at(-1).month)+'</text></svg>';
@@ -137,12 +137,10 @@ async function loadOfficialSummary(){
   if(!taiwan)throw Error('台灣時區模組未就緒');
   const today=taiwan.today(),maximumMonth=taiwan.prevMonth(today);
   const eligible=data.records.filter(r=>r.month<=maximumMonth&&r.publication_date<=today);
-  const checked=eligible.filter(r=>r.verification==='CROSS_VERIFIED');
-  if(!checked.length)throw Error('沒有完成雙來源核對的月份');
-  const newest=checked.at(-1);
-  const monthBefore=eligible.find(r=>r.month===maximumMonth);
+  const newest=eligible.at(-1);
+  if(!newest)throw Error('目前沒有已發布的 CPI 公告');
   text('dash-cpi-month',newest.month.replace('-',' / '));
-  text('dash-cpi-sub','官方年增率 '+(newest.official_yoy_pct>0?'+':'')+Number(newest.official_yoy_pct).toFixed(2)+'%；上月 '+(monthBefore?(monthBefore.verification==='CROSS_VERIFIED'?'已查證':'待核對'):'未見公告'));
+  text('dash-cpi-sub','最新官方公告年增率 '+(newest.official_yoy_pct>0?'+':'')+Number(newest.official_yoy_pct).toFixed(2)+'%');
   trend(eligible);
  }catch{
   text('dash-cpi-month','來源暫不可用');

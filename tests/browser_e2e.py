@@ -48,6 +48,16 @@ async def main():
             eligible=[x for x in snapshot['records']
                       if x['publication_date']<=today and x['month']<=previous_month]
             assert eligible, 'Expected at least one published historical CPI month'
+            latest_public=eligible[-1]
+            latest_rate=('+' if latest_public['official_yoy_pct']>0 else '')+f"{latest_public['official_yoy_pct']:.2f}%"
+            await page.locator('#official-cpi-panel').filter(has_text='最新官方公告年增率').wait_for(timeout=15000)
+            panel=await page.locator('#official-cpi-panel').inner_text()
+            assert latest_rate in panel
+            assert latest_public['month'] in panel
+            assert '上個月官方資料狀態' not in panel
+            await page.locator('#dash-cpi-month').filter(has_text=latest_public['month'].replace('-',' / ')).wait_for(timeout=15000)
+            assert latest_rate in (await page.locator('#dash-cpi-sub').inner_text())
+            print('BROWSER_GITHUB_LATEST_PUBLISHED_OFFICIAL_YOY_PASS')
             assert previous_month in (await page.locator('#official-cpi-panel').inner_text())
             assert '尚無全年官方基準' not in (await page.locator('#official-cpi-panel').inner_text())
             # A simulation date is independent of the public as-of-Taiwan CPI snapshot.
