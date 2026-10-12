@@ -1,7 +1,7 @@
 {
   ".nojekyll": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
   "bridge.py": "d1397517091fee07f9f608ef953b632bc633c9c63388ec7af9324790bcd07f1a",
-  "index.html": "ac2cec49f391e908ee01febdfc16f78573e5a5a95f3e2f9789943f7e93c255e7",
+  "index.html": "ebf9370995ccf12af970b2f2e17a37d7bf06bee3d1381e48fc5d1b439c22b77c",
   "policy/__init__.py": "c351713828d38702d7b6562661a8e52511e0c63d370d55a77109263a4a7ea0e1",
   "policy/annual_execution_v340.py": "4e92b2a6b3d7166ca7536b6afdcb3ce6bffd90ac8f94d7a47e0231c266eee0df",
   "policy/retirement_model_v340.py": "54dd2718a098c7f8182fcc44db980c523c2859fdaa276c50e81e8f8ea8712f10",
@@ -11,10 +11,12 @@
   "static/style.css": "36f229f3a94ece742274f4ca1bc7c95ff3c06f40346fb25b8da09d172b8561f8",
   "tests/test_pages_bridge.py": "b365c0a78815047f3fd9b3b5b560cc48802cdd9c0d48217a4ee31aa4d60e79e1",
   "workflow.py": "130809eaf5863ed960a56bfc0596b18abb811cf9b5794b21682b526e6de58ffe",
-  "tests/browser_e2e.py": "7f39e2ec899b80189f6779b4fd46e53b4aa8957c653c69a289d9c8a847a25c0b",
+  "tests/browser_e2e.py": "699a8b7da828f1463c6d56d05f52f8bd940ccb4abe5c8775a9bad91c138cb817",
   "data/cpi_verified.json": "6271525be1c288d780463a29d2a9379331de2d751f284491f021e5f68cdfd2c1",
   "static/cpi-official.js": "9d4a2489b5a202e28b4a5cdbb0436702fca804b93f755920de5928899ef54183",
   "scripts/public_cpi/cpi_sources.py": "6e893e0bd5bb6330b14217ad26cce44ac590356d3231effdff1a1c63d26c7cf8",
   "scripts/public_cpi/update.py": "2915dc02c130487d441de40491045d610fdd971f888c6585cb43cdf7d5f3be3d",
-  "scripts/public_cpi/tests/test_public_cpi.py": "614765dab403e83cbacc3c9e550dff7f22affd63d6f4ed7c0a601b7eef1bdb53"
+  "scripts/public_cpi/tests/test_public_cpi.py": "614765dab403e83cbacc3c9e550dff7f22affd63d6f4ed7c0a601b7eef1bdb53",
+  "static/dashboard.css": "6c2f38a7da55a72cd844cc59c7c68734333e3720a00a49ccddcbf3f8f6f88f8c",
+  "static/dashboard.js": "2bff3aaa03d01c138a3868e907aa65cac36f429b7ee37b0156aca322eff5e93a"
 }
