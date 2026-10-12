@@ -115,6 +115,12 @@ async def main():
             assert 'PoS' in a and '核准生活費' in a
             assert '通膨換算後正常生活費' in a
             assert '今年核准生活費' in a
+            # A single primary annual result; no second large recommendation widget.
+            assert await page.locator('#opening-result .metric.featured').count()==1
+            assert await page.locator('.dash-recommendation, #dash-recommend-body').count()==0
+            assert await page.locator('.dash-lower-side .dash-history-summary').count()==1
+            assert await page.locator('.dash-lower-side .dash-risk-notes').count()==1
+            assert await page.locator('#dash-budget').inner_text()!='尚未試算'
             import re
             converted=650000*125/float(await page.locator('#cpi_2026').input_value())
             match=re.search(r'通膨換算後正常生活費\s+NT\$\s*([\d,]+)',a)

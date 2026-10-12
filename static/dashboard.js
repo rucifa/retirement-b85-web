@@ -31,24 +31,6 @@ function updateKpis(){
  text('dash-years',years.length+' 年');
  text('dash-years-sub',years.length?'最早 '+years[0].year+' 年 · 最新 '+years[years.length-1].year+' 年':'僅保存在此瀏覽器');
  text('dash-policy-status',y?'已計算 '+y.year+' 年預算；'+(y.b85_restored?'符合 B＋85 恢復條件。':'以當年的 Guardrail／Sticky 結果為準。'):'目前尚無核准年度；請先執行年初試算。');
- const result=$('dash-recommend-body');
- if(result){
-  result.replaceChildren();
-  const heading=document.createElement('strong');
-  heading.textContent=y&&fine(y.living_authorized_twd)?money(Number(y.living_authorized_twd)):'尚未產生建議';
-  result.append(heading);
-  const p=document.createElement('p');
-  p.textContent=y?
-   y.year+' 年已核准'+(y.calendar_first_year?'首年按日生活費':'全年生活費')+' · '+(y.age||'—')+' 歲（研究演練）；不等於實際已提領金額。':
-   '請填妥年度資料並執行年初核准，建議金額將直接採用 B＋85 計算結果。';
-  result.append(p);
-  if(y&&fine(y.pos_pct)){
-   const note=document.createElement('p');
-   note.className='dash-recommend-note';
-   note.textContent='PoS '+Number(y.pos_pct).toFixed(1)+'% · 換車專項 '+(fine(y.car_authorized_twd)?money(Number(y.car_authorized_twd)):'未建立');
-   result.append(note);
-  }
- }
  const history=$('dash-recent-years');
  if(history){
   history.replaceChildren();

@@ -102,16 +102,12 @@ body{color:var(--dash-ink);background:linear-gradient(150deg,#edf9fa 0%,#f6f8fb 
 .dash-policy-ring-inner small{font-size:10px;color:#758e95}
 .dash-policy-card p{font-size:11px;color:#67868e;line-height:1.7;text-align:center;margin:0 auto 11px;max-width:380px}
 .dash-policy-status{background:#e5f5f0;color:#267968;border-radius:10px;padding:12px;text-align:center;font-size:11px;font-weight:780;line-height:1.6}
-.dashboard-lower{display:grid;grid-template-columns:minmax(0,1.47fr) minmax(340px,1fr);gap:15px;align-items:stretch}
-.dash-history-chart,.dash-recommendation{min-height:260px}
+.dashboard-lower{display:grid;grid-template-columns:minmax(0,1.47fr) minmax(340px,1fr);gap:15px;align-items:start}
+.dash-lower-side{display:flex;flex-direction:column;gap:15px;min-width:0}
+.dash-history-chart{min-height:260px}
 .dash-asset-chart{min-height:207px;display:grid;place-items:center;line-height:1.7;color:#78929c;font-size:12px;text-align:center;background:linear-gradient(180deg,#fafdff,#fff);border-radius:12px;border:1px solid #e9f1f3;padding:14px}
 .dash-asset-chart svg{width:100%;height:auto;display:block;max-height:260px}
 .dash-history-chart .dash-widget-head{flex-wrap:wrap}
-.dash-recommendation{background:linear-gradient(140deg,#edf9f7,#e6f4f8)}
-.dash-recommendation #dash-recommend-body>strong{font-size:26px;color:#0c6f72;display:block;margin:22px 0 7px;font-variant-numeric:tabular-nums}
-.dash-recommendation #dash-recommend-body p{font-size:12px;color:#547b87;line-height:1.75;margin:7px 0 10px}
-.dash-recommendation #dash-recommend-body .dash-recommend-note{font-weight:750}
-.dash-recommend-foot{padding-top:13px;border-top:1px solid #d0e7e7;margin-top:22px;font-size:10px;color:#728d96;line-height:1.55}
 .dash-history-summary #dash-recent-years{font-size:12px;color:#63818c;line-height:1.8}
 .dash-recent-row{padding:10px 0;display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid #eaf1f3}
 .dash-recent-row strong{color:#21475d}
