@@ -100,6 +100,7 @@ function fillNext(){
 function render(){
  const last=lastYear();
  $('opening-result').classList.toggle('hidden',!last);if(last)$('opening-result').innerHTML=budgetHtml(last);
+ const baseline=$('dashboard-baseline');if(baseline)baseline.classList.toggle('hidden',!last);
  const pending=!!(last && !last.closing);
  $('opening-form').classList.toggle('hidden',pending||!!(last&&last.age>=104));
  $('opening-tag').textContent=pending?'等待年末結算':last?.closing?'可開始下一年':'準備建立';
