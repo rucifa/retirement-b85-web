@@ -34,11 +34,11 @@
  <div id="opening-result" class="results hidden"></div>
  <form id="opening-form" class="form-card">
  <h3>年度基本資料</h3><div class="grid-form"><label class="field"><span>決策日期 <em>必填</em></span><input id="decision_date" type="date" required/><small>首次進入使用瀏覽器時鐘換算為台灣今天（非伺服器授時）；已儲存的年度接續日期不會覆寫。可自行選擇試算日期。</small><small id="decision-month-guidance" class="decision-month-guidance" role="status">首年可自選日期，生活費按剩餘曆年天數計算。</small><button type="button" id="use-january-date" class="dash-text-link" hidden>舊版一月試算快捷鍵</button></label>
- <label class="field"><span>預計額外必要支出（新台幣）</span><input id="planned_extra_twd" type="number" min="0" step="0.01" value="0" required/><small>例如另外安排的醫療、購車等已確定費用。已由政策安排的定期換車請勿重複輸入。此金額會納入本年度 PoS 與必要支出預算，實際付款只扣一次。</small></label></div>
+ <label class="field"><span>預計額外必要支出（新台幣）<small>選填</small></span><input id="planned_extra_twd" type="number" min="0" step="0.01" placeholder="例如：1500000（沒有可留空）"/><small>例如另外安排的醫療、購車等已確定費用。已由政策安排的定期換車請勿重複輸入。此金額會納入本年度 PoS 與必要支出預算，實際付款只扣一次；留空視為無額外支出（0 元）。</small></label></div>
  <div id="first-year-fields"><div class="inner-divider"></div><h3>首次建立：退休起始條件</h3><div class="grid-form"><label class="field"><span>退休開始年</span><input id="first_year" type="number" readonly/><small>與上方決策日期年份相同。</small></label>
- <label class="field"><span>退休開始年齡</span><input id="start_age" type="number" min="45" max="90" value="65" required/><small>一般試算預設 65 歲（2026 起勞保老年年金法定請領年齡），並非強制退休年齡；可自行修改。</small></label>
- <label class="field"><span>投資資產總市值（新台幣）</span><input id="investment_twd" type="number" min="0" step="0.01" value="27000000" required/><small>股票＋債券，與安全現金分開。</small></label>
- <label class="field"><span>安全現金（新台幣）</span><input id="cash_twd" type="number" min="0" step="0.01" value="2400000" required/><small>退休啟動日安全現金政策目標 240 萬元。</small></label>
+ <label class="field"><span>退休開始年齡</span><input id="start_age" type="number" min="45" max="90" placeholder="例如：54" required/><small>請自行填入預計退休年齡。65 歲是勞保老年年金請領年齡的參考，不是系統替你設定的退休年齡。</small></label>
+ <label class="field"><span>投資資產總市值（新台幣）</span><input id="investment_twd" type="number" min="0" step="0.01" placeholder="例如：27000000" required/><small>股票＋債券，與安全現金分開。</small></label>
+ <label class="field"><span>安全現金（新台幣）</span><input id="cash_twd" type="number" min="0" step="0.01" placeholder="例如：2400000" required/><small>退休啟動日安全現金政策目標 240 萬元。</small></label>
  <label class="field"><span>股／債配置</span><select id="stock_bond"><option value="70/30">股票 70%／債券 30%（首選）</option><option value="65/35">股票 65%／債券 35%（保守備選）</option></select><small>這是股債比例，不是美國／非美國的股票地域比例。</small></label></div>
  <div class="inner-divider"></div><h3>退休後，你一年至少需要多少生活費？</h3>
  <p class="spending-profile-intro">先填<strong>一年省不掉的生活費</strong>，再看看以你輸入的資產，這套退休規則會算出多少年度生活預算。下方「希望花多少」可留空；若留空，會先用最低需求進行試算。</p>
@@ -48,7 +48,7 @@
  </div>
  <details class="advanced spending-core-advanced" id="spending-core-details"><summary>進階：調整模型的中間生活費參考值（通常不用改）</summary>
   <p>這是研究模型使用的中間參考值，<strong>不會額外扣一次費用</strong>。系統會依上面兩個金額自動帶入；只有需要自行研究時才改。</p>
-  <label class="field"><span>中間生活費參考值（元／年）</span><input id="core_spend_2026_twd" type="number" min="12000" max="10000000" step="1" value="500000" required/><small>必須介於最低需求與希望生活費之間。</small></label>
+  <label class="field"><span>中間生活費參考值（元／年）</span><input id="core_spend_2026_twd" type="number" min="12000" max="10000000" step="1" placeholder="依最低與希望生活費自動計算" required/><small>必須介於最低需求與希望生活費之間。</small></label>
  </details>
  <p id="spending-profile-preview" class="spending-profile-preview" role="status">填入最低必要費用後，按下方按鈕計算今年的年度生活預算。安全現金政策目標目前仍維持 240 萬。</p>
  </div>
@@ -131,16 +131,16 @@
  <section id="panel-closing" class="panel hidden"><div class="section-head"><div><div class="eyebrow green">STEP 02</div><h2>年末・確認實際花了多少</h2><p>不用填報酬率。只要記錄實際支出及年底投資／現金餘額。</p></div><span id="closing-tag" class="tag">尚未核准</span></div>
  <div id="closing-readiness" class="empty-state"><span class="empty-icon">▧</span><h3>請先完成年初核准</h3><p>年初預算計算完成後，年末結算表單就會開放。</p><button class="secondary-btn" data-go="opening">回到年初核准</button></div>
  <div id="closing-form-wrap" class="hidden"><div id="closing-budget" class="summary-strip"></div>
- <form class="form-card" id="closing-form"><h3>實際年度支出</h3><div class="grid-form"><label class="field"><span>實際生活費（新台幣）</span><input id="living_paid_twd" type="number" min="0" step="0.01" required/><small>以全年實際付出去的金額為準，不是預算金額。</small></label>
- <label class="field"><span>實際換車費用（新台幣）</span><input id="car_paid_twd" type="number" min="0" step="0.01" value="0" required/></label>
- <label class="field"><span>其他已核准必要支出（新台幣）</span><input id="extra_paid_twd" type="number" min="0" step="0.01" value="0" required/></label></div>
- <div class="inner-divider"></div><h3>年底帳戶餘額</h3><div class="grid-form"><label class="field"><span>年底投資資產總市值（新台幣）</span><input id="investment_end_twd" type="number" min="0" step="0.01" required/><small>包含 ETF、股票與債券的年底市值。</small></label>
- <label class="field"><span>年底安全現金餘額（新台幣）</span><input id="cash_end_twd" type="number" min="0" step="0.01" required/><small>已考慮未花完預算回存的情況。</small></label>
+ <form class="form-card" id="closing-form"><h3>實際年度支出</h3><div class="grid-form"><label class="field"><span>實際生活費（新台幣）</span><input id="living_paid_twd" type="number" min="0" step="0.01" placeholder="例如：650000（請填實際支出）" required/><small>以全年實際付出去的金額為準，不是預算金額。</small></label>
+ <label class="field"><span>實際換車費用（新台幣）</span><input id="car_paid_twd" type="number" min="0" step="0.01" placeholder="例如：1200000（無則留空）"/><small>沒有實際換車支出時可留空，結算時視為 0 元。</small></label>
+ <label class="field"><span>其他已核准必要支出（新台幣）</span><input id="extra_paid_twd" type="number" min="0" step="0.01" placeholder="例如：150000（無則留空）"/><small>沒有額外必要支出時可留空，結算時視為 0 元。</small></label></div>
+ <div class="inner-divider"></div><h3>年底帳戶餘額</h3><div class="grid-form"><label class="field"><span>年底投資資產總市值（新台幣）</span><input id="investment_end_twd" type="number" min="0" step="0.01" placeholder="例如：28000000" required/><small>包含 ETF、股票與債券的年底市值。</small></label>
+ <label class="field"><span>年底安全現金餘額（新台幣）</span><input id="cash_end_twd" type="number" min="0" step="0.01" placeholder="例如：2000000" required/><small>已考慮未花完預算回存的情況。</small></label>
  <label class="field"><span>年末結算日期</span><input id="closing_date" type="date" required/></label>
- <label class="field"><span>年末可用 CPI 指數</span><input id="closing_cpi" type="number" min="10" step="0.01" required/><small>用於將年底名目資產換算到退休起始購買力。</small></label>
+ <label class="field"><span>年末可用 CPI 指數</span><input id="closing_cpi" type="number" min="10" step="0.01" placeholder="例如：112.50（請核對來源）" required/><small>用於將年底名目資產換算到退休起始購買力。</small></label>
  <label class="field"><span>該 CPI 的官方公布日期</span><input id="closing_cpi_release" type="date" required/></label></div>
- <details class="advanced"><summary>今年是否有緊急支出、額外入金或其他特殊狀況？</summary><p>不明資金流或一次性 Emergency 須另行核對，不能讓系統將它誤當市場報酬。</p><div class="grid-form"><label class="field"><span>一次性 Emergency（新台幣）</span><input id="emergency_paid_twd" type="number" min="0" step="0.01" value="0" required/></label>
- <label class="field"><span>額外入金／轉帳（新台幣）</span><input id="external_flow_twd" type="number" min="0" step="0.01" value="0" required/></label></div></details>
+ <details class="advanced"><summary>今年是否有緊急支出、額外入金或其他特殊狀況？</summary><p>不明資金流或一次性 Emergency 須另行核對，不能讓系統將它誤當市場報酬。</p><div class="grid-form"><label class="field"><span>一次性 Emergency（新台幣）</span><input id="emergency_paid_twd" type="number" min="0" step="0.01" placeholder="例如：300000（無則留空）"/><small>留空視為 0 元；正數仍須額外核對資金來源，不能直接結算。</small></label>
+ <label class="field"><span>額外入金／轉帳（新台幣）</span><input id="external_flow_twd" type="number" min="0" step="0.01" placeholder="例如：100000（無則留空）"/><small>留空視為 0 元；正數需另行對帳，不會直接納入市場報酬。</small></label></div></details>
  <div class="form-footer"><button id="demo-close-btn" type="button" class="secondary-btn">填入示範年底數值</button><button class="primary-btn" type="submit" id="close-btn">完成年度結算 <span>→</span></button></div></form></div>
  <div id="closing-result" class="results hidden"></div></section>
  <section id="panel-history" class="panel hidden"><div class="section-head"><div><div class="eyebrow green">STEP 03</div><h2>歷年紀錄・從哪一年接續</h2><p>年初核准與年末實際紀錄分開保存，避免重複支出。</p></div><div class="history-actions"><button id="export-btn" class="secondary-btn">匯出 JSON 備份</button> <button id="import-btn" class="secondary-btn">匯入 JSON 備份</button><input id="import-file" type="file" accept="application/json,.json" class="hidden" aria-label="匯入已保存的年度備份 JSON"/></div></div><div id="history-list" class="history-list"></div><div class="history-footer"><p>重設之前請先匯出備份。重設之前會自動下載一份 JSON 備份。</p><button id="reset-btn" type="button" class="danger-link">清除演練並重新開始</button></div></section>
