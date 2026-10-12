@@ -10,6 +10,7 @@ import argparse
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 import hashlib
+import html
 import json
 from pathlib import Path
 import re
@@ -114,6 +115,43 @@ def verified_https_retry(fetch, stage, pause=time.sleep):
             pause(2 * (attempt + 1))
 
 
+
+def read_official_ytd(article:bytes, month:str, url:str, release:str):
+    """The bulletin states Jan-N average compared with the same period last year."""
+    raw=html.unescape(s.decode_html(article))
+    plain=re.sub(r'\s+','',re.sub(r'<[^>]+>','',raw)).replace('％','%')
+    match=re.search(r'1[-－~～](\d{1,2})月平均[，,]?較上年同期(漲|跌)(\d+(?:\.\d+)?)%',plain)
+    if not match or int(match.group(1))!=int(month[-2:]):
+        return None
+    rate=float(Decimal(match.group(3)))
+    need(0<=rate<100,'OFFICIAL_YTD_OUT_OF_BOUNDS')
+    return {'period':month,'average_yoy_pct':-rate if match.group(2)=='跌' else rate,
+      'publication_date':str(release),'source_url':url,
+      'metric':'JAN_TO_LATEST_AVG_VS_PRIOR_YEAR_SAME_MONTHS'}
+
+
+def calendar_year_chart(primary:dict, rows:list):
+    """Display Jan..latest, max 12. Differentiate bulletin YoY from index-derived."""
+    if not rows:return []
+    last=rows[-1]['month'];yr=int(last[:4]);year=str(yr)
+    known={r['month']:r for r in rows if r['month'].startswith(year)}
+    points=[]
+    for mo in range(1,int(last[-2:])+1):
+        key=f'{year}-{mo:02d}'
+        bulletin=known.get(key)
+        if bulletin is not None:
+            points.append({'month':key,'yoy_pct':bulletin['official_yoy_pct'],
+                           'index':bulletin['index'],'origin':'OFFICIAL_BULLETIN'})
+            continue
+        previous=f'{yr-1}-{mo:02d}'
+        if key in primary and previous in primary:
+            yoy=(Decimal(str(primary[key]))/Decimal(str(primary[previous]))-1)*100
+            points.append({'month':key,'yoy_pct':round(float(yoy),2),
+                           'index':float(primary[key]),
+                           'origin':'OFFICIAL_HISTORICAL_INDEX_DERIVED'})
+    return points
+
+
 def load_official(now):
     try:
         context=verified_https_retry(s.twca_verified_context, 'TWCA_CA_CHAIN')
@@ -130,12 +168,16 @@ def load_official(now):
         raise PublishError('TLS_STAGE_STAT_GOV_BULLETIN_LIST: '+str(exc)) from exc
     discovered=s.bulletin_list(listing,now)
     reports=[]
+    ytd=None
+    latest_period=max(item['month'] for item in discovered)
     for item in discovered:
         try:
             article=verified_https_retry(lambda:s.https_bytes(item['url'],context,'www.stat.gov.tw',s.MAX_HTML), 'STAT_GOV_ARTICLE_'+item['month'])
         except (s.DataError,s.DualSourceError,OSError) as exc:
             raise PublishError('TLS_STAGE_STAT_GOV_ARTICLE_'+item['month']+': '+str(exc)) from exc
         meta=s.bulletin_article(article,item,now)
+        if item['month']==latest_period:
+            ytd=read_official_ytd(article,item['month'],item['url'],meta['release_date'])
         try:
             excel=verified_https_retry(lambda:s.https_bytes(meta['table1_url'],context,'ws.dgbas.gov.tw',s.MAX_XLSX), 'DGBAS_TABLE1_'+item['month'])
         except (s.DataError,s.DualSourceError,OSError) as exc:
@@ -147,7 +189,7 @@ def load_official(now):
     assessment=s.compare(primary,reports,now,protected_last=BASELINE_END)
     need(not assessment['conflicting_months'],
          'CPI_DUAL_SOURCE_CONFLICT_REQUIRES_MANUAL_REVIEW')
-    return primary,assessment,s.digest(raw),s.digest(listing)
+    return primary,assessment,s.digest(raw),s.digest(listing),ytd
 
 
 def valid_old(history, now):
@@ -211,7 +253,7 @@ def public_record(row,now):
     return output
 
 
-def build_snapshot(primary,assessment,raw_sha,list_sha,previous,now):
+def build_snapshot(primary,assessment,raw_sha,list_sha,previous,now,ytd=None):
     need(assessment.get('status') in
          ('BULLETIN_AHEAD_PENDING_PRIMARY','CROSS_VERIFIED','CROSS_VERIFIED_WITH_VINTAGE_DIFFERENCES'),
          'CPI_RESEARCH_STATUS_NOT_SAFE')
@@ -249,6 +291,8 @@ def build_snapshot(primary,assessment,raw_sha,list_sha,previous,now):
       'annual_2026_index':None,
       'annual_2026_release_date':None,
       'source_list_url':SOURCE_LIST,
+      'latest_official_ytd':ytd,
+      'current_year_chart':calendar_year_chart(primary,rows),
       'records':rows,
     }
 
@@ -265,8 +309,8 @@ def publish(repo,now=None):
     for name,expected in manifest.items():
         need(hashlib.sha256((repo/name).read_bytes()).hexdigest()==expected,
              'PUBLIC_SOURCE_MANIFEST_HASH_MISMATCH: '+name)
-    primary,assessment,raw_sha,list_sha=load_official(now.date())
-    snapshot=build_snapshot(primary,assessment,raw_sha,list_sha,history,now)
+    primary,assessment,raw_sha,list_sha,ytd=load_official(now.date())
+    snapshot=build_snapshot(primary,assessment,raw_sha,list_sha,history,now,ytd=ytd)
     # Only official allowlisted fields leave this collector. No other file is touched.
     raw=(json.dumps(snapshot,ensure_ascii=False,indent=2)+'\n').encode('utf-8')
     target=repo/'data/cpi_verified.json'
