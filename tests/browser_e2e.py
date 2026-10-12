@@ -1,6 +1,7 @@
 """Genuine Pyodide + NumPy + B+85 in a Chromium tab, no fake policy responses."""
-import asyncio,json,os
+import asyncio,json,os,sys
 from pathlib import Path
+sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 from playwright.async_api import async_playwright,TimeoutError as PlaywrightTimeout
 
 async def main():
@@ -252,10 +253,10 @@ async def main():
             assert await page.locator('#dash-scenario-pane').is_visible()
             assert await page.locator('#dash-scenario-tab').get_attribute('aria-pressed')=='true'
             assert await page.locator('#dash-scenario-chart svg polygon').count()==0
-            assert '任意預填的數學示例' in (await page.locator('.dash-scenario-disclaimer').inner_text())
+            assert '任意預填的數學示例' in (await page.locator('#dash-scenario-pane .dash-scenario-disclaimer').inner_text())
             await page.locator('#dash-return-low').fill('-3')
             assert await page.locator('#dash-scenario-chart svg path').count()==3
-            assert '不是 B＋85 蒙地卡羅 P10／P50／P90' in (await page.locator('.dash-scenario-disclaimer').inner_text())
+            assert '不是 B＋85 蒙地卡羅 P10／P50／P90' in (await page.locator('#dash-scenario-pane .dash-scenario-disclaimer').inner_text())
             await page.locator('#dash-actual-tab').click()
             assert await page.locator('#dash-asset-chart').is_visible()
             await page.locator('#dash-scenario-tab').click()
@@ -458,6 +459,29 @@ async def main():
                 assert await extra_page.evaluate("() => request('/api/export')")==raw_before
                 print('BROWSER_REAL_MC_PYTHON_PARITY_SIX_VIEWS_EXPORT_CANCEL_AND_READONLY_PASS')
                 print('BROWSER_MC_PERFORMANCE_SECONDS',result['seconds'])
+                await extra_page.locator('[data-go="closing"]').first.click()
+                await extra_page.locator('#demo-close-btn').click()
+                await extra_page.locator('#close-btn').click()
+                await extra_page.locator('#closing-result').filter(has_text='已完成年度結算').wait_for(timeout=120000)
+                assert await extra_page.evaluate('window.B85_MC_RESEARCH.getResult()') is None
+                await extra_page.locator('[data-go="opening"]').first.click()
+                await extra_page.locator('#decision_cpi').fill('113')
+                await extra_page.locator('#decision_cpi_release').fill('2027-01-07')
+                await extra_page.locator('#approve-btn').click()
+                await extra_page.locator('#opening-tag').filter(has_text='等待年末結算').wait_for(timeout=180000)
+                second=await extra_page.evaluate('() => state.years.at(-1)')
+                assert second['year']==2027 and second['age']==annual['age']+1
+                assert not second['calendar_first_year']
+                assert second['extra_authorized_twd']==0
+                await extra_page.locator('#dash-mc-tab').click()
+                await extra_page.locator('#mc-precision').select_option('higher')
+                await extra_page.locator('#mc-run').click()
+                await extra_page.locator('#mc-status[data-state="complete"]').wait_for(timeout=240000)
+                high=await extra_page.evaluate('window.B85_MC_RESEARCH.getResult()')
+                assert high['paths']==8192 and high['inner_paths']==2048
+                assert high['years'][0]['year']==2027 and high['years'][-1]['age']==104
+                assert high['seconds']<120,high['seconds']
+                print('BROWSER_MC_HIGHER_PRECISION_NEXT_YEAR_CONTINUITY_SECONDS',high['seconds'])
             finally:
                 await context_extra.close()
             # Someone who only knows their minimum essential expenses must
