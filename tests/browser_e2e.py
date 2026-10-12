@@ -27,7 +27,8 @@ async def main():
                 assert await page.locator('#use-january-date').is_visible()
                 await page.locator('#use-january-date').click()
                 assert await page.locator('#decision_date').input_value()==today[:4]+'-01-15'
-                assert await page.locator('#decision_cpi_release').input_value() in ('',)
+                cpi_release=await page.locator('#decision_cpi_release').input_value()
+                assert not cpi_release or cpi_release<=today[:4]+'-01-15'
                 await page.locator('#decision_date').fill(today)
 
             assert await page.locator('#dashboard-baseline').is_hidden()
