@@ -30,48 +30,43 @@ function validate(d){
  return d;
 }
 function paint(){
- if(loadError){box.innerHTML='<strong class="cpi-state-title">官方 CPI 暫時無法讀取</strong><p> '+safe(loadError)+'。保留原手動輸入，所有示範數字均非官方自動查證。</p>';box.dataset.status='error';return}
+ if(loadError){box.innerHTML='<strong class="cpi-state-title">官方 CPI 暫時無法讀取</strong><p>'+safe(loadError)+'。資料無法驗證，保留手動演練欄位，不會提供虛構官方數字。</p>';box.dataset.status='error';return}
  if(!snapshot){box.innerHTML='<strong class="cpi-state-title">正在讀取官方 CPI 快照…</strong>';box.dataset.status='loading';return}
- const d=decision.value;
- if(!validDate(d)){box.textContent='請先選擇有效的年初決策日期';box.dataset.status='invalid-date';return}
- const sameYearRecords=snapshot.records.filter(r=>r.month.slice(0,4)===d.slice(0,4));
- const releaseEligible=snapshot.records.filter(r=>r.publication_date<=d&&r.month<=d.slice(0,7));
+ const taiwan=window.B85_TAIWAN_TIME;
+ if(!taiwan){box.textContent='台灣時間模組尚未載入；暫停官方資料時點判定。';box.dataset.status='error';return}
+ const today=taiwan.today();
+ const previousMonth=taiwan.prevMonth(today);
+ const releaseEligible=snapshot.records.filter(r=>r.publication_date<=today&&r.month<=previousMonth);
  const cross=releaseEligible.filter(r=>r.verification==='CROSS_VERIFIED').at(-1);
  const pending=releaseEligible.filter(r=>r.verification==='BULLETIN_ONLY_PENDING_PRIMARY').at(-1);
- const reportYear=Number(snapshot.records.at(-1).month.slice(0,4)),year=Number(d.slice(0,4));
- const unavailable=year>reportYear||(!sameYearRecords.length&&year!==reportYear);
- const lastReleaseAge=cross?days(d,cross.publication_date):Infinity;
+ const lastMonth=releaseEligible.find(r=>r.month===previousMonth);
+ const lastReleaseAge=cross?days(today,cross.publication_date):Infinity;
  const fresh=!!cross&&lastReleaseAge<=120&&lastReleaseAge>=0;
- const now=new Date().toISOString().slice(0,10);
- const snapshotAge=days(now,snapshot.source_checked_at_utc.slice(0,10));
+ const snapshotAge=days(today,snapshot.source_checked_at_utc.slice(0,10));
  const staleSnapshot=snapshotAge>75;
- let yoy='尚無當年官方資料',heading='尚無當年官方資料',extra='';
- if(unavailable){
-  extra=safe(year)+' 年尚未有可供該年度使用的已查證 CPI；網站不會把 '+safe(reportYear)+' 年的數字當成 '+safe(year)+' 年官方通膨。';
- }else if(fresh){
-  yoy=(cross.official_yoy_pct>0?'+':'')+cross.official_yoy_pct.toFixed(2)+'%';
-  heading='已查證月度 CPI（非全年指數）';
-  extra='統計 '+safe(cross.month)+'，公布 '+safe(cross.publication_date)+'；官方公告同月年增率，該月指數經雙來源核對。';
- }else if(cross){
-  heading='已查證歷史月度資料／目前過期';
-  extra='最新合格的舊月份為 '+safe(cross.month)+'，但對本決策日已超過 120 天；不能視為最新決策依據。';
- }else{
-  extra='在 '+safe(d)+' 年初決策日期以前，沒有已雙來源核對且完成公布的可用月份。';
- }
- const pendingHtml=!unavailable&&pending?
-  '<p class="cpi-pending">待雙來源確認：'+safe(pending.month)+' 官方新聞稿公布年增率 '+safe(pending.official_yoy_pct.toFixed(2))+
-  '%（'+safe(pending.publication_date)+' 公布）。主 Excel 尚未核對，不納入「已查證」數值。 <a href="'+safe(pending.official_source_url)+'" target="_blank" rel="noopener noreferrer">查看公告</a></p>':'';
- const details=snapshot.records.map(r=>'<li>'+safe(r.month)+'：'+safe(r.verification)+
+ const yoy=fresh?(cross.official_yoy_pct>0?'+':'')+cross.official_yoy_pct.toFixed(2)+'%':'尚無近期已查證資料';
+ const heading=fresh?'已查證月度資料（非全年 CPI）':cross?'最近已查證月份已過期':'尚無雙來源已查證月份';
+ const lastMonthText=lastMonth?
+  (lastMonth.verification==='CROSS_VERIFIED'?'上個月（'+previousMonth+'）已完成雙來源核對。':
+   lastMonth.verification==='BULLETIN_ONLY_PENDING_PRIMARY'?'上個月（'+previousMonth+'）已公布，但尚待主資料核對。':
+   '上個月（'+previousMonth+'）出現不同資料版本，須進一步確認。'):
+  '上個月（'+previousMonth+'）目前沒有可供使用的官方公告紀錄；不以其他月份冒充上個月。';
+ const extra=cross?
+  '最近可用的已查證月份：'+safe(cross.month)+'（公布 '+safe(cross.publication_date)+'）。'+safe(lastMonthText):
+  '截至台灣 '+safe(today)+'，'+safe(lastMonthText)+'目前沒有可用的雙來源已查證月度資料。';
+ const pendingHtml=pending?
+  '<p class="cpi-pending">最新待核對月份：'+safe(pending.month)+'；公告年增率 '+safe(pending.official_yoy_pct.toFixed(2))+
+  '%（'+safe(pending.publication_date)+' 公布）。此數字不能視為已完成雙來源查證。 <a href="'+safe(pending.official_source_url)+'" target="_blank" rel="noopener noreferrer">查看官方公告</a></p>':'';
+ const details=releaseEligible.map(r=>'<li>'+safe(r.month)+'：'+safe(r.verification)+
   '；CPI '+safe(r.index.toFixed(2))+(r.verification==='HISTORICAL_VINTAGE_DIFFERENCE'?'／主資料修訂值 '+safe(r.primary_index.toFixed(2)):'')+
   '；發布 '+safe(r.publication_date)+'</li>').join('');
- box.dataset.status=fresh&&!staleSnapshot?'verified':(unavailable?'no-year-data':staleSnapshot?'stale':'pending');
+ box.dataset.status=staleSnapshot?'stale':fresh?'verified':'pending';
  box.innerHTML='<div class="cpi-heading"><strong class="cpi-state-title">主計總處 CPI 公開快照</strong><span class="cpi-status">'+safe(heading)+'</span></div>'+
-  '<div class="cpi-public-grid"><div><small>最近官方可用通膨率（該月份年增率）</small><strong>'+safe(yoy)+'</strong></div>'+
-  '<div><small>相對 2026 年全年購買力基準累積物價變化</small><strong>尚無全年官方基準</strong></div>'+
-  '<div><small>當年通膨調整後正常生活費</small><strong>尚無當年官方資料</strong></div></div>'+
+  '<div class="cpi-public-grid"><div><small>最近已查證月份年增率</small><strong>'+safe(yoy)+'</strong></div>'+
+  '<div><small>上個月官方資料狀態</small><strong>'+safe(lastMonth?lastMonth.verification==='CROSS_VERIFIED'?'已查證':lastMonth.verification==='BULLETIN_ONLY_PENDING_PRIMARY'?'待雙來源核對':'資料版本差異':'尚未取得公告')+'</strong></div></div>'+
   '<p class="cpi-caption">'+extra+'</p>'+pendingHtml+
-  (staleSnapshot?'<p class="cpi-warning">此公開快照已逾 75 天未同步；可能不是最新公布資料，請查原始官方公告。</p>':'')+
-  '<p class="cpi-caption">2026 年全年 CPI 年平均尚未正式完成公布，不能以 7 月指數或演練預設值取代；正常生活費 2026 實質基準為 NT$650,000，與 B＋85 實際核准額不同。本區僅讀取官方來源快照，不自動修改手動欄位或既有年度紀錄。</p>'+
+  (staleSnapshot?'<p class="cpi-warning">此公開快照已逾 75 天未重新核對，請查主計總處最新公告。</p>':'')+
+  '<p class="cpi-caption">查詢基準：台灣 '+safe(today)+'，統計月份最多截至 '+safe(previousMonth)+'。2026 全年 CPI 年平均尚無已確認基準，因此不提供官方累積物價變化或官方換算生活費。模擬年度的 CPI 輸入不會因本卡自動改寫。</p>'+
   '<details class="cpi-source-detail"><summary>進階資料：原始 CPI、來源與核對紀錄</summary>'+
   '<p>統一基期：'+safe(snapshot.index_base)+'。來源最後核對 '+safe(snapshot.source_checked_at_utc.slice(0,10))+
   '（UTC）。來源狀態：'+safe(snapshot.source_status)+'。<a href="'+safe(snapshot.source_list_url)+'" target="_blank" rel="noopener noreferrer">主計總處物價新聞稿</a></p>'+
@@ -85,7 +80,5 @@ async function load(){
  }catch(e){snapshot=null;loadError=e.message||'無法驗證快照'}
  paint();
 }
-decision.addEventListener('input',paint);
-decision.addEventListener('change',paint);
 load();
 })();
