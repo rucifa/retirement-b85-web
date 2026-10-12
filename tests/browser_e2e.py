@@ -34,6 +34,7 @@ async def main():
             assert await page.locator('#dashboard-baseline').is_hidden()
             assert await page.locator('#inflation-preview').is_hidden()
             assert await page.locator('#dashboard-kpis .dash-kpi').count()==4
+            assert await page.locator('#dashboard-kpis #dash-cpi-month, #dashboard-kpis #dash-years').count()==0
             assert await page.locator('#dashboard-cpi-card').count()==1
             assert await page.locator('#dashboard-baseline article').count()==4
             assert await page.locator('#dashboard-lower .dash-widget').count()==3
@@ -112,9 +113,9 @@ async def main():
             await page.locator('#approve-btn').click()
             await page.locator('#opening-tag').filter(has_text='等待年末結算').wait_for(timeout=180000)
             a=await page.locator('#opening-result').inner_text()
-            assert 'PoS' in a and '核准生活費' in a
+            assert 'PoS' in a and '建議生活費' in a
             assert '通膨換算後正常生活費' in a
-            assert '今年核准生活費' in a
+            assert '今年建議生活費' in a
             # A single primary annual result; no second large recommendation widget.
             assert await page.locator('#opening-result .metric.featured').count()==1
             assert await page.locator('.dash-recommendation, #dash-recommend-body').count()==0
@@ -129,6 +130,37 @@ async def main():
             assert '81/366' in a
             assert '全年模型參考 PoS' in a
             assert '首年' in (await page.locator('#dash-budget-sub').inner_text())
+            # Year-one floor/recommendation difference uses the SAME CPI-adjusted
+            # nominal year and the same 81/366-day spending period as the engine.
+            model_year=await page.evaluate('() => state.years[state.years.length-1]')
+            comparable=await page.evaluate('y => window.B85_BUDGET_COMPARISON.compare(y)',model_year)
+            assert comparable['minimum']==round(model_year['floor_reference_twd']*model_year['calendar_fraction'])
+            assert comparable['recommended']==round(model_year['living_authorized_twd'])
+            assert await page.locator('#dash-minimum').inner_text()==f"NT$ {comparable['minimum']:,}"
+            if comparable['difference']>0:
+                assert await page.locator('#dash-difference-card').get_attribute('data-state')=='surplus'
+                assert await page.locator('#dash-difference').inner_text()==f"＋NT$ {comparable['difference']:,}"
+            elif comparable['difference']<0:
+                assert await page.locator('#dash-difference-card').get_attribute('data-state')=='shortfall'
+                assert await page.locator('#dash-difference').inner_text()==f"−NT$ {abs(comparable['difference']):,}"
+            else:
+                assert await page.locator('#dash-difference-card').get_attribute('data-state')=='equal'
+            # Deterministic independent UI cases: positive, negative, invalid and full year.
+            cases=await page.evaluate('''() => {
+              const calc=window.B85_BUDGET_COMPARISON.compare;
+              return [
+                calc({floor_reference_twd:400000,living_authorized_twd:593034,calendar_first_year:true,calendar_fraction:317/365}),
+                calc({floor_reference_twd:400000,living_authorized_twd:310000,calendar_first_year:true,calendar_fraction:1}),
+                calc({floor_reference_twd:400000,living_authorized_twd:410000,calendar_first_year:false,calendar_fraction:0.5}),
+                calc({floor_reference_twd:400000,living_authorized_twd:410000,calendar_first_year:true,calendar_fraction:0}),
+                calc({floor_reference_twd:null,living_authorized_twd:410000})
+              ];
+            }''')
+            assert cases[0]['minimum']==round(400000*317/365) and cases[0]['difference']>0
+            assert cases[1]['difference']<0
+            assert cases[2]['minimum']==400000 and cases[2]['difference']==10000
+            assert cases[3] is None and cases[4] is None
+            print('BROWSER_LIVING_FLOOR_SAME_PERIOD_CPI_AND_SHORTFALL_CASES_PASS')
             assert await page.locator('#dash-guardrail-pos').inner_text()!='—'
             assert await page.locator('[data-guardrail-zone].active').count()==1
             assert 'Guardrail 後全年額度' in (await page.locator('#dash-guardrail-breakdown').inner_text())
@@ -146,6 +178,7 @@ async def main():
             print('BROWSER_GUARDRAIL_REAL_POLICY_AND_USER_EDITABLE_SCENARIOS_PASS')
             print('BROWSER_OCTOBER_FIRST_YEAR_ACTUAL_DAY_PRORATION_PASS')
             assert await page.locator('#dashboard-baseline').is_visible()
+            assert await page.locator('#dashboard-baseline').get_attribute('open') is None
             print('BROWSER_SPENDING_BASELINE_AND_INFLATION_REVEAL_ONLY_AFTER_APPROVAL_PASS')
             print('BROWSER_INFLATION_SPENDING_RESULT_PASS')
             await page.locator('#dash-budget').filter(has_text='NT$').wait_for(timeout=15000)
@@ -249,6 +282,7 @@ async def main():
                 await custom.locator('#approve-btn').click()
                 await custom.locator('#opening-tag').filter(has_text='等待年末結算').wait_for(timeout=180000)
                 assert '個人化生活費研究 v1' in (await custom.locator('#dash-engine-name').inner_text())
+                await custom.locator('#dashboard-baseline summary').click()
                 assert '920,000' in (await custom.locator('#dash-baseline-normal').inner_text())
                 assert '700,000' in (await custom.locator('#dash-baseline-core').inner_text())
                 assert '520,000' in (await custom.locator('#dash-baseline-floor').inner_text())
@@ -279,8 +313,9 @@ async def main():
                 assert saved['normal_twd']==350000
                 assert saved['core_twd']==350000
                 assert saved['floor_twd']==350000
+                await essential.locator('#dashboard-baseline summary').click()
                 assert '350,000' in (await essential.locator('#dash-baseline-floor').inner_text())
-                assert '今年核准生活費' in (await essential.locator('#opening-result').inner_text())
+                assert '今年建議生活費' in (await essential.locator('#opening-result').inner_text())
                 await essential.locator('.capacity-research .capacity-grid article').first.wait_for(timeout=180000)
                 inverse_text=await essential.locator('.capacity-research').inner_text()
                 assert '95%' in inverse_text and '99%' in inverse_text

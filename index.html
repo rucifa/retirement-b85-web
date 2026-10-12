@@ -12,22 +12,25 @@
 <div class="main-col"><header class="topbar"><div class="breadcrumb">退休規劃 <span>／</span> <strong id="breadcrumb-current">年初核准</strong></div><div class="status-pill"><span class="status-dot"></span> 研究演練 · 尚未正式 ACTIVE</div></header>
 <main class="main-content">
  <div class="hero"><div class="hero-copy"><div class="eyebrow">一年只需兩次確認</div><h1>把退休過成你想要的生活。</h1><p>不用計算複雜公式。年初看可以花多少，年末核對還剩多少，其他交給 B＋85 基準或個人化研究引擎；研究結果尚非正式提款建議。</p></div><div class="hero-art" aria-hidden="true"><div class="orbit orbit-a"></div><div class="orbit orbit-b"></div><div class="orb-core">B<span>＋</span>85<small>ANNUAL PLAN</small></div></div></div>
- <section class="dash-kpis" id="dashboard-kpis" aria-label="年度規劃摘要">
- <article class="dash-kpi dash-kpi-primary"><div class="dash-kpi-icon" aria-hidden="true">＄</div><div><small>本年度核准生活費</small><strong id="dash-budget">尚未試算</strong><p id="dash-budget-sub">完成年初核准後顯示</p></div></article>
- <article class="dash-kpi"><div class="dash-kpi-icon" aria-hidden="true">◇</div><div><small>PoS 模型成功機率</small><strong id="dash-pos">—</strong><p id="dash-pos-sub">依 B＋85 政策計算</p></div></article>
- <article class="dash-kpi"><div class="dash-kpi-icon" aria-hidden="true">▥</div><div><small>最近雙來源已查證 CPI</small><strong id="dash-cpi-month">讀取中</strong><p id="dash-cpi-sub">僅顯示官方已核對月份</p></div></article>
- <article class="dash-kpi"><div class="dash-kpi-icon" aria-hidden="true">▤</div><div><small>已保存年度</small><strong id="dash-years">0 年</strong><p id="dash-years-sub">僅保存在此瀏覽器</p></div></article>
+ <section class="dash-kpis dash-spending-overview" id="dashboard-kpis" aria-label="退休生活費比較摘要">
+ <article class="dash-kpi" id="dash-minimum-card"><div class="dash-kpi-icon" aria-hidden="true">▤</div><div><small>我的最低必要生活費</small><strong id="dash-minimum">待試算</strong><p id="dash-minimum-sub">試算後按相同期間與物價換算</p></div></article>
+ <article class="dash-kpi dash-kpi-primary" id="dash-budget-card"><div class="dash-kpi-icon" aria-hidden="true">＄</div><div><small>今年建議生活費</small><strong id="dash-budget">尚未試算</strong><p id="dash-budget-sub">依輸入資產與 B＋85 模型試算</p></div></article>
+ <article class="dash-kpi dash-kpi-difference" id="dash-difference-card" data-state="pending"><div class="dash-kpi-icon" aria-hidden="true">↗</div><div><small id="dash-difference-title">與最低需求相比</small><strong id="dash-difference">待試算</strong><p id="dash-difference-sub" role="status">完成試算後顯示可增加的預算或缺口</p></div></article>
+ <article class="dash-kpi" id="dash-pos-card"><div class="dash-kpi-icon" aria-hidden="true">◇</div><div><small>模型成功機率（PoS）</small><strong id="dash-pos">—</strong><p id="dash-pos-sub">完整年度模型參考值，非保證</p></div></article>
  </section>
+ <p class="dash-overview-hint" id="dash-overview-hint">生活費比較僅包含一般生活費，不含換車與其他必要支出；首年會按實際退休天數及通膨調整。模型結果不是終生保證或最高安全提款額。</p>
  <div class="notice"><span class="notice-icon">!</span><div><strong>目前為瀏覽器研究演練</strong><p>可實際輸入、儲存與匯出年度紀錄；但沒有連線驗證券商或實際支付；CPI 公開快照僅提供已知官方數字與來源核對狀態，因此不會把結果標示為已核准的真實提款指令。</p></div></div>
  <div id="runtime-status" class="notice" role="status"><span class="notice-icon">…</span><div><strong id="runtime-title">正在載入 B＋85 計算引擎</strong><p id="runtime-detail">第一次載入需下載瀏覽器版 Python 與 NumPy，請保持網路連線。</p></div></div>
  <div id="alert" class="alert" hidden role="alert"></div>
  <section id="panel-opening" class="panel"><div class="section-head"><div><div class="eyebrow green">STEP 01</div><h2>年初・確認今年的生活預算</h2><p>第一次建立退休起始資料，以後自動延續上一年結算紀錄。</p></div><span id="opening-tag" class="tag">準備輸入</span></div>
  <div id="opening-result" class="results hidden"></div>
- <div class="baseline-block hidden" id="dashboard-baseline" aria-label="試算完成後顯示的生活費基準"><h3>生活費用基準 <small>2026 年實質金額／非當年核准額</small></h3>
- <div class="baseline-grid"><article><span>正常生活費</span><strong id="dash-baseline-normal">NT$ 650,000</strong><small id="dash-baseline-normal-month">2026 實質，每月約 54,167 元</small></article>
- <article><span>核心生活費（參考層）</span><strong id="dash-baseline-core">NT$ 600,000</strong><small id="dash-baseline-core-month">2026 實質，每月 50,000 元</small></article>
- <article><span>Floor 最低必要支出</span><strong id="dash-baseline-floor">NT$ 500,000</strong><small id="dash-baseline-floor-month">2026 實質，每月約 41,667 元</small></article>
- <article><span>安全現金目標</span><strong>NT$ 2,400,000</strong><small>退休啟動時名目政策基準</small></article></div></div>
+ <details class="baseline-block hidden" id="dashboard-baseline" aria-label="生活費設定與計算參考">
+ <summary>查看原本的生活費設定與計算參考 <small>進階資訊・不等於今年可提領金額</small></summary>
+ <p class="baseline-explain">以下金額是以 2026 年物價估算的<strong>全年設定</strong>，與首頁已換算成「當年、相同期間」的最低必要生活費不同。模型可能依資產與 Guardrail 調整建議生活費，並非只能花設定的金額。</p>
+ <div class="baseline-grid"><article><span>原本希望的全年生活費</span><strong id="dash-baseline-normal">NT$ 650,000</strong><small id="dash-baseline-normal-month">2026 年物價・全年設定</small></article>
+ <article><span>模型的中間生活費參考值</span><strong id="dash-baseline-core">NT$ 600,000</strong><small id="dash-baseline-core-month">進階研究參數，不是另外一筆支出</small></article>
+ <article><span>原本設定的最低必要生活費</span><strong id="dash-baseline-floor">NT$ 500,000</strong><small id="dash-baseline-floor-month">2026 年物價・全年設定</small></article>
+ <article><span>退休安全現金準備目標</span><strong>NT$ 2,400,000</strong><small>退休啟動時名目政策目標，非可額外花用的生活費</small></article></div></details>
  <form id="opening-form" class="form-card">
  <h3>年度基本資料</h3><div class="grid-form"><label class="field"><span>決策日期 <em>必填</em></span><input id="decision_date" type="date" required/><small>首次進入使用瀏覽器時鐘換算為台灣今天（非伺服器授時）；已儲存的年度接續日期不會覆寫。可自行選擇試算日期。</small><small id="decision-month-guidance" class="decision-month-guidance" role="status">首年可自選日期，生活費按剩餘曆年天數計算。</small><button type="button" id="use-january-date" class="dash-text-link" hidden>舊版一月試算快捷鍵</button></label>
  <label class="field"><span>預計額外必要支出（新台幣）</span><input id="planned_extra_twd" type="number" min="0" step="0.01" value="0" required/><small>例如已確定的大額醫療費用；定期換車由政策自動列入。</small></label></div>
@@ -65,6 +68,7 @@
  <aside id="dashboard-rail" class="dashboard-rail" aria-label="官方物價與政策狀態">
   <section class="dash-widget dash-cpi-card" id="dashboard-cpi-card" aria-labelledby="dash-cpi-title">
    <div class="dash-widget-head"><h3 id="dash-cpi-title"><span class="dash-widget-icon" aria-hidden="true">▥</span> 官方 CPI 快照</h3><small>資料來源：行政院主計總處</small></div>
+   <div class="dash-cpi-meta">最近已核對月份 <strong id="dash-cpi-month">讀取中</strong><small id="dash-cpi-sub">僅採用官方已公布的資料</small></div>
    <div id="official-cpi-panel" class="official-cpi-panel" role="status" aria-live="polite">正在讀取官方 CPI 快照…</div>
    <div id="dash-cpi-trend" class="dash-cpi-trend" aria-label="官方 CPI 已公布月份年增率圖">正在準備月度走勢…</div>
    <a class="dash-outline-link" href="https://www.stat.gov.tw/News.aspx?n=2668" target="_blank" rel="noopener noreferrer">前往查看完整 CPI 資料 <span aria-hidden="true">↗</span></a>
@@ -103,7 +107,7 @@
    </div>
   </section>
    <div class="dash-lower-side" aria-label="年度紀錄與注意事項">
-   <section class="dash-widget dash-history-summary" aria-labelledby="dash-history-title"><div class="dash-widget-head"><h3 id="dash-history-title"><span class="dash-widget-icon" aria-hidden="true">▤</span> 年度紀錄</h3><button type="button" class="dash-text-link" data-go="history">查看全部 →</button></div><div id="dash-recent-years">尚無已保存年度</div></section>
+   <section class="dash-widget dash-history-summary" aria-labelledby="dash-history-title"><div class="dash-widget-head"><h3 id="dash-history-title"><span class="dash-widget-icon" aria-hidden="true">▤</span> 年度紀錄 <small id="dash-years" class="dash-years-count">0 年</small></h3><button type="button" class="dash-text-link" data-go="history">查看全部 →</button></div><div id="dash-recent-years">尚無已保存年度</div><p id="dash-years-sub" class="dash-years-help">僅保存在此瀏覽器</p></section>
    <section class="dash-widget dash-risk-notes" aria-labelledby="dash-risk-title"><div class="dash-widget-head"><h3 id="dash-risk-title"><span class="dash-widget-icon" aria-hidden="true">!</span> 使用前的重要提醒</h3></div>
      <p>官方 CPI 查證快照與手動演練數值彼此獨立；正式全年基準尚未完成時，不會當成已確認的通膨換算。</p>
      <p>本網站不連接金融帳戶，所有年度紀錄只存在此瀏覽器，請定期匯出 JSON 備份。</p></section>

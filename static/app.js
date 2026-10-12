@@ -82,7 +82,7 @@ function budgetHtml(y){
  const annual=part?`按日換算前全年生活費 ${twMoney(y.full_year_living_reference_twd)}，首年核准 ${total}。車輛及額外必要支出不按天數縮減。`:'';
  return `<div class="result-caption">${y.year} 年・${y.age} 歲・${period}・B＋85 研究演練</div>
  <div class="result-grid">
- ${metric('今年核准生活費',total,true)}
+ ${metric('今年建議生活費',total,true)}
  ${metric('全年模型參考 PoS',pos)}
  ${metric('換車專項預算',car)}
  </div><div class="progress-track"><div class="progress-bar" style="width:${Math.max(0,Math.min(100,y.pos_pct))}%"></div></div>

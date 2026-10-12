@@ -15,19 +15,54 @@ const text=(id,value)=>{const el=$(id);if(el)el.textContent=String(value);};
 function lastAnnual(){
  const s=stateRead();return s?.years?.length?s.years[s.years.length-1]:null;
 }
+// Read the model's already CPI-converted nominal annual floor reference.
+// Only the FIRST retirement year gets calendar proration; future years remain full-year.
+// This is a read-only comparison, never an input to the B+85 annual engine.
+function compareAnnualLivingBudget(year){
+ const positiveAmount=x=>x!==null&&x!==undefined&&x!==''&&Number.isFinite(Number(x))&&Number(x)>=0;
+ if(!year||!positiveAmount(year.floor_reference_twd)||!positiveAmount(year.living_authorized_twd))return null;
+ const fullYearFloor=Number(year.floor_reference_twd);
+ if(fullYearFloor<=0)return null;
+ const fraction=year.calendar_first_year?Number(year.calendar_fraction):1;
+ if(!Number.isFinite(fraction)||fraction<=0||fraction>1)return null;
+ const minimum=Math.round(fullYearFloor*fraction);
+ if(minimum<=0)return null;
+ const recommended=Math.round(Number(year.living_authorized_twd));
+ const difference=recommended-minimum;
+ return {minimum,recommended,difference,pct:Math.round(Math.abs(difference)/minimum*1000)/10,
+  fraction,prorated:!!year.calendar_first_year};
+}
+// Read-only presentation helper for deterministic UI regression tests.
+window.B85_BUDGET_COMPARISON=Object.freeze({compare:compareAnnualLivingBudget});
 function updateKpis(){
  const s=stateRead(),y=lastAnnual(),years=s?.years||[];
- if(y&&fine(y.living_authorized_twd)){
-  text('dash-budget',money(Number(y.living_authorized_twd)));
-  text('dash-budget-sub',y.calendar_first_year?
-   y.year+' 年首年 '+y.calendar_days+'/'+y.calendar_year_days+' 天・生活費按日換算':
-   y.year+' 年・依 B＋85 計算（研究演練）');
- }else{
-  text('dash-budget','尚未試算');
-  text('dash-budget-sub','完成年初核准後顯示');
+ const comparison=compareAnnualLivingBudget(y);
+ text('dash-budget',y&&Number.isFinite(Number(y.living_authorized_twd))?money(Number(y.living_authorized_twd)):'尚未試算');
+ text('dash-budget-sub',y?(y.calendar_first_year?
+  y.year+' 年首年 '+y.calendar_days+'/'+y.calendar_year_days+' 天・按日計算':
+  y.year+' 年全年生活費・依 B＋85 計算')+'（不含換車與額外支出）':
+  '依輸入資產與 B＋85 模型試算');
+ text('dash-minimum',comparison?money(comparison.minimum):'待試算');
+ text('dash-minimum-sub',comparison?
+  (comparison.prorated?y.year+' 年首年 '+y.calendar_days+'/'+y.calendar_year_days+' 天':'本年度全年')+'・已換算當年物價':
+  '試算後按相同期間與物價換算');
+ const differenceCard=$('dash-difference-card');
+ let stateLabel='pending',title='與最低需求相比',value='待試算',explanation='完成試算後顯示可增加的預算或缺口';
+ if(comparison){
+  const delta=comparison.difference;
+  if(delta>0){stateLabel='surplus';title='比最低需求多出的生活費';value='＋'+money(delta);
+   explanation='同期間多 '+comparison.pct.toFixed(1)+'%・僅今年預算，不代表往後都能增加';}
+  else if(delta<0){stateLabel='shortfall';title='距離最低生活需求的缺口';value='−'+money(Math.abs(delta));
+   explanation='低於最低需求 '+comparison.pct.toFixed(1)+'%・請重新檢視資產與生活費';}
+  else{stateLabel='equal';title='與最低生活需求相當';value='NT$ 0';
+   explanation='同期間相等，無額外生活費空間';}
  }
- text('dash-pos',y&&fine(y.pos_pct)?Number(y.pos_pct).toFixed(1)+'%':'—');
- text('dash-pos-sub',y?'完整年度模型參考 PoS（未校準首年短期間）':'依 B＋85 政策計算');
+ if(differenceCard)differenceCard.dataset.state=stateLabel;
+ text('dash-difference-title',title);
+ text('dash-difference',value);
+ text('dash-difference-sub',explanation);
+ text('dash-pos',y&&Number.isFinite(Number(y.pos_pct))?Number(y.pos_pct).toFixed(1)+'%':'—');
+ text('dash-pos-sub',y?'完整年度模型參考值（非首年短期間保證）':'完整年度模型參考值，非保證');
  text('dash-years',years.length+' 年');
  text('dash-years-sub',years.length?'最早 '+years[0].year+' 年 · 最新 '+years[years.length-1].year+' 年':'僅保存在此瀏覽器');
  text('dash-policy-status',y?'已計算 '+y.year+' 年預算；'+(y.b85_restored?'符合 B＋85 恢復條件。':'以當年的 Guardrail／Sticky 結果為準。'):'目前尚無核准年度；請先執行年初試算。');
