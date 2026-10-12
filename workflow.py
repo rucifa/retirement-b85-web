@@ -222,6 +222,9 @@ class AnnualWorkflow:
             'expense_pos_contract':y.get('expense_pos_contract'),
             'assumed_drag_description':'已在 B+85 市場模型的 net_central_2026ref 情境中計入一次，年末不重扣。',
         }
+        # Derived on read; does not alter approval SHA, stored events, or policy.
+        from withdrawal_sources import attribution
+        result['withdrawal_sources']=attribution(approval,decision_cpi,activation_cpi)
         meta=y.get('calendar_first_year')
         if meta:
             result.update({

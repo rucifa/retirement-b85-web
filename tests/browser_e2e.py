@@ -174,6 +174,15 @@ async def main():
             assert '本次建議生活費預算' in a
             assert '本次安全現金橋接' in a
             assert '本次安全現金補回' in a
+            sources=await page.evaluate('() => state.years.at(-1).withdrawal_sources')
+            assert sources['status']=='RECONCILED',sources
+            assert '年度核准資金來源' in a
+            assert '尚未實際提款' in a
+            assert '定期購車' in a and '實際交易待核對' in a
+            assert abs(sources['total']['total_twd']-(
+                sources['living']['total_twd']+sources['car']['total_twd']+sources['extra']['total_twd']))<.04
+            assert await page.locator('#opening-result .source-audit tbody tr').count()==4
+            print('BROWSER_APPROVAL_SOURCE_BREAKDOWN_RECONCILES_AND_IS_NOT_A_TRADE_PASS')
             assert '本次試算開始時安全現金' in a
             assert '現金補回' in a
             assert '橋接屬於生活費的資金來源' in a
