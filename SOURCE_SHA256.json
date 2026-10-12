@@ -17,7 +17,7 @@
   "policy/retirement_model_v340.py": "54dd2718a098c7f8182fcc44db980c523c2859fdaa276c50e81e8f8ea8712f10",
   "policy/simple_annual_ledger.py": "f1bc90cde15cbe08edb466297f693099c20aa5b78779ea8d818b01df8af0e4b6",
   "projection_research.py": "bd6a31427d81e5da0d6877d57a5a632504abf84714a7b989ff45c295d5cbd767",
-  "pyodide-worker.js": "4a71ff2859047cd3265161effd406dd1ae1fcda376ac4b76848078311daef4e1",
+  "pyodide-worker.js": "57ac72735e69a41b3fafb154404b5a4ef5fb03da27bb9cd2495bc8c7242807ea",
   "scripts/public_cpi/cpi_sources.py": "6e893e0bd5bb6330b14217ad26cce44ac590356d3231effdff1a1c63d26c7cf8",
   "scripts/public_cpi/tests/test_public_cpi.py": "790ae9178f60e0d223849b1d5f8ffa4c699ce159fbc9103a37036d2f7d7d6a80",
   "scripts/public_cpi/update.py": "604dfed24b86e1d871b6b824ed73c9dfc142f912818f6f35122d649fbe1c7d4a",
@@ -38,6 +38,6 @@
   "tests/test_projection_research.py": "6a7bff0236d70364c4feeb86b39823e3967ca4c6a9918fd1c92c77e47b6a9183",
   "workflow.py": "a67e179ddc766c9d98156d522e3e604eaaf7628099bc6177addcf5c74f17c985",
   "withdrawal_sources.py": "565b0ef0e8b52883776bfd1c0830e12e87c1c3f1cdb930465e2e356e6b2843d6",
-  "tests/test_withdrawal_sources.py": "5786a3e7fea666824ed5ef1c8a3bb100f1b4099148dbd9bc15168ac370c6244f",
+  "tests/test_withdrawal_sources.py": "8ea7be2e628b694f77111df20d61cd5b5f9c25cf8f589e36fe7d2cf35edf7daa",
   "README.md": "f8674f3beac5cd0cae3a7d19953d5599ac5e06788a9c8794ce918b561d499c95"
 }
