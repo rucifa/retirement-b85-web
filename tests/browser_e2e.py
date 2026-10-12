@@ -12,7 +12,12 @@ async def main():
         logs=[]
         page.on('console',lambda c: logs.append('console: '+c.text[:300]))
         page.on('pageerror',lambda e: logs.append('js-error: '+str(e)[:450]))
-        page.on('dialog',lambda dialog: asyncio.create_task(dialog.accept('清除演練') if dialog.type=='prompt' else dialog.accept()))
+        async def handle_dialog(dialog):
+            if '清除這個瀏覽器' in dialog.message:
+                assert chr(92)+'n' not in dialog.message
+                assert chr(10) in dialog.message
+            await dialog.accept('清除演練') if dialog.type=='prompt' else await dialog.accept()
+        page.on('dialog',lambda dialog: asyncio.create_task(handle_dialog(dialog)))
         try:
             await page.goto('http://127.0.0.1:8766/',wait_until='domcontentloaded')
             await page.locator('#runtime-status.ready').wait_for(timeout=180000)
@@ -50,7 +55,15 @@ async def main():
             assert latest_rate in panel
             assert latest_public['month'] in panel
             assert await page.locator('#latest-cpi-index').inner_text()==f"{latest_public['index']:.2f}"
-            assert await page.locator('#cpi_2026').input_value()=='110'
+            cpi_months=[x for x in snapshot['current_year_chart']
+                if x['month'].startswith('2026-') and x['month']<=latest_public['month']]
+            annual_proxy=sum(x['index'] for x in cpi_months)/len(cpi_months)
+            assert abs(float(await page.locator('#cpi_2026').input_value())-annual_proxy)<0.011
+            assert '1～' in (await page.locator('#cpi-reference-explanation').inner_text())
+            assert await page.locator('#floor_spend_2026_twd').input_value()==''
+            assert await page.locator('#normal_spend_2026_twd').input_value()==''
+            assert not await page.locator('#core_spend_2026_twd').is_visible()
+            print('BROWSER_NO_FIXED_110_CPI_AND_MINIMUM_FIRST_SPENDING_PASS')
             assert await page.locator('.cpi-manual-input').is_visible()
             chart=snapshot.get('current_year_chart') or []
             assert len(chart)<=12
@@ -89,7 +102,11 @@ async def main():
             await page.locator('.cpi-manual-input summary').click()
             await page.locator('#decision_cpi').fill('125')
             await page.locator('#decision_cpi_release').fill('2036-10-07')
-            assert await page.locator('#cpi_2026').input_value()=='110'
+            assert abs(float(await page.locator('#cpi_2026').input_value())-annual_proxy)<0.011
+            await page.locator('#floor_spend_2026_twd').fill('500000')
+            assert '最低需求' in (await page.locator('#spending-profile-preview').inner_text())
+            await page.locator('#normal_spend_2026_twd').fill('650000')
+            assert await page.locator('#core_spend_2026_twd').input_value()=='600000'
             assert await page.locator('#inflation-preview').is_hidden()
             print('BROWSER_CPI_TAIWAN_ASOF_AND_SIMULATION_ISOLATION_PASS')
             await page.locator('#approve-btn').click()
@@ -98,7 +115,11 @@ async def main():
             assert 'PoS' in a and '核准生活費' in a
             assert '通膨換算後正常生活費' in a
             assert '今年核准生活費' in a
-            assert '738,636' in a
+            import re
+            converted=650000*125/float(await page.locator('#cpi_2026').input_value())
+            match=re.search(r'通膨換算後正常生活費\s+NT\$\s*([\d,]+)',a)
+            assert match is not None, a
+            assert abs(float(match.group(1).replace(',',''))-converted)<2
             assert '81/366' in a
             assert '全年模型參考 PoS' in a
             assert '首年' in (await page.locator('#dash-budget-sub').inner_text())
@@ -190,10 +211,12 @@ async def main():
                 await jan.locator('#decision_date').fill('2026-01-01')
                 await jan.locator('#decision_cpi').evaluate("(el)=>{el.blur()}")
                 await jan.locator('#cpi-decision-asof-note').filter(has_text='演練假設').wait_for(timeout=15000)
-                assert await jan.locator('#decision_cpi').input_value()=='110'
+                assert abs(float(await jan.locator('#decision_cpi').input_value())-annual_proxy)<0.011
                 assert await jan.locator('#decision_cpi_release').input_value()=='2026-01-01'
                 assert await jan.locator('#decision-cpi-date-caption').text_content()=='演練假設生效日（非官方公布日）'
                 assert await jan.locator('#decision_cpi').get_attribute('data-auto-source')=='SCENARIO_2026_BASELINE'
+                await jan.locator('#floor_spend_2026_twd').fill('500000')
+                await jan.locator('#normal_spend_2026_twd').fill('650000')
                 await jan.locator('#approve-btn').click()
                 await jan.locator('#opening-tag').filter(has_text='等待年末結算').wait_for(timeout=180000)
                 assert '本年 CPI 為演練假設' in (await jan.locator('#opening-result').inner_text())
@@ -209,9 +232,11 @@ async def main():
                 await custom.locator('#runtime-status.ready').wait_for(timeout=180000)
                 await custom.locator('#decision_date').fill('2026-01-01')
                 await custom.locator('#cpi-decision-asof-note').filter(has_text='演練假設').wait_for(timeout=15000)
-                await custom.locator('#normal_spend_2026_twd').fill('920000')
-                await custom.locator('#core_spend_2026_twd').fill('700000')
                 await custom.locator('#floor_spend_2026_twd').fill('520000')
+                await custom.locator('#normal_spend_2026_twd').fill('920000')
+                assert await custom.locator('#core_spend_2026_twd').input_value()=='786667'
+                await custom.locator('#spending-core-details summary').click()
+                await custom.locator('#core_spend_2026_twd').fill('700000')
                 assert await custom.locator('#spending-profile-preview').get_attribute('data-valid')=='true'
                 await custom.locator('#approve-btn').click()
                 await custom.locator('#opening-tag').filter(has_text='等待年末結算').wait_for(timeout=180000)
