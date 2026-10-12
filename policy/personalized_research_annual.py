@@ -1,8 +1,7 @@
-"""GENERALIZED_RESEARCH_v1 annual decision fork.
-
-Original documented policy gates stay intact. Browser-generated synthetic
-personalized plans are research only; not DOCUMENTED certification.
-"""
+# GENERALIZED_RESEARCH_v1 annual decision fork.
+# 
+# Original documented policy gates stay intact. Browser-generated synthetic
+# personalized plans are research only; not DOCUMENTED certification.
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """B+85 formal candidate annual REVIEW adapter. NO trading or automatic deployment.

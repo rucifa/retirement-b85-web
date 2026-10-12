@@ -1,10 +1,9 @@
-"""GENERALIZED_RESEARCH_v1: independently forked v3.4.0 policy engine.
-
-Origin: policy/retirement_model_v340.py, whose SHA256 must remain frozen.
-Only research configuration normal/core spending parameters differ from the
-canonical source. The original policy is not modified or superseded.
-Not certified as a new formal retirement policy.
-"""
+# GENERALIZED_RESEARCH_v1: independently forked v3.4.0 policy engine.
+# 
+# Origin: policy/retirement_model_v340.py, whose SHA256 must remain frozen.
+# Only research configuration normal/core spending parameters differ from the
+# canonical source. The original policy is not modified or superseded.
+# Not certified as a new formal retirement policy.
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """退休模型 B+85 v3.4.0 Release Policy Engine (offline; not live), adapted from FROZEN v3.3.9 Canonical Reference Engine.

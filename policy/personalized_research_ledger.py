@@ -1,9 +1,8 @@
-"""GENERALIZED_RESEARCH_v1 annual ledger fork, not formal policy.
-
-The finance mechanics follow unchanged simple_annual_ledger.py, but compute
-new approvals from personalized_research_annual/research_engine instead.
-Existing closed yearly records keep the original ledger path.
-"""
+# GENERALIZED_RESEARCH_v1 annual ledger fork, not formal policy.
+# 
+# The finance mechanics follow unchanged simple_annual_ledger.py, but compute
+# new approvals from personalized_research_annual/research_engine instead.
+# Existing closed yearly records keep the original ledger path.
 """Research-only, minimal, two-phase yearly accounting for B+85.
 
 Money is in *retirement-activation-year* real TWD millions (not nominal

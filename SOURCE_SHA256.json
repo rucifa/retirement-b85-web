@@ -23,7 +23,7 @@
   "calendar_first_year.py": "32820dbc95b55944e50f1cd5ad6c426428418cfca55d124f8d0566166192c67e",
   "tests/test_calendar_first_year.py": "32126bf5570e0f811a11d13f4efac6fb3b140fd236edcb4ac1ce42492e322429",
   "spending_profile.py": "d279b1cb56f30c1e64de0fcb0e2a27a6703b1508bf5c5060d7eff502ec043f29",
-  "policy/personalized_research_engine.py": "02cab159d65b3bcb49254b3e21f4ea64a958e238c04e6b109b9903ec3c7c860e",
-  "policy/personalized_research_annual.py": "502499ec64d608a657c4c185098f6866eb77cef9e181dc5da87bf72a7f373e8c",
-  "policy/personalized_research_ledger.py": "772a5b02053764c5347afdd875806e37372df8f47b79c2d578f03a0718bf5445"
+  "policy/personalized_research_engine.py": "9cbbd4d71b4ee2f04dbdcd2dd46cfcddd193e80baada85bc658f5c4dd8a9ad5d",
+  "policy/personalized_research_annual.py": "3f42fcf86a0076a12f87b7ac40f252d24cf79318f7db939e979dea9906a93456",
+  "policy/personalized_research_ledger.py": "0e2af1102fd6b038fb1226b18f8922ddd454bdbe37028ed8643ecba4b1682da1"
 }
