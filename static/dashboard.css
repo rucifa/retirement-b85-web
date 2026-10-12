@@ -205,3 +205,16 @@ body{color:var(--dash-ink);background:linear-gradient(150deg,#edf9fa 0%,#f6f8fb 
 #cpi-simple-inputs{margin-top:12px}
 
 .cpi-decision-asof-note{margin:10px 0 0;padding:9px 12px;background:#ecf8f7;border-radius:8px;color:#285f69;font-size:12px;line-height:1.55}
+
+/* CPI point details on mouse hover and keyboard focus. */
+#dash-cpi-trend{position:relative}
+#dash-cpi-trend .cpi-point-hit{cursor:help;pointer-events:all}
+#dash-cpi-trend .cpi-point-hit:focus{stroke:#0b9a8d;stroke-width:2;outline:0}
+#dash-cpi-trend .cpi-hover-tooltip{
+ position:absolute;z-index:5;transform:translate(-50%,-100%);
+ pointer-events:none;min-width:160px;max-width:95%;
+ border-radius:9px;padding:8px 11px;
+ background:#0c4e5c;color:#fff;font-size:12px;font-weight:650;
+ line-height:1.45;text-align:center;box-shadow:0 5px 15px rgba(10,50,66,.18);
+}
+#dash-cpi-trend .cpi-hover-tooltip[hidden]{display:none!important}

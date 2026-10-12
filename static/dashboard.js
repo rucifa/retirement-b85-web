@@ -123,12 +123,47 @@ function trend(records){
   svg+='<path d="M'+a.x.toFixed(1)+' '+a.y.toFixed(1)+' L'+b.x.toFixed(1)+' '+b.y.toFixed(1)+'" fill="none" stroke="#168f9d" stroke-width="2.4"/>';
  }
  for(const p of points){
-  svg+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="3.1" fill="#0b9a8d"><title>'+safe(p.month)+' '+safe(p.yoy.toFixed(2))+'%・'+(p.origin==='OFFICIAL_HISTORICAL_INDEX_DERIVED'?'歷史指數計算值':'官方公告')+'</title></circle>';
+  const cx=p.x.toFixed(1),cy=p.y.toFixed(1);
+  const origin=p.origin==='OFFICIAL_HISTORICAL_INDEX_DERIVED'?'歷史指數計算值':'官方公告';
+  const rate=(p.yoy>=0?'+':'')+p.yoy.toFixed(2)+'%';
+  svg+='<circle cx="'+cx+'" cy="'+cy+'" r="3.1" fill="#0b9a8d" aria-hidden="true"/>'+
+   '<circle class="cpi-point-hit" cx="'+cx+'" cy="'+cy+'" r="12" fill="transparent" tabindex="0" role="button" aria-label="'+safe(p.month+' 年增率 '+rate+' '+origin)+'" data-month="'+safe(p.month)+'" data-rate="'+safe(rate)+'" data-origin="'+safe(origin)+'"><title>'+safe(p.month+' 年增率 '+rate+' '+origin)+'</title></circle>';
  }
  svg+='<text x="'+l+'" y="'+(h-6)+'" font-size="10" fill="#678496">'+safe(rows[0].month)+'</text>'+
  '<text x="'+(w-r)+'" y="'+(h-6)+'" font-size="10" text-anchor="end" fill="#678496">'+safe(rows.at(-1).month)+'</text></svg>';
- html+=svg;
+ html+=svg+'<div class="cpi-hover-tooltip" role="status" aria-live="polite" hidden></div>';
  box.innerHTML=html;
+}
+const cpiTrend=$('dash-cpi-trend');
+function cpiPointDetails(point){
+ const tip=cpiTrend?.querySelector('.cpi-hover-tooltip');
+ if(!tip||!point)return;
+ const month=point.dataset.month,rate=point.dataset.rate,origin=point.dataset.origin;
+ if(!/^\d{4}-\d{2}$/.test(month)||!/^[+-]?\d+(?:\.\d+)?%$/.test(rate))return;
+ tip.textContent=month.replace('-',' 年 ')+' 月　年增率 '+rate+'｜'+origin;
+ tip.hidden=false;
+ const rect=cpiTrend.getBoundingClientRect(),dot=point.getBoundingClientRect();
+ const x=dot.left+dot.width/2-rect.left,y=dot.top-rect.top;
+ tip.style.left=Math.max(88,Math.min(Math.max(88,rect.width-88),x))+'px';
+ tip.style.top=Math.max(7,y-13)+'px';
+}
+function hideCpiPointDetails(){
+ const tip=cpiTrend?.querySelector('.cpi-hover-tooltip');
+ if(tip)tip.hidden=true;
+}
+if(cpiTrend){
+ cpiTrend.addEventListener('pointerover',e=>{
+  const point=e.target.closest?.('.cpi-point-hit');if(point)cpiPointDetails(point);
+ });
+ cpiTrend.addEventListener('pointerout',e=>{
+  if(e.target.closest?.('.cpi-point-hit'))hideCpiPointDetails();
+ });
+ cpiTrend.addEventListener('focusin',e=>{
+  const point=e.target.closest?.('.cpi-point-hit');if(point)cpiPointDetails(point);
+ });
+ cpiTrend.addEventListener('focusout',e=>{
+  if(e.target.closest?.('.cpi-point-hit'))hideCpiPointDetails();
+ });
 }
 async function loadOfficialSummary(){
  try{

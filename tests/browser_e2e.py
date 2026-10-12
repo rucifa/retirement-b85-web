@@ -61,6 +61,18 @@ async def main():
                 expected_ytd=snapshot['latest_official_ytd']['average_yoy_pct']
                 assert f"{expected_ytd:+.2f}%" in panel
                 await page.locator('#dash-cpi-trend svg').wait_for(timeout=15000)
+                hits=page.locator('#dash-cpi-trend .cpi-point-hit')
+                assert await hits.count()==len(chart)
+                await hits.first.hover()
+                tooltip=page.locator('#dash-cpi-trend .cpi-hover-tooltip')
+                await tooltip.wait_for(state='visible',timeout=5000)
+                assert chart[0]['month'].replace('-',' 年 ') in (await tooltip.inner_text())
+                first_rate=chart[0]['yoy_pct']
+                assert f"{first_rate:+.2f}%" in (await tooltip.inner_text())
+                assert ('歷史指數計算值' if chart[0]['origin']=='OFFICIAL_HISTORICAL_INDEX_DERIVED' else '官方公告') in (await tooltip.inner_text())
+                await hits.last.focus()
+                assert chart[-1]['month'].replace('-',' 年 ') in (await tooltip.inner_text())
+                print('BROWSER_CPI_POINT_HOVER_KEYBOARD_RATE_AND_PROVENANCE_PASS')
                 print('BROWSER_OFFICIAL_YTD_AND_JAN_TO_DATE_CHART_PASS')
             assert '上個月官方資料狀態' not in panel
             await page.locator('#dash-cpi-month').filter(has_text=latest_public['month'].replace('-',' / ')).wait_for(timeout=15000)
@@ -144,6 +156,27 @@ async def main():
             assert '1 年' in (await page.locator('#dash-years').inner_text())
             assert await page.locator('#decision_cpi').input_value()==saved_manual_cpi
             print('BROWSER_CPI_OFFLINE_AND_INVALID_SCHEMA_PASS')
+            # Fresh, separate IndexedDB state: Jan 1, 2026 has no historical
+            # published record in the current public JSON; use explicitly
+            # labeled 2026 baseline scenario, not a fabricated official index.
+            context_jan=await browser.new_context()
+            jan=await context_jan.new_page()
+            try:
+                await jan.goto('http://127.0.0.1:8766/',wait_until='domcontentloaded')
+                await jan.locator('#runtime-status.ready').wait_for(timeout=180000)
+                await jan.locator('#decision_date').fill('2026-01-01')
+                await jan.locator('#decision_cpi').evaluate("(el)=>{el.blur()}")
+                await jan.locator('#cpi-decision-asof-note').filter(has_text='演練假設').wait_for(timeout=15000)
+                assert await jan.locator('#decision_cpi').input_value()=='110'
+                assert await jan.locator('#decision_cpi_release').input_value()=='2026-01-01'
+                assert await jan.locator('#decision_cpi-date-caption').inner_text()=='演練假設生效日（非官方公布日）'
+                assert await jan.locator('#decision_cpi').get_attribute('data-auto-source')=='SCENARIO_2026_BASELINE'
+                await jan.locator('#approve-btn').click()
+                await jan.locator('#opening-tag').filter(has_text='等待年末結算').wait_for(timeout=180000)
+                assert '本年 CPI 為演練假設' in (await jan.locator('#opening-result').inner_text())
+                print('BROWSER_JANUARY_FIRST_NO_OFFICIAL_CPI_SCENARIO_APPROVED_PASS')
+            finally:
+                await context_jan.close()
         except Exception:
             print('BROWSER_FAILURE_LAST_LOGS',json.dumps(logs[-15:],ensure_ascii=False))
             try: await page.screenshot(path='/tmp/b85_pages_browser_failure.png',full_page=True,timeout=2000)

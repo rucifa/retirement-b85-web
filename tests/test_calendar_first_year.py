@@ -73,6 +73,34 @@ class CalendarFirstYear(unittest.TestCase):
                                before.bridge_from_cash_m*(1-share))
         self.assertTrue(record['years'][0]['calendar_first_year']['pos_full_year_reference_only'])
 
+    def test_january_first_as_explicit_2026_cpi_baseline_scenario(self):
+        scenario=dict(BASE,decision_date='2026-01-01',start_age='65',
+                      decision_cpi='110',decision_cpi_release='2026-01-01',
+                      decision_cpi_source='SCENARIO_2026_BASELINE')
+        approved=self.call('approve',scenario)
+        self.assertEqual(approved['data']['approval']['calendar_days'],365)
+        self.assertEqual(approved['data']['approval']['decision_cpi_source'],'SCENARIO_2026_BASELINE')
+        self.assertAlmostEqual(approved['data']['approval']['calendar_fraction'],1)
+        self.assertEqual(approved['record']['years'][0]['cpi_decision_source'],'SCENARIO_2026_BASELINE')
+        snapshot=self.call('export')['data']
+        bridge.initialize(None)
+        restored=self.call('import',snapshot)
+        self.assertEqual(restored['data']['years'][0]['decision_cpi_source'],'SCENARIO_2026_BASELINE')
+
+    def test_scenario_rejects_mismatched_baseline(self):
+        scenario=dict(BASE,decision_date='2026-01-01',start_age='65',
+                      decision_cpi='112',decision_cpi_release='2026-01-01',
+                      decision_cpi_source='SCENARIO_2026_BASELINE')
+        with self.assertRaisesRegex(workflow.InputError,'基準假設'):
+            self.call('approve',scenario)
+
+    def test_scenario_does_not_allow_future_year(self):
+        scenario=dict(BASE,decision_date='2036-01-01',
+                      decision_cpi='110',decision_cpi_release='2036-01-01',
+                      decision_cpi_source='SCENARIO_2026_BASELINE')
+        with self.assertRaisesRegex(workflow.InputError,'2026'):
+            self.call('approve',scenario)
+
     def test_january_first_is_exact_full_year(self):
         first=self.start(decision_date='2036-01-01',
                          decision_cpi_release='2035-12-20')
