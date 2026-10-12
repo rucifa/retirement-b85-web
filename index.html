@@ -24,9 +24,9 @@
  <section id="panel-opening" class="panel"><div class="section-head"><div><div class="eyebrow green">STEP 01</div><h2>年初・確認今年的生活預算</h2><p>第一次建立退休起始資料，以後自動延續上一年結算紀錄。</p></div><span id="opening-tag" class="tag">準備輸入</span></div>
  <div id="opening-result" class="results hidden"></div>
  <div class="baseline-block hidden" id="dashboard-baseline" aria-label="試算完成後顯示的生活費基準"><h3>生活費用基準 <small>2026 年實質金額／非當年核准額</small></h3>
- <div class="baseline-grid"><article><span>正常生活費</span><strong>NT$ 650,000</strong><small>每年・月均約 54,167 元</small></article>
- <article><span>核心生活費</span><strong>NT$ 600,000</strong><small>每年・月均 50,000 元</small></article>
- <article><span>Floor 最低支出</span><strong>NT$ 500,000</strong><small>每年・月均約 41,667 元</small></article>
+ <div class="baseline-grid"><article><span>正常生活費</span><strong id="dash-baseline-normal">NT$ 650,000</strong><small id="dash-baseline-normal-month">2026 實質，每月約 54,167 元</small></article>
+ <article><span>核心生活費（參考層）</span><strong id="dash-baseline-core">NT$ 600,000</strong><small id="dash-baseline-core-month">2026 實質，每月 50,000 元</small></article>
+ <article><span>Floor 最低必要支出</span><strong id="dash-baseline-floor">NT$ 500,000</strong><small id="dash-baseline-floor-month">2026 實質，每月約 41,667 元</small></article>
  <article><span>安全現金目標</span><strong>NT$ 2,400,000</strong><small>退休啟動時名目政策基準</small></article></div></div>
  <form id="opening-form" class="form-card">
  <h3>年度基本資料</h3><div class="grid-form"><label class="field"><span>決策日期 <em>必填</em></span><input id="decision_date" type="date" required/><small>首次進入使用瀏覽器時鐘換算為台灣今天（非伺服器授時）；已儲存的年度接續日期不會覆寫。可自行選擇試算日期。</small><small id="decision-month-guidance" class="decision-month-guidance" role="status">首年可自選日期，生活費按剩餘曆年天數計算。</small><button type="button" id="use-january-date" class="dash-text-link" hidden>舊版一月試算快捷鍵</button></label>
@@ -35,7 +35,16 @@
  <label class="field"><span>退休開始年齡</span><input id="start_age" type="number" min="45" max="90" value="65" required/><small>一般試算預設 65 歲（2026 起勞保老年年金法定請領年齡），並非強制退休年齡；可自行修改。</small></label>
  <label class="field"><span>投資資產總市值（新台幣）</span><input id="investment_twd" type="number" min="0" step="0.01" value="27000000" required/><small>股票＋債券，與安全現金分開。</small></label>
  <label class="field"><span>安全現金（新台幣）</span><input id="cash_twd" type="number" min="0" step="0.01" value="2400000" required/><small>退休啟動日安全現金政策目標 240 萬元。</small></label>
- <label class="field"><span>股／債配置</span><select id="stock_bond"><option value="70/30">股票 70%／債券 30%（首選）</option><option value="65/35">股票 65%／債券 35%（保守備選）</option></select><small>這是股債比例，不是美國／非美國的股票地域比例。</small></label></div></div>
+ <label class="field"><span>股／債配置</span><select id="stock_bond"><option value="70/30">股票 70%／債券 30%（首選）</option><option value="65/35">股票 65%／債券 35%（保守備選）</option></select><small>這是股債比例，不是美國／非美國的股票地域比例。</small></label></div>
+ <div class="inner-divider"></div><h3>你的年度生活費需求 <small>以 2026 年購買力填寫</small></h3>
+ <p class="spending-profile-intro">以下是<strong>可以修改的示範值</strong>，不是人人固定花費。三者應滿足 Floor ≤ 核心 ≤ 正常；新輸入將使用獨立的個人化研究引擎重新計算 PoS、Guardrail 與提領額度。</p>
+ <div class="grid-form spending-profile-form" id="spending-profile-inputs">
+  <label class="field"><span>正常生活費（元／年）<em>必填</em></span><input id="normal_spend_2026_twd" type="number" min="12000" max="10000000" step="1" value="650000" required/><small>退休時希望維持的年度生活品質；不以資產多寡自動推定。</small></label>
+  <label class="field"><span>核心生活費（元／年）<em>必填</em></span><input id="core_spend_2026_twd" type="number" min="12000" max="10000000" step="1" value="600000" required/><small>希望盡量維持的核心生活水準；僅是參考層，不會重複扣款。</small></label>
+  <label class="field"><span>Floor 最低必要支出（元／年）<em>必填</em></span><input id="floor_spend_2026_twd" type="number" min="12000" max="10000000" step="1" value="500000" required/><small>基本生活不可低於的支出下限；會影響 Floor 風險計算。</small></label>
+ </div>
+ <p id="spending-profile-preview" class="spending-profile-preview" role="status">可自行修改生活費。安全現金政策目標目前仍沿用 240 萬研究基準，不會自動隨生活費變動。</p>
+ </div>
  
  <div class="inner-divider"></div><div class="hrow"><h3>生活費與通膨換算</h3><span class="tag subdued">CPI 資料由 GitHub 自動取得・基準指數可自行調整</span></div>
  <div class="grid-form" id="cpi-simple-inputs">
