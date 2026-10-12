@@ -139,8 +139,17 @@ function updateDecisionMonthHelp(){
 $('use-january-date')?.addEventListener('click',()=>{
  const d=$('decision_date').value;
  if(!/^\d{4}-\d{2}-\d{2}$/.test(d))return;
- $('decision_date').value=d.slice(0,4)+'-01-15';
+ const newDate=d.slice(0,4)+'-01-15';
+ $('decision_date').value=newDate;
+ const published=$('decision_cpi_release'),index=$('decision_cpi');
+ if(published&&published.value&&published.value>newDate){
+  published.value='';
+  if(index)index.value='';
+  const small=index?.closest('label')?.querySelector('small');
+  if(small)small.textContent='原先帶入的月度 CPI 公布日在選定的一月決策日之後，因此已清除。請填入該決策日前已公開的有效 CPI 與真正公布日。';
+ }
  $('decision_date').dispatchEvent(new Event('change',{bubbles:true}));
+ renderInflationPreview();
 });
 const fieldVal=id=>$(id).value;
 function initPayload(){return {
