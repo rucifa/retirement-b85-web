@@ -101,16 +101,20 @@ async def main():
             print('BROWSER_LOCAL_JSON_IMPORT_PASS')
             assert '2036' in (await page.locator('#history-list').inner_text())
             print('B85_PAGES_BROWSER_PYODIDE_E2E_PASS')
+            saved_manual_cpi=await page.locator('#decision_cpi').input_value()
             await page.route('**/data/cpi_verified.json',lambda route:route.abort())
             await page.reload(wait_until='domcontentloaded')
             await page.locator('#official-cpi-panel[data-status="error"]').wait_for(timeout=15000)
-            assert '保留原手動輸入' in (await page.locator('#official-cpi-panel').inner_text())
+            assert await page.locator('#decision_cpi').input_value()==saved_manual_cpi
+            assert '1 年' in (await page.locator('#dash-years').inner_text())
+            print('BROWSER_CPI_OFFLINE_PRESERVES_MANUAL_INPUT_AND_HISTORY_PASS')
             await page.unroute('**/data/cpi_verified.json')
             async def bad_json(route):
                 await route.fulfill(status=200,content_type='application/json',body='{}')
             await page.route('**/data/cpi_verified.json',bad_json)
             await page.reload(wait_until='domcontentloaded')
             await page.locator('#official-cpi-panel[data-status="error"]').wait_for(timeout=15000)
+            assert await page.locator('#decision_cpi').input_value()==saved_manual_cpi
             print('BROWSER_CPI_OFFLINE_AND_INVALID_SCHEMA_PASS')
         except Exception:
             print('BROWSER_FAILURE_LAST_LOGS',json.dumps(logs[-15:],ensure_ascii=False))
