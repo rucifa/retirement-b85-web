@@ -252,6 +252,30 @@ async def main():
                 print('BROWSER_PERSONALIZED_SPENDING_MODEL_AND_DYNAMIC_BASELINE_PASS')
             finally:
                 await context_custom.close()
+            # Someone who only knows their minimum essential expenses must
+            # still be able to complete a real annual approval.
+            context_basic=await browser.new_context()
+            essential=await context_basic.new_page()
+            try:
+                await essential.goto('http://127.0.0.1:8766/',wait_until='domcontentloaded')
+                await essential.locator('#runtime-status.ready').wait_for(timeout=180000)
+                await essential.locator('#decision_date').fill('2026-01-01')
+                await essential.locator('#cpi-decision-asof-note').filter(has_text='演練假設').wait_for(timeout=15000)
+                await essential.locator('#floor_spend_2026_twd').fill('350000')
+                assert await essential.locator('#normal_spend_2026_twd').input_value()==''
+                assert await essential.locator('#core_spend_2026_twd').input_value()=='350000'
+                assert '最低需求' in (await essential.locator('#spending-profile-preview').inner_text())
+                await essential.locator('#approve-btn').click()
+                await essential.locator('#opening-tag').filter(has_text='等待年末結算').wait_for(timeout=180000)
+                saved=await essential.evaluate('() => state.plan.spending_profile')
+                assert saved['normal_twd']==350000
+                assert saved['core_twd']==350000
+                assert saved['floor_twd']==350000
+                assert '350,000' in (await essential.locator('#dash-baseline-floor').inner_text())
+                assert '今年核准生活費' in (await essential.locator('#opening-result').inner_text())
+                print('BROWSER_MINIMUM_ONLY_OPTIONAL_DESIRED_SPENDING_PASS')
+            finally:
+                await context_basic.close()
         except Exception:
             print('BROWSER_FAILURE_LAST_LOGS',json.dumps(logs[-15:],ensure_ascii=False))
             try: await page.screenshot(path='/tmp/b85_pages_browser_failure.png',full_page=True,timeout=2000)
