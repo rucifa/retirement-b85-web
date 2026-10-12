@@ -81,6 +81,20 @@ class ProjectionResearchTests(unittest.TestCase):
         c=project_saved(s,paths=256,inner_paths=128,seed=20261113);self.assertNotEqual(a['years'],c['years'])
         for args in ({'paths':0},{'paths':True},{'inner_paths':99999},{'inflation_pct':float('nan')}):
             with self.assertRaises(ValueError):project_saved(s,**args)
+
+    def test_javascript_json_integer_coercion_does_not_change_projection(self):
+        self.op('approve',BASE);s=bridge.ENGINE._state
+        # JSON.stringify(1.0) emits 1, unlike Python's json.dumps(1.0).
+        def browser_json(value):
+            if isinstance(value,dict):return {k:browser_json(v) for k,v in value.items()}
+            if isinstance(value,list):return [browser_json(v) for v in value]
+            if isinstance(value,float) and value.is_integer():return int(value)
+            return value
+        transported=browser_json(s)
+        a=project_saved(s,paths=256,inner_paths=128)
+        b=project_saved(transported,paths=256,inner_paths=128)
+        self.assertEqual(a['years'],b['years'])
+        self.assertEqual(a['diagnostics'],b['diagnostics'])
     def test_completed_104_no_future_and_start90_full_horizon(self):
         self.op('approve',dict(BASE,start_age='90'))
         r=self.op('projection',{'paths':256,'inner_paths':128})['data']

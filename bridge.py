@@ -26,7 +26,7 @@ def _validate_import(export: dict):
     if record.get('schema')!=1 or not isinstance(record.get('years'),list):
         raise InputError('備份版本或年度結構不相容')
     years=record['years']
-    if len(years)>51:raise InputError('年度數量超出 104 歲模型範圍')
+    if len(years)>60:raise InputError('年度數量超出 104 歲模型範圍')
     if bool(years)!=bool(record.get('plan')):
         raise InputError('退休計畫與年度紀錄不一致')
     if years:
@@ -52,6 +52,8 @@ def _validate_import(export: dict):
         if calendar_contract is not None and calendar_contract != CALENDAR_MODE:
             raise InputError('未知的曆年首年規格')
         if not isinstance(first_year,int) or not isinstance(start_age,int):raise InputError('備份起始資訊錯誤')
+        if not 45<=start_age<=90 or len(years)>105-start_age:
+            raise InputError('備份年度或年齡超出 104 歲模型範圍')
         for i,row in enumerate(years):
             if not isinstance(row,dict) or not isinstance(row.get('approval'),dict):raise InputError('備份年度格式不正確')
             appr=hydrate_approval(row['approval']);opening=appr.opening

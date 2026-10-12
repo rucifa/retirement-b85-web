@@ -2,7 +2,7 @@
   ".github/workflows/cpi-public-scheduled.yml": "9e3873af62ba6e619f547ab6680f9e4bf6aa3ef7c241aae30cf41105e47ded9b",
   ".github/workflows/verify-b85-pages.yml": "552370d7accc1866ee970423afa521c14e7a53a0257ae21fef6d3591a6099fd5",
   ".nojekyll": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "bridge.py": "80c51c63a7107d289cde28ddcfd2afb677566672f6be67aa41a2d8acc4a081ae",
+  "bridge.py": "1a5d60c5f028d4ea249f04bced9b2bf9c2073bc0eaebacf401785d5d15180e18",
   "calendar_first_year.py": "32820dbc95b55944e50f1cd5ad6c426428418cfca55d124f8d0566166192c67e",
   "capacity_research.py": "db456b3b5422c2f2df4d27e43e1dc09b4ab307025354bd1f81d5979d4d934e22",
   "data/cpi_verified.json": "f6263bab421e97082479f03a06fe018b73a424b5a79216aab952cfd0424af07f",
@@ -16,7 +16,7 @@
   "policy/personalized_research_ledger.py": "0e2af1102fd6b038fb1226b18f8922ddd454bdbe37028ed8643ecba4b1682da1",
   "policy/retirement_model_v340.py": "54dd2718a098c7f8182fcc44db980c523c2859fdaa276c50e81e8f8ea8712f10",
   "policy/simple_annual_ledger.py": "f1bc90cde15cbe08edb466297f693099c20aa5b78779ea8d818b01df8af0e4b6",
-  "projection_research.py": "66a5c838b26b6db77da732ca81fd68ad9df5293edb8e9c64a80a90971ec7bd61",
+  "projection_research.py": "bd6a31427d81e5da0d6877d57a5a632504abf84714a7b989ff45c295d5cbd767",
   "pyodide-worker.js": "a4dc8440cdc530fd82d6864f4bb33f6cacc0538fc1f99c697e56988c8deb93ba",
   "scripts/public_cpi/cpi_sources.py": "6e893e0bd5bb6330b14217ad26cce44ac590356d3231effdff1a1c63d26c7cf8",
   "scripts/public_cpi/tests/test_public_cpi.py": "790ae9178f60e0d223849b1d5f8ffa4c699ce159fbc9103a37036d2f7d7d6a80",
@@ -35,6 +35,6 @@
   "tests/test_inverse_capacity.py": "733d3ddb6ad460b07dc1c709ea7c2fa70a97941f2c58ffcb7713685385853d6f",
   "tests/test_pages_bridge.py": "fd69d6f9054f5fe1a432060a88bb254cb03f84c8c8be37b3ce86e4fddac3e03b",
   "tests/test_personalized_spending.py": "8b058f5b0de7df6370c538a7e355172af765cf6e7b840b0f7ab7d3856ba3bf5a",
-  "tests/test_projection_research.py": "746906acc677f5d68e37d248ef39ecf4ccc3ef269e268e299c857a9f5335d095",
+  "tests/test_projection_research.py": "6a7bff0236d70364c4feeb86b39823e3967ca4c6a9918fd1c92c77e47b6a9183",
   "workflow.py": "afcaf0df8c9b4edce6cdede172e63230f50ce0ce6859fb2ba18d42b0ff9d8550"
 }
