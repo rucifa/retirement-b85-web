@@ -36,19 +36,22 @@
  <label class="field"><span>投資資產總市值（新台幣）</span><input id="investment_twd" type="number" min="0" step="0.01" value="27000000" required/><small>股票＋債券，與安全現金分開。</small></label>
  <label class="field"><span>安全現金（新台幣）</span><input id="cash_twd" type="number" min="0" step="0.01" value="2400000" required/><small>退休啟動日安全現金政策目標 240 萬元。</small></label>
  <label class="field"><span>股／債配置</span><select id="stock_bond"><option value="70/30">股票 70%／債券 30%（首選）</option><option value="65/35">股票 65%／債券 35%（保守備選）</option></select><small>這是股債比例，不是美國／非美國的股票地域比例。</small></label></div>
- <div class="inner-divider"></div><h3>你的年度生活費需求 <small>以 2026 年購買力填寫</small></h3>
- <p class="spending-profile-intro">以下是<strong>可以修改的示範值</strong>，不是人人固定花費。三者應滿足 Floor ≤ 核心 ≤ 正常；新輸入將使用獨立的個人化研究引擎重新計算 PoS、Guardrail 與提領額度。</p>
+ <div class="inner-divider"></div><h3>退休後，你一年至少需要多少生活費？</h3>
+ <p class="spending-profile-intro">先填<strong>一年省不掉的生活費</strong>，再看看以你輸入的資產，這套退休規則會算出多少年度生活預算。下方「希望花多少」可留空；若留空，會先用最低需求進行試算。</p>
  <div class="grid-form spending-profile-form" id="spending-profile-inputs">
-  <label class="field"><span>正常生活費（元／年）<em>必填</em></span><input id="normal_spend_2026_twd" type="number" min="12000" max="10000000" step="1" value="650000" required/><small>退休時希望維持的年度生活品質；不以資產多寡自動推定。</small></label>
-  <label class="field"><span>核心生活費（元／年）<em>必填</em></span><input id="core_spend_2026_twd" type="number" min="12000" max="10000000" step="1" value="600000" required/><small>希望盡量維持的核心生活水準；僅是參考層，不會重複扣款。</small></label>
-  <label class="field"><span>Floor 最低必要支出（元／年）<em>必填</em></span><input id="floor_spend_2026_twd" type="number" min="12000" max="10000000" step="1" value="500000" required/><small>基本生活不可低於的支出下限；會影響 Floor 風險計算。</small></label>
+  <label class="field"><span>一年最低需要的生活費（元）<em>必填</em></span><input id="floor_spend_2026_twd" type="number" min="12000" max="10000000" step="1" placeholder="例如：350000" required/><small>例如房租、吃飯、保險、水電與基本醫療。請填<strong>一年合計</strong>、以 2026 年物價估算。</small></label>
+  <label class="field"><span>如果可以，一年希望花多少（元）<small>選填</small></span><input id="normal_spend_2026_twd" type="number" min="12000" max="10000000" step="1" placeholder="可留空，先按最低生活費試算"/><small>想維持的生活方式。留空時以最低需求作為模型的期望預算起點；不是自動算出最大安全提款額。</small></label>
  </div>
- <p id="spending-profile-preview" class="spending-profile-preview" role="status">可自行修改生活費。安全現金政策目標目前仍沿用 240 萬研究基準，不會自動隨生活費變動。</p>
+ <details class="advanced spending-core-advanced" id="spending-core-details"><summary>進階：調整模型的中間生活費參考值（通常不用改）</summary>
+  <p>這是研究模型使用的中間參考值，<strong>不會額外扣一次費用</strong>。系統會依上面兩個金額自動帶入；只有需要自行研究時才改。</p>
+  <label class="field"><span>中間生活費參考值（元／年）</span><input id="core_spend_2026_twd" type="number" min="12000" max="10000000" step="1" value="500000" required/><small>必須介於最低需求與希望生活費之間。</small></label>
+ </details>
+ <p id="spending-profile-preview" class="spending-profile-preview" role="status">填入最低必要費用後，按下方按鈕計算今年的年度生活預算。安全現金政策目標目前仍維持 240 萬。</p>
  </div>
  
  <div class="inner-divider"></div><div class="hrow"><h3>生活費與通膨換算</h3><span class="tag subdued">CPI 資料由 GitHub 自動取得・基準指數可自行調整</span></div>
  <div class="grid-form" id="cpi-simple-inputs">
-  <label class="field" id="reference_cpi_field"><span>選填：2026 年 CPI 基準指數（2021＝100）</span><input id="cpi_2026" type="number" step="0.01" min="10" value="110"/><small>留空將採用 110 作為<strong>演練假設</strong>，不是官方公布的 2026 全年 CPI；你可自行調整。</small></label>
+  <label class="field" id="reference_cpi_field"><span>2026 年購買力參考指數（自動取得，可修改）</span><input id="cpi_2026" type="number" step="0.01" min="10" placeholder="正在讀取 GitHub 的 CPI 資料…" required/><small id="cpi-reference-explanation">系統將依 GitHub 已公布的 2026 年各月份 CPI 指數計算暫時平均值；這不是尚未公布的全年官方平均。</small></label>
   <div class="field" id="latest-cpi-readonly"><span>最新官方 CPI 指數（自動取得）</span><div class="dash-live-value" id="latest-cpi-index" aria-live="polite">讀取中…</div><small id="latest-cpi-meta">來自 GitHub 官方 CPI 快照；不需選擇公布日期。</small></div>
  </div><p id="cpi-decision-asof-note" class="cpi-decision-asof-note" role="status" aria-live="polite">正在比對決策日可用的 CPI…</p>
  <details class="advanced cpi-manual-input"><summary>進階：歷史決策的 CPI 及公布日期（通常不需修改）</summary><p>目前年度依決策日前已公布資料自動選取。下列欄位供研究舊年度或來源缺漏時自行校核；已儲存年度不會被覆寫。</p>
@@ -57,7 +60,7 @@
  </details>
  <div id="inflation-preview" class="inflation-preview hidden" role="status" aria-live="polite"></div><p class="privacy-help">通膨換算後正常生活費會在完成試算後，與 B＋85 核准結果一併顯示。2026 全年 CPI 尚未認證，手動假設不會被標示為官方資料。</p>
  <details class="advanced inflation-help"><summary>為什麼需要 CPI？這不是直接輸入通膨率嗎？</summary><p>通膨率是兩個可比較時點的 CPI 變化。底層需保留 CPI 以換算 2026 年實質生活費、年末資產購買力及跨年紀錄；畫面會優先呈現通膨和新台幣生活費。第一次建立時，若沒有去年同期 CPI，會顯示「尚無同期資料」，不會捏造全年通膨率。資料需採相同基期，且僅可使用當時已公布版本；本網站另顯示官方快照與核對狀態，但不會把尚未公布的 2026 全年基準或未查證月份自動回填模型。</p></details>
- <div class="form-footer"><div class="tiny-info">核准只保留一份額度，不等於資金已經支出。</div><button class="primary-btn" type="submit" id="approve-btn">計算今年可花多少 <span>→</span></button></div>
+ <div class="form-footer"><div class="tiny-info">試算結果會建立本機年度帳本。顯示的是模型給的生活費預算，不是保證能花的金額或「最大可提款額」。</div><button class="primary-btn" type="submit" id="approve-btn">試算今年可安排的生活費 <span>→</span></button></div>
  </form>
  <aside id="dashboard-rail" class="dashboard-rail" aria-label="官方物價與政策狀態">
   <section class="dash-widget dash-cpi-card" id="dashboard-cpi-card" aria-labelledby="dash-cpi-title">
