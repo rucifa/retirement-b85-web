@@ -7,7 +7,7 @@ const CDN=`https://cdn.jsdelivr.net/pyodide/v${VERSION}/full/`;
 let runtime=null;
 let ready=false;
 let busy=Promise.resolve();
-const sourceFiles=['workflow.py','bridge.py','calendar_first_year.py','policy/__init__.py','policy/retirement_model_v340.py','policy/annual_execution_v340.py','policy/simple_annual_ledger.py'];
+const sourceFiles=['workflow.py','bridge.py','calendar_first_year.py','spending_profile.py','policy/__init__.py','policy/retirement_model_v340.py','policy/annual_execution_v340.py','policy/simple_annual_ledger.py','policy/personalized_research_engine.py','policy/personalized_research_annual.py','policy/personalized_research_ledger.py'];
 function progress(message){self.postMessage({type:'progress',message});}
 async function getRuntime(){
   if(runtime)return runtime;
