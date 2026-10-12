@@ -37,11 +37,15 @@
  <label class="field"><span>安全現金（新台幣）</span><input id="cash_twd" type="number" min="0" step="0.01" value="2400000" required/><small>退休啟動日安全現金政策目標 240 萬元。</small></label>
  <label class="field"><span>股／債配置</span><select id="stock_bond"><option value="70/30">股票 70%／債券 30%（首選）</option><option value="65/35">股票 65%／債券 35%（保守備選）</option></select><small>這是股債比例，不是美國／非美國的股票地域比例。</small></label></div></div>
  
- <div class="inner-divider"></div><div class="hrow"><h3>生活費與通膨換算</h3><span class="tag subdued">先看金額；指數僅供後端換算</span></div>
- <details class="advanced cpi-manual-input"><summary>手動 CPI／演練假設（展開原始指數）</summary><p>只有手動確認並提交的 CPI 會送入 B＋85 演練計算。公開官方快照不會覆寫你的輸入或已保存年度。</p>
- <div class="grid-form"><label class="field" id="reference_cpi_field"><span>2026 年 CPI 基準指數（2021＝100）</span><input id="cpi_2026" type="number" step="0.01" min="10" value="110" required/><small>110 為<span class="em-strong">示範假設</span>，不是已認證的 2026 全年指數。</small></label>
- <label class="field"><span>決策時最近可用的 CPI 指數</span><input id="decision_cpi" type="number" step="0.01" min="10" placeholder="載入最近已查證 CPI…" required/><small>若可取得決策日以前已公布且雙來源已查證的月度 CPI，會於首次試算前帶入；可自行修改，未核對的上月資料不會自動帶入。</small></label>
- <label class="field"><span>該 CPI 的官方公布日期</span><input id="decision_cpi_release" type="date" required/><small>首次試算會以已查證 CPI 的實際發布日帶入；修改 CPI 時請同步核對公布日期。</small></label></div></details>
+ <div class="inner-divider"></div><div class="hrow"><h3>生活費與通膨換算</h3><span class="tag subdued">CPI 資料由 GitHub 自動取得・基準指數可自行調整</span></div>
+ <div class="grid-form" id="cpi-simple-inputs">
+  <label class="field" id="reference_cpi_field"><span>選填：2026 年 CPI 基準指數（2021＝100）</span><input id="cpi_2026" type="number" step="0.01" min="10" value="110"/><small>留空將採用 110 作為<strong>演練假設</strong>，不是官方公布的 2026 全年 CPI；你可自行調整。</small></label>
+  <div class="field" id="latest-cpi-readonly"><span>最新官方 CPI 指數（自動取得）</span><div class="dash-live-value" id="latest-cpi-index" aria-live="polite">讀取中…</div><small id="latest-cpi-meta">來自 GitHub 官方 CPI 快照；不需選擇公布日期。</small></div>
+ </div>
+ <details class="advanced cpi-manual-input"><summary>進階：歷史決策的 CPI 及公布日期（通常不需修改）</summary><p>目前年度依決策日前已公布資料自動選取。下列欄位供研究舊年度或來源缺漏時自行校核；已儲存年度不會被覆寫。</p>
+  <div class="grid-form"><label class="field"><span>此次試算採用的 CPI 指數</span><input id="decision_cpi" type="number" step="0.01" min="10" placeholder="正在比對資料庫…" required/><small>以當時已正式公布、基期一致的官方 CPI 指數為準，無法取得時請手動提供有效資料。</small></label>
+  <label class="field"><span>上述 CPI 的官方公布日期</span><input id="decision_cpi_release" type="date" required/><small>自動帶入來源公布日；若自行修改，公布日期不得晚於決策日期。</small></label></div>
+ </details>
  <div id="inflation-preview" class="inflation-preview hidden" role="status" aria-live="polite"></div><p class="privacy-help">通膨換算後正常生活費會在完成試算後，與 B＋85 核准結果一併顯示。2026 全年 CPI 尚未認證，手動假設不會被標示為官方資料。</p>
  <details class="advanced inflation-help"><summary>為什麼需要 CPI？這不是直接輸入通膨率嗎？</summary><p>通膨率是兩個可比較時點的 CPI 變化。底層需保留 CPI 以換算 2026 年實質生活費、年末資產購買力及跨年紀錄；畫面會優先呈現通膨和新台幣生活費。第一次建立時，若沒有去年同期 CPI，會顯示「尚無同期資料」，不會捏造全年通膨率。資料需採相同基期，且僅可使用當時已公布版本；本網站另顯示官方快照與核對狀態，但不會把尚未公布的 2026 全年基準或未查證月份自動回填模型。</p></details>
  <div class="form-footer"><div class="tiny-info">核准只保留一份額度，不等於資金已經支出。</div><button class="primary-btn" type="submit" id="approve-btn">計算今年可花多少 <span>→</span></button></div>

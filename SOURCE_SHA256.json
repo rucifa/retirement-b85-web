@@ -1,7 +1,7 @@
 {
   ".nojekyll": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
   "bridge.py": "d1397517091fee07f9f608ef953b632bc633c9c63388ec7af9324790bcd07f1a",
-  "index.html": "ebe1e564a532d5c6d29e235f50a073bd2c1ebd2ebfd395d3f2cc1814a614e43b",
+  "index.html": "12f48ef21b06e0d4d4d4faf0f6bfd64838067e2830bcbfd3c81f2e9a4f2f07e2",
   "policy/__init__.py": "c351713828d38702d7b6562661a8e52511e0c63d370d55a77109263a4a7ea0e1",
   "policy/annual_execution_v340.py": "4e92b2a6b3d7166ca7536b6afdcb3ce6bffd90ac8f94d7a47e0231c266eee0df",
   "policy/retirement_model_v340.py": "54dd2718a098c7f8182fcc44db980c523c2859fdaa276c50e81e8f8ea8712f10",
@@ -13,7 +13,7 @@
   "workflow.py": "130809eaf5863ed960a56bfc0596b18abb811cf9b5794b21682b526e6de58ffe",
   "tests/browser_e2e.py": "ba41472d7cf8359dc1deb3a7376e1557e8d0b3dd9cc84c8f84f881a826df268c",
   "data/cpi_verified.json": "fc0981bcdc1572c3a47f9af27a7e0a3fe9917f16e2711838b159ca900dfce3bf",
-  "static/cpi-official.js": "68e160ae196bb4129ce1fc2288d5c92e14339a9b474fac6f3c7ba44f303b55e5",
+  "static/cpi-official.js": "45c2272fc90ecd7a0e0b787d7aba7b27fa45158e8ec82dd8957610efe034dcd1",
   "scripts/public_cpi/cpi_sources.py": "6e893e0bd5bb6330b14217ad26cce44ac590356d3231effdff1a1c63d26c7cf8",
   "scripts/public_cpi/update.py": "604dfed24b86e1d871b6b824ed73c9dfc142f912818f6f35122d649fbe1c7d4a",
   "scripts/public_cpi/tests/test_public_cpi.py": "790ae9178f60e0d223849b1d5f8ffa4c699ce159fbc9103a37036d2f7d7d6a80",

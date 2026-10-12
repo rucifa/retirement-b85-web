@@ -35,6 +35,7 @@ function paint(){
  const taiwan=window.B85_TAIWAN_TIME;
  if(!taiwan){box.textContent='台灣時間模組尚未載入；暫停官方資料時點判定。';box.dataset.status='error';return}
  const today=taiwan.today(),previousMonth=taiwan.prevMonth(today);
+ const live=document.getElementById('latest-cpi-index'),meta=document.getElementById('latest-cpi-meta');
  // Every number below was checked against its official bulletin and attached Table-1 XLSX
  // by GitHub before publishing. The historical XLS may trail the publication.
  const eligible=snapshot.records.filter(r=>r.publication_date<=today&&r.month<=previousMonth);
@@ -44,6 +45,8 @@ function paint(){
  const rate=latest?(latest.official_yoy_pct>0?'+':'')+latest.official_yoy_pct.toFixed(2)+'%':'尚無官方公告';
  const month=latest?latest.month:'尚無可用月份';
  const released=latest?latest.publication_date:'—';
+ if(live)live.textContent=latest?Number(latest.index).toFixed(2):'尚無公告';
+ if(meta)meta.textContent=latest?latest.month+' 官方指數・公布 '+latest.publication_date+'；若模擬歷史日期，試算仍以當時已公布數值為準。':'尚未取得最新公布指數，請稍後重試。';
  const lastMonth=eligible.find(r=>r.month===previousMonth);
  const ageText=latest?.month===previousMonth?
   '上個月的官方 CPI 公告已收錄；歷史資料庫同步進度請見進階資料。':
