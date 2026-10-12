@@ -381,6 +381,8 @@ async def main():
             # Known spending is included in PoS and first-year cash flow exactly once.
             context_extra=await browser.new_context()
             extra_page=await context_extra.new_page()
+            extra_page.on('console',lambda c: logs.append('extra-console: '+c.text[:700]))
+            extra_page.on('pageerror',lambda e: logs.append('extra-js-error: '+str(e)[:1500]))
             try:
                 await extra_page.goto('http://127.0.0.1:8766/',wait_until='domcontentloaded')
                 await extra_page.locator('#runtime-status.ready').wait_for(timeout=180000)
@@ -425,7 +427,8 @@ async def main():
                 assert abs(annual['pos_pct']-100*expected_pos)<.006
                 await extra_page.locator('#dash-mc-tab').click()
                 await extra_page.locator('#mc-run').click()
-                await extra_page.locator('#mc-status[data-state="complete"]').wait_for(timeout=240000)
+                await extra_page.wait_for_function("['complete','error','cancelled','stale'].includes(document.getElementById('mc-status').dataset.state)",timeout=240000)
+                assert await extra_page.locator('#mc-status').get_attribute('data-state')=='complete', await extra_page.locator('#mc-status').inner_text()
                 result=await extra_page.evaluate('window.B85_MC_RESEARCH.getResult()')
                 independent=project_saved(saved,paths=2048,inner_paths=512)
                 assert result['end_age']==104 and result['all_paths_included']
@@ -476,7 +479,8 @@ async def main():
                 await extra_page.locator('#dash-mc-tab').click()
                 await extra_page.locator('#mc-precision').select_option('higher')
                 await extra_page.locator('#mc-run').click()
-                await extra_page.locator('#mc-status[data-state="complete"]').wait_for(timeout=240000)
+                await extra_page.wait_for_function("['complete','error','cancelled','stale'].includes(document.getElementById('mc-status').dataset.state)",timeout=240000)
+                assert await extra_page.locator('#mc-status').get_attribute('data-state')=='complete', await extra_page.locator('#mc-status').inner_text()
                 high=await extra_page.evaluate('window.B85_MC_RESEARCH.getResult()')
                 assert high['paths']==8192 and high['inner_paths']==2048
                 assert high['years'][0]['year']==2027 and high['years'][-1]['age']==104
