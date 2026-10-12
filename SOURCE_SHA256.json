@@ -13,11 +13,11 @@
   "workflow.py": "130809eaf5863ed960a56bfc0596b18abb811cf9b5794b21682b526e6de58ffe",
   "tests/browser_e2e.py": "ba41472d7cf8359dc1deb3a7376e1557e8d0b3dd9cc84c8f84f881a826df268c",
   "data/cpi_verified.json": "fc0981bcdc1572c3a47f9af27a7e0a3fe9917f16e2711838b159ca900dfce3bf",
-  "static/cpi-official.js": "f007350ceeb78660c9d3d6e63d186568c384bcd4a62ff253facdee62aca8cafe",
+  "static/cpi-official.js": "68e160ae196bb4129ce1fc2288d5c92e14339a9b474fac6f3c7ba44f303b55e5",
   "scripts/public_cpi/cpi_sources.py": "6e893e0bd5bb6330b14217ad26cce44ac590356d3231effdff1a1c63d26c7cf8",
   "scripts/public_cpi/update.py": "604dfed24b86e1d871b6b824ed73c9dfc142f912818f6f35122d649fbe1c7d4a",
   "scripts/public_cpi/tests/test_public_cpi.py": "790ae9178f60e0d223849b1d5f8ffa4c699ce159fbc9103a37036d2f7d7d6a80",
   "static/dashboard.css": "eeb0f6a3c83cf84d843d49a6aa29d6ba9942bbaa47cd1168a3647ffd98bac9be",
-  "static/dashboard.js": "a88ae3c44b4e75a33a57ca2da89ada13e5fa9b60064e3e726b5a03e87e2f68c5",
+  "static/dashboard.js": "2a2ca72d74b3bebdf73bc53c719e106ecda9207726a34814951cc4dfeaf2104e",
   "static/taiwan-time.js": "2a0e63ba7eff9ee308db9bd2d7a8c65aa47f86654c67f5c34630bed7317a202c"
 }

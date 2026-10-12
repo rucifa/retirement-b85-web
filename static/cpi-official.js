@@ -49,6 +49,11 @@ function paint(){
   '上個月的官方 CPI 公告已收錄；歷史資料庫同步進度請見進階資料。':
   '上個月（'+safe(previousMonth)+'）尚未收錄公告，以下顯示 GitHub 已保存的最近一次官方公告。';
  const statusLabel=latest?'已收錄官方公告':'尚未收錄官方公告';
+ const ytd=snapshot.latest_official_ytd;
+ const ytdValid=!!(latest&&ytd&&ytd.period===latest.month&&ytd.publication_date<=today&&
+   knownHost(ytd.source_url)&&Number.isFinite(ytd.average_yoy_pct)&&Math.abs(ytd.average_yoy_pct)<100);
+ const ytdText=ytdValid?(ytd.average_yoy_pct>0?'+':'')+Number(ytd.average_yoy_pct).toFixed(2)+'%':'尚無年初至今平均公告';
+ const ytdPeriod=ytdValid?'今年 1～'+Number(month.slice(-2))+' 月':'截至最新官方公布月份';
  const details=eligible.map(r=>'<li>'+safe(r.month)+'：'+safe(r.verification)+
   '；公告年增率 '+safe((r.official_yoy_pct>0?'+':'')+r.official_yoy_pct.toFixed(2))+'%'+
   '；公告 CPI 指數 '+safe(r.index.toFixed(2))+
@@ -57,9 +62,9 @@ function paint(){
   '；<a href="'+safe(r.official_source_url)+'" target="_blank" rel="noopener noreferrer">官方公告</a></li>').join('');
  box.dataset.status=staleSnapshot?'stale':latest?'published':'pending';
  box.innerHTML='<div class="cpi-heading"><strong class="cpi-state-title">主計總處 CPI 公開快照</strong><span class="cpi-status">'+safe(statusLabel)+'</span></div>'+
-  '<div class="cpi-public-grid"><div><small>最新官方公告年增率（'+safe(month)+'）</small><strong>'+safe(rate)+'</strong></div>'+
-  '<div><small>官方公告月份／日期</small><strong>'+safe(month)+'</strong><small>'+safe(released)+'</small></div></div>'+
-  '<p class="cpi-caption">'+ageText+' 網站直接呈現 GitHub 上的最新官方公告數字；如有後續修訂，依下一次資料更新為準。</p>'+
+  '<div class="cpi-public-grid"><div><small>'+safe(ytdPeriod)+' CPI 平均較去年同期</small><strong>'+safe(ytdText)+'</strong><small>官方年初至今累計平均</small></div>'+
+  '<div><small>最新月份年增率（'+safe(month)+'）</small><strong>'+safe(rate)+'</strong><small>公布 '+safe(released)+'</small></div></div>'+
+  '<p class="cpi-caption">'+ageText+' 網站直接呈現 GitHub 上的官方公告數字；年初至今累計平均並非各月份年增率的簡單平均。如有後續修訂，依下一次資料更新為準。</p>'+
   (staleSnapshot?'<p class="cpi-warning">GitHub 的 CPI 快照超過 75 天未重新核對，請確認自動排程是否正常執行。</p>':'')+
   '<p class="cpi-caption">查詢基準：台灣 '+safe(today)+'，最多顯示到 '+safe(previousMonth)+'。月度「年增率」不等於 2026 全年 CPI 年平均，也不會直接修改已核准的退休計算紀錄。</p>'+
   '<details class="cpi-source-detail"><summary>進階資料：原始 CPI、來源與雙來源核對紀錄</summary>'+

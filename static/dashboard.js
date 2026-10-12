@@ -99,8 +99,9 @@ function drawHistory(years){
 }
 function trend(records){
  const box=$('dash-cpi-trend');if(!box)return;
- const rows=(records||[]).filter(r=>/^\d{4}-(0[1-9]|1[0-2])$/.test(String(r.month))&&Number.isFinite(Number(r.official_yoy_pct))).
-  slice(-12).map(r=>({...r,yoy:Number(r.official_yoy_pct)}));
+ const year=String(records?.at(-1)?.month||'').slice(0,4);
+ const rows=(records||[]).filter(r=>String(r.month).startsWith(year)&&/^\d{4}-(0[1-9]|1[0-2])$/.test(String(r.month))&&Number.isFinite(Number(r.official_yoy_pct))).
+  slice(0,12).map(r=>({...r,yoy:Number(r.official_yoy_pct)}));
  if(rows.length<2){
   box.textContent='官方快照可比較的月度資料不足，暫不繪製 CPI 年增率曲線。';
   return;
@@ -108,7 +109,7 @@ function trend(records){
  const vals=rows.map(r=>r.yoy),low=Math.min(...vals)-.6,high=Math.max(...vals)+.6;
  const w=390,h=135,l=34,r=10,t=17,b=24,pw=w-l-r,ph=h-t-b;
  const points=rows.map((v,i)=>({x:l+i*pw/(rows.length-1),y:t+(high-v.yoy)/(high-low)*ph,...v}));
- let html='<p>官方公告 CPI 同月年增率（%）</p>';
+ let html='<p>今年 1 月至最近的 CPI 同月年增率（%）｜來源見資料點說明</p>';
  let svg='<svg viewBox="0 0 '+w+' '+h+'" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="已公布月度 CPI 年增率走勢">';
  for(let i=0;i<3;i++){
    const y=t+i*ph/2,axis=high-(high-low)*i/2;
@@ -120,7 +121,7 @@ function trend(records){
   svg+='<path d="M'+a.x.toFixed(1)+' '+a.y.toFixed(1)+' L'+b.x.toFixed(1)+' '+b.y.toFixed(1)+'" fill="none" stroke="#168f9d" stroke-width="2.4"/>';
  }
  for(const p of points){
-  svg+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="3.1" fill="#0b9a8d"><title>'+safe(p.month)+' '+safe(p.yoy.toFixed(2))+'%</title></circle>';
+  svg+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="3.1" fill="#0b9a8d"><title>'+safe(p.month)+' '+safe(p.yoy.toFixed(2))+'%・'+(p.origin==='OFFICIAL_HISTORICAL_INDEX_DERIVED'?'歷史指數計算值':'官方公告')+'</title></circle>';
  }
  svg+='<text x="'+l+'" y="'+(h-6)+'" font-size="10" fill="#678496">'+safe(rows[0].month)+'</text>'+
  '<text x="'+(w-r)+'" y="'+(h-6)+'" font-size="10" text-anchor="end" fill="#678496">'+safe(rows.at(-1).month)+'</text></svg>';
@@ -141,7 +142,11 @@ async function loadOfficialSummary(){
   if(!newest)throw Error('目前沒有已發布的 CPI 公告');
   text('dash-cpi-month',newest.month.replace('-',' / '));
   text('dash-cpi-sub','最新官方公告年增率 '+(newest.official_yoy_pct>0?'+':'')+Number(newest.official_yoy_pct).toFixed(2)+'%');
-  trend(eligible);
+  const yearData=Array.isArray(data.current_year_chart)?data.current_year_chart.filter(
+    x=>x.month<=maximumMonth&&x.month.slice(0,4)===newest.month.slice(0,4)):[];
+  trend(yearData.length?yearData.map(x=>({month:x.month,
+    official_yoy_pct:x.yoy_pct,origin:x.origin})):eligible);
+
  }catch{
   text('dash-cpi-month','來源暫不可用');
   text('dash-cpi-sub','不會採用未查證的 CPI 數字');
