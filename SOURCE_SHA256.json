@@ -12,7 +12,7 @@
   "tests/test_pages_bridge.py": "b365c0a78815047f3fd9b3b5b560cc48802cdd9c0d48217a4ee31aa4d60e79e1",
   "workflow.py": "130809eaf5863ed960a56bfc0596b18abb811cf9b5794b21682b526e6de58ffe",
   "tests/browser_e2e.py": "ba41472d7cf8359dc1deb3a7376e1557e8d0b3dd9cc84c8f84f881a826df268c",
-  "data/cpi_verified.json": "86741b6d11cb2553711ce2ee060f348be1b38cef328baeeea38f2ef8e4d44437",
+  "data/cpi_verified.json": "517d4d2bc2179ca00d871e6085921ff225acf21766848f0cec580c096c8e345f",
   "static/cpi-official.js": "f007350ceeb78660c9d3d6e63d186568c384bcd4a62ff253facdee62aca8cafe",
   "scripts/public_cpi/cpi_sources.py": "6e893e0bd5bb6330b14217ad26cce44ac590356d3231effdff1a1c63d26c7cf8",
   "scripts/public_cpi/update.py": "4a7b7cd7489031757d85c820aaed014d4cbf171f1e84d33e5d1efa077eaee411",
