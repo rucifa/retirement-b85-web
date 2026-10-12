@@ -64,6 +64,9 @@ function updateKpis(){
   }
  }
  drawHistory(years);
+ updateGuardrail(y);
+ drawScenario(y);
+ updateChartMode(y,years);
 }
 function drawHistory(years){
  const box=$('dash-asset-chart');if(!box)return;
@@ -165,6 +168,149 @@ if(cpiTrend){
   if(e.target.closest?.('.cpi-point-hit'))hideCpiPointDetails();
  });
 }
+
+/* Policy signals come only from the saved B+85 annual result. */
+function updateGuardrail(y){
+ const ring=$('dash-policy-ring'),num=$('dash-guardrail-pos');
+ const status=$('dash-policy-status'),detail=$('dash-guardrail-breakdown');
+ const levels=[...document.querySelectorAll('[data-guardrail-zone]')];
+ levels.forEach(el=>{el.classList.remove('active');el.removeAttribute('aria-current');});
+ if(!ring||!num||!status||!detail)return;
+ const valid=!!(y&&fine(y.pos_pct));
+ ring.style.setProperty('--dash-pos-stop',valid?clamp(Number(y.pos_pct),0,100)+'%':'0%');
+ num.textContent=valid?Number(y.pos_pct).toFixed(1)+'%':'—';
+ if(!valid){
+  status.textContent='尚未核准年度：依 B＋85 模型 PoS 判定減支／維持／增支。';
+  status.dataset.state='pending';
+  detail.textContent='核准後將顯示正常生活費、Guardrail 全年額度與首年按日換算結果。';
+  return;
+ }
+ const pos=Number(y.pos_pct);
+ const action=y.guardrail_action||(y.b85_restored?'B85_RESTORED':pos<=75?'CUT_10_PERCENT':pos>=95?'RAISE_10_PERCENT':'HOLD');
+ const zone=action==='CUT_10_PERCENT'?'cut':action==='RAISE_10_PERCENT'?'raise':'hold';
+ const el=levels.find(x=>x.dataset.guardrailZone===zone);
+ if(el){el.classList.add('active');el.setAttribute('aria-current','true');}
+ status.dataset.state=zone;
+ const changes={
+  CUT_10_PERCENT:'PoS '+pos.toFixed(1)+'% ≤ 75%，已觸發本年度 Sticky 減支 10%。',
+  HOLD:'PoS '+pos.toFixed(1)+'%，位於 75%～95% 之間，維持原 Sticky 生活預算。',
+  RAISE_10_PERCENT:'PoS '+pos.toFixed(1)+'% ≥ 95%，已觸發本年度 Sticky 增支 10%（仍有上限）。',
+  B85_RESTORED:'符合 B＋85 恢復條件，Sticky 恢復至正常額度。'
+ };
+ status.textContent=changes[action]||'本年度依 B＋85 政策 Guardrail／Sticky 規則核准。';
+ detail.replaceChildren();
+ const rows=[];
+ if(fine(y.normal_reference_twd))rows.push(['正常生活費參考（全年）',money(Number(y.normal_reference_twd))]);
+ const full=fine(y.full_year_living_reference_twd)?Number(y.full_year_living_reference_twd):
+  (fine(y.living_authorized_twd)?Number(y.living_authorized_twd):null);
+ if(full!==null)rows.push(['Guardrail 後全年額度',money(full)]);
+ if(y.calendar_first_year&&fine(y.calendar_fraction))rows.push([
+  '首年按日換算（'+y.calendar_days+'/'+y.calendar_year_days+' 天）',
+  money(Number(y.living_authorized_twd))
+ ]);
+ else if(fine(y.living_authorized_twd))rows.push(['本年核准生活費',money(Number(y.living_authorized_twd))]);
+ if(!rows.length){detail.textContent='舊年度紀錄缺少核准金額，請重新核對資料來源。';return}
+ for(let i=0;i<rows.length;i++){
+  const line=document.createElement('div');line.className='dash-step'+(i===rows.length-1?' final':'');
+  const label=document.createElement('span');label.textContent=rows[i][0];
+  const number=document.createElement('strong');number.textContent=rows[i][1];
+  line.append(label,number);detail.append(line);
+ }
+}
+let assetMode='actual',assetModeChanged=false;
+function updateChartMode(y,years){
+ if(!assetModeChanged)assetMode=(y&&!years.some(x=>!!x.closing))?'scenarios':'actual';
+ const scenario=assetMode==='scenarios';
+ const history=$('dash-asset-chart'),pane=$('dash-scenario-pane');
+ if(!history||!pane)return;
+ history.classList.toggle('hidden',scenario);
+ pane.classList.toggle('hidden',!scenario);
+ for(const [id,chosen] of [['dash-actual-tab',!scenario],['dash-scenario-tab',scenario]]){
+  const btn=$(id);if(!btn)continue;
+  btn.classList.toggle('selected',chosen);
+  btn.setAttribute('aria-pressed',chosen?'true':'false');
+ }
+}
+for(const [id,mode] of [['dash-actual-tab','actual'],['dash-scenario-tab','scenarios']]){
+ $(id)?.addEventListener('click',()=>{
+  assetModeChanged=true;assetMode=mode;
+  updateChartMode(lastAnnual(),stateRead()?.years||[]);
+  if(mode==='scenarios')drawScenario(lastAnnual());
+ });
+}
+for(const id of ['dash-return-low','dash-return-mid','dash-return-high']){
+ $(id)?.addEventListener('input',()=>drawScenario(lastAnnual()));
+}
+function forecastScenario(y,annualPct){
+ const annual=Number(y.full_year_living_reference_twd??y.living_authorized_twd);
+ const first=Number(y.living_authorized_twd);
+ const opening=Number(y.investment_open_twd)+Number(y.cash_open_twd);
+ const firstShare=y.calendar_first_year?Number(y.calendar_fraction):1;
+ if(!Number.isFinite(opening)||opening<=0||!Number.isFinite(annual)||annual<0||
+    !Number.isFinite(first)||first<0||!Number.isFinite(firstShare)||firstShare<=0||firstShare>1)
+   return [];
+ const periods=clamp(104-Number(y.age),1,49);
+ const points=[{year:Number(y.year),assets:opening/10000}];
+ let total=opening;
+ for(let i=0;i<periods;i++){
+  const spending=i===0?first:annual;
+  const fraction=i===0?firstShare:1;
+  // Constant real total-asset return; NOT original B+85 market path, future
+  // Guardrail, cash/stock split or dynamically recalculated cash bridge.
+  total=Math.max(0,total-spending)*Math.pow(1+annualPct/100,fraction);
+  if(!Number.isFinite(total))return [];
+  points.push({year:Number(y.year)+i+1,assets:total/10000});
+ }
+ return points;
+}
+function drawScenario(y){
+ const box=$('dash-scenario-chart');if(!box)return;
+ if(!y){box.textContent='先完成年度試算，才能以實際起始資產建立三種假設對照。';return;}
+ const names=[['dash-return-low','逆風'],['dash-return-mid','中性'],['dash-return-high','順風']];
+ const rates=names.map(([id])=>Number($(id)?.value));
+ if(rates.some((rate,i)=>!$(names[i][0])?.value||!Number.isFinite(rate)||rate< -99||rate>30)
+      || !(rates[0]<rates[1]&&rates[1]<rates[2])){
+  box.textContent='請輸入 −99%～＋30% 的實質年報酬假設，並保持逆風 ＜ 中性 ＜ 順風。';return;
+ }
+ const lines=rates.map(rate=>forecastScenario(y,rate));
+ if(lines.some(line=>line.length<2)||lines[0].length!==lines[1].length){
+  box.textContent='目前的年度資料不足以建立可核對的情境對照。';return;
+ }
+ const width=640,height=244,left=58,right=14,top=15,bottom=36;
+ const plotW=width-left-right,plotH=height-top-bottom;
+ const count=lines[0].length;
+ const maximum=Math.max(100,...lines.flatMap(line=>line.map(p=>p.assets)))*1.06;
+ const xx=i=>left+i/(count-1)*plotW;
+ const yy=value=>top+(1-value/maximum)*plotH;
+ const P=(line)=>line.map((p,i)=>(i?'L':'M')+xx(i).toFixed(2)+' '+yy(p.assets).toFixed(2)).join(' ');
+ const lower=lines[0],upper=lines[2],middle=lines[1];
+ const band=upper.map((p,i)=>xx(i).toFixed(2)+','+yy(p.assets).toFixed(2)).concat(
+    [...lower].reverse().map((p,i)=>xx(count-1-i).toFixed(2)+','+yy(p.assets).toFixed(2))).join(' ');
+ let svg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+width+' '+height+'" role="img" aria-label="三組不同實質報酬假設的資產餘額，非機率分布或 B＋85 蒙地卡羅預測">';
+ for(let i=0;i<=4;i++){
+  const v=maximum*(1-i/4),yPx=top+plotH*i/4;
+  svg+='<line x1="'+left+'" x2="'+(width-right)+'" y1="'+yPx+'" y2="'+yPx+'" stroke="#e2ecf0"/>'+
+   '<text x="'+(left-7)+'" y="'+(yPx+4)+'" text-anchor="end" fill="#7b929c" font-size="11">'+safe(fmt(v))+'</text>';
+ }
+ svg+='<polygon points="'+band+'" fill="#c3dceb" opacity=".30"/>';
+ const colors=['#d38d42','#159268','#4b9fda'];
+ for(let k=0;k<3;k++){
+  const line=lines[k];
+  svg+='<path d="'+P(line)+'" stroke="'+colors[k]+'" fill="none" stroke-width="'+(k===1?3:2)+'" stroke-linejoin="round" '+(k===1?'':'stroke-dasharray="5 4"')+'/>';
+  const at=Math.max(1,Math.floor(count/6));
+  for(let i=0;i<count;i+=at){
+   const p=line[i],v=fmt(p.assets);
+   svg+='<circle cx="'+xx(i).toFixed(2)+'" cy="'+yy(p.assets).toFixed(2)+'" r="4" fill="'+colors[k]+'" stroke="#fff" stroke-width="1.5"><title>'+safe(String(p.year))+' 年 '+names[k][1]+'（'+(rates[k]>0?'+':'')+rates[k]+'%） '+safe(v)+' 萬元（固定報酬情境，非預測）</title></circle>';
+  }
+ }
+ for(let i=0;i<count;i+=Math.max(1,Math.ceil((count-1)/5))){
+  const yr=lines[0][i].year;
+  svg+='<text x="'+xx(i).toFixed(2)+'" y="'+(height-11)+'" font-size="11" text-anchor="middle" fill="#6a8795">'+yr+'</text>';
+ }
+ svg+='<text x="'+(left-7)+'" y="10" font-size="10" text-anchor="end" fill="#698c99">萬元</text></svg>';
+ box.innerHTML=svg;
+}
+
 async function loadOfficialSummary(){
  try{
   const response=await fetch('./data/cpi_verified.json',{cache:'no-store'});

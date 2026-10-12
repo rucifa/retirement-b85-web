@@ -18,7 +18,7 @@
   "scripts/public_cpi/update.py": "604dfed24b86e1d871b6b824ed73c9dfc142f912818f6f35122d649fbe1c7d4a",
   "scripts/public_cpi/tests/test_public_cpi.py": "790ae9178f60e0d223849b1d5f8ffa4c699ce159fbc9103a37036d2f7d7d6a80",
   "static/dashboard.css": "8396463da1324bd9f1c3838534f049f5d05f2d904bab82181986d2ce7a1f456a",
-  "static/dashboard.js": "5600a9fddfc0835fee45eea229e55023b6bb9e8ac9cd76a2fef1007c13028e09",
+  "static/dashboard.js": "5a08343d9b94516f9dd7d7cede09c9322f147bd16759b6bf839db8c24480ebd1",
   "static/taiwan-time.js": "2a0e63ba7eff9ee308db9bd2d7a8c65aa47f86654c67f5c34630bed7317a202c",
   "calendar_first_year.py": "32820dbc95b55944e50f1cd5ad6c426428418cfca55d124f8d0566166192c67e",
   "tests/test_calendar_first_year.py": "a55d9677101feeb569d84a11fb78fede821e32ebbcd8f1c449d8c798fc875e2d"
