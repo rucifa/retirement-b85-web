@@ -7,6 +7,8 @@ Real monetary units here are activation-year TWD millions.
 from dataclasses import replace
 from math import isfinite, log1p, sqrt
 import time
+import hashlib
+from pathlib import Path
 import numpy as np
 from expense_contract import bind_current_expense, CONTRACT as EXPENSE_CONTRACT
 
@@ -168,6 +170,8 @@ def trace_paths(cfg, *, engine, paths=2048, inner_paths=512, seed=SEED,
             'required_expense_paid_fraction':float(np.mean(~mandatory_failure)),
             'extra_paid_median_m':float(np.median(extra_paid)),
             'car_paid_median_m':float(np.median(car_paid)),
+            'living_paid_median_m':float(np.median(living)),
+            'emergency_paid_median_m':float(np.median(emergency_paid)),
             'bridge_median_m':float(np.median(bridge)), 'refill_median_m':float(np.median(refill)),
             'depleted_fraction':float(np.mean(invest+cash<=1e-10))})
         if progress: progress(j+1,t)
@@ -243,6 +247,8 @@ def project_saved(state, *, paths=2048, inner_paths=512, seed=SEED, inflation_pc
         d[key+'_wilson_lower_95']=_lower_wilson(round(d[key]*paths),paths)
     return {'contract':CONTRACT,'status':'VALIDATED_CODE_RESEARCH_NOT_EXTERNALLY_CALIBRATED',
         'policy_sha256':'54dd2718a098c7f8182fcc44db980c523c2859fdaa276c50e81e8f8ea8712f10',
+        'research_engine_sha256':hashlib.sha256(Path(engine.__file__).read_bytes()).hexdigest(),
+        'projection_source_sha256':hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
         'profile_sha256':plan.get('spending_profile_sha256'),
         'source_approval_id':row['approval']['approval_id'],'source_state_sha256':workflow.digest(state),
         'asof':asof,'start_age':age0,'end_age':104,'paths':paths,'inner_paths':inner_paths,'seed':seed,

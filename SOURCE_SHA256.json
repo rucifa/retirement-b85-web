@@ -16,7 +16,7 @@
   "policy/personalized_research_ledger.py": "0e2af1102fd6b038fb1226b18f8922ddd454bdbe37028ed8643ecba4b1682da1",
   "policy/retirement_model_v340.py": "54dd2718a098c7f8182fcc44db980c523c2859fdaa276c50e81e8f8ea8712f10",
   "policy/simple_annual_ledger.py": "f1bc90cde15cbe08edb466297f693099c20aa5b78779ea8d818b01df8af0e4b6",
-  "projection_research.py": "241b76a680d7cab5ac05caf93ab9f46b3f12d27e9f1478b2a3fe07f549e0f0d5",
+  "projection_research.py": "66a5c838b26b6db77da732ca81fd68ad9df5293edb8e9c64a80a90971ec7bd61",
   "pyodide-worker.js": "dd5f328074725488f37e56c89022050803ebc0725c9c8372ee18903528da8de2",
   "scripts/public_cpi/cpi_sources.py": "6e893e0bd5bb6330b14217ad26cce44ac590356d3231effdff1a1c63d26c7cf8",
   "scripts/public_cpi/tests/test_public_cpi.py": "790ae9178f60e0d223849b1d5f8ffa4c699ce159fbc9103a37036d2f7d7d6a80",
@@ -29,12 +29,12 @@
   "static/mc-projection.js": "7b61e7d015034ca96295cec95ab81e2ff38f58afb487b776fd78d9e149fcea30",
   "static/style.css": "63f61b68ae7bae47702ddbfefc4b9a926398f5761b057337bf7e6208265691a8",
   "static/taiwan-time.js": "2a0e63ba7eff9ee308db9bd2d7a8c65aa47f86654c67f5c34630bed7317a202c",
-  "tests/browser_e2e.py": "27b0d955a3e7f3a18f70178f928b8f310840c1419047163f59adbd5e26b3661f",
+  "tests/browser_e2e.py": "0fb7791bcfb804ed71125ec752804a61208002869add5c8d10b2ffee773c9cdb",
   "tests/test_calendar_first_year.py": "32126bf5570e0f811a11d13f4efac6fb3b140fd236edcb4ac1ce42492e322429",
   "tests/test_expense_contract.py": "73b093dfceab3fb7b9ff25729a7bce8b920a163a750ffa90fce50b032d7eeb96",
   "tests/test_inverse_capacity.py": "733d3ddb6ad460b07dc1c709ea7c2fa70a97941f2c58ffcb7713685385853d6f",
   "tests/test_pages_bridge.py": "fd69d6f9054f5fe1a432060a88bb254cb03f84c8c8be37b3ce86e4fddac3e03b",
   "tests/test_personalized_spending.py": "8b058f5b0de7df6370c538a7e355172af765cf6e7b840b0f7ab7d3856ba3bf5a",
-  "tests/test_projection_research.py": "f11dd5840c806a4a0349d5686c2fe50cb565822b41c69226d7d51dd97c0b97c5",
+  "tests/test_projection_research.py": "746906acc677f5d68e37d248ef39ecf4ccc3ef269e268e299c857a9f5335d095",
   "workflow.py": "afcaf0df8c9b4edce6cdede172e63230f50ce0ce6859fb2ba18d42b0ff9d8550"
 }

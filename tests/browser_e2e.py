@@ -197,7 +197,9 @@ async def main():
             candidate_markup=await page.evaluate('y => budgetHtml({...y,bridge_from_cash_twd:123456.7,cash_refill_twd:50000,cash_open_twd:2000000,extra_authorized_twd:1500000,pos_pct:88.6})',model_year)
             assert 'NT$ 123,457' in candidate_markup and 'NT$ 50,000' in candidate_markup
             assert 'NT$ 2,000,000' in candidate_markup
-            assert '原始 PoS 的內層試算' in candidate_markup
+            assert '原始 PoS 的內層試算' not in candidate_markup
+            legacy_markup=await page.evaluate('y => budgetHtml({...y,extra_authorized_twd:1500000,extra_included_in_pos:false})',model_year)
+            assert '原始 PoS 的內層試算' in legacy_markup
             assert '不是生活費之外可以再加領的金額' in candidate_markup
             print('BROWSER_CASH_BRIDGE_AND_OPENING_CASH_FROM_POLICY_NO_DOUBLE_COUNT_PASS')
             assert '適用期間：2036/10/12～2036/12/31（含起始日，共 81 天）' in a

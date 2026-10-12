@@ -90,4 +90,27 @@ class ProjectionResearchTests(unittest.TestCase):
         s['years'][-1]['close']={'investment_next_m':1,'safety_cash_next_m':1,'sticky_next':1,'emergency_pending_next':False,'net_portfolio_real_return':0}
         with self.assertRaisesRegex(ValueError,'104'):project_saved(s,paths=256,inner_paths=128)
 
+    def test_each_year_matches_real_scalar_annual_adapter_including_emergency(self):
+        from policy.annual_execution_v340 import AnnualInput,decide_year
+        cfg=frozen.ModelConfig(start_age=65,end_age=68,car_ages=(67,),
+            forced_emergency_age=66,forced_emergency_amount=1.3,
+            extra_mandatory_expense_by_age={65:1.5},use_charity=False,
+            use_prosperity=True,prosperity_spending_mode='recommended_target')
+        rp=np.full((256,4),.03);rc=np.zeros_like(rp)
+        trace=trace_paths(cfg,engine=frozen,paths=256,inner_paths=128,injected_returns=(rp,rc))
+        inv,cash,mult,pending=cfg.initial_investment,cfg.initial_safety_cash,1.,True
+        for j,age in enumerate(range(65,69)):
+            r=decide_year(AnnualInput(decision_date=f'{2026+j}-01-01',age=age,retirement_start_age=65,
+                investment_start_m=inv,safety_cash_start_m=cash,sticky_before=mult,
+                emergency_pending=pending,previous_completed_real_portfolio_return=.03 if j else None,
+                extra_mandatory_m=cfg.extra_mandatory_expense_by_age.get(age,0.),
+                emergency_event_m=1.3 if age==66 else 0.,realized_year_portfolio_return=.03),
+                cfg,n_inner=128,seed=20261112)
+            self.assertAlmostEqual(trace['investment'][0,j],r.investment_next_start_m,places=10)
+            self.assertAlmostEqual(trace['cash'][0,j],r.safety_cash_next_start_m,places=10)
+            inv,cash,mult,pending=r.investment_next_start_m,r.safety_cash_next_start_m,r.sticky_after,r.emergency_pending_next
+        self.assertEqual(trace['annual'][1]['emergency_paid_median_m'],1.3)
+        self.assertEqual(trace['annual'][2]['emergency_paid_median_m'],0.)
+        self.assertEqual(trace['annual'][2]['car_paid_median_m'],1.2)
+
 if __name__=='__main__':unittest.main()
