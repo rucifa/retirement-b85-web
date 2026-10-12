@@ -76,6 +76,36 @@ function paint(){
   '（UTC）。來源狀態：'+safe(snapshot.source_status)+'。<a href="'+safe(snapshot.source_list_url)+'" target="_blank" rel="noopener noreferrer">主計總處物價新聞稿</a></p>'+
   '<ul>'+details+'</ul><p>來源原始檔 SHA256：<code>'+safe(snapshot.primary_source_sha256)+'</code></p></details>';
 }
+function prefillReferenceFromPublishedMonths(){
+ const base=document.getElementById('cpi_2026'),
+       help=document.getElementById('cpi-reference-explanation');
+ if(!base||!snapshot||!window.B85_TAIWAN_TIME)return;
+ try{if(typeof state!=='undefined'&&state?.years?.length)return;}catch{return;}
+ if(base.dataset.userEdited==='true')return;
+ const today=window.B85_TAIWAN_TIME.today();
+ const previous=window.B85_TAIWAN_TIME.prevMonth(today);
+ const published=snapshot.records.filter(r=>r.month.startsWith('2026-')&&r.month<=previous&&r.publication_date<=today);
+ const newest=published.at(-1);
+ const chart=snapshot.current_year_chart;
+ if(!newest||!Array.isArray(chart)||chart.length===0){
+  if(help)help.textContent='目前尚無可驗證的 2026 年 CPI 月度資料，請自行輸入基準指數並核對資料；系統不會預填虛構數字。';
+  return;
+ }
+ const monthly=chart.filter(r=>r.month?.startsWith('2026-')&&r.month<=newest.month&&Number.isFinite(r.index));
+ if(!monthly.length||monthly[0].month!=='2026-01'||monthly.at(-1).month!==newest.month){
+  if(help)help.textContent='目前無法確認年初至今每個月的 CPI，請先核對來源再自行輸入年度基準。';
+  return;
+ }
+ // Monthly index levels in a consistent 2021=100 base, NOT the mean of YoY %.
+ const provisional=monthly.reduce((sum,r)=>sum+r.index,0)/monthly.length;
+ base.value=provisional.toFixed(2);
+ base.dataset.autoSource='OFFICIAL_YTD_INDEX_AVG_PROVISIONAL';
+ base.dataset.latestMonth=newest.month;
+ if(help)help.textContent='已自動取用 GitHub 官方月指數：2026 年 1～'+
+   Number(newest.month.slice(-2))+' 月平均 '+base.value+
+   '（2021＝100）。隨新月份公告更新；不是 2026 全年官方平均，也不是月年增率。已建立的年度不會改寫。';
+ base.dispatchEvent(new Event('input',{bubbles:true}));
+}
 function prefillInitialMonthlyCpi(){
  const input=document.getElementById('decision_cpi'),release=document.getElementById('decision_cpi_release');
  const base=document.getElementById('cpi_2026'),notice=document.getElementById('cpi-decision-asof-note');
@@ -104,10 +134,17 @@ function prefillInitialMonthlyCpi(){
   if(caption)caption.textContent='CPI 官方公布日期';
   if(help)help.textContent='來自官方新聞稿及附表，公布 '+eligible.publication_date+'。';
  }else if(day.startsWith('2026-')){
-  const assumed=base.value.trim()||'110';
+  const assumed=base.value.trim();
+  if(!assumed){
+   input.value='';release.value='';
+   input.dataset.autoSource='MISSING_HISTORICAL_CPI';
+   if(notice)notice.textContent='缺少 2026 CPI 基準，無法建立日期 '+day+' 的演練假設；請確認自動資料或自行填入指數。';
+   return;
+  }
   input.value=assumed;release.value=day;
   input.dataset.autoSource='SCENARIO_2026_BASELINE';
-  if(notice)notice.textContent='此日期沒有可核對的歷史 CPI；以 2026 CPI 基準 '+assumed+' 作演練假設（非當天官方公布）。';
+  if(notice)notice.textContent='此日期缺少可核對的當時 CPI：使用 2026 年暫定基準 '+assumed+
+     ' 作研究假設（非當天公布的官方指數）。歷史日期不會倒填後來才公布的月 CPI。';
   if(caption)caption.textContent='演練假設生效日（非官方公布日）';
   if(help)help.textContent='使用自行設定的 2026 CPI 基準；非官方 CPI 資料。';
  }else{
@@ -123,14 +160,15 @@ if(manualCpi)manualCpi.addEventListener('input',e=>{if(e.isTrusted){manualCpi.da
 if(manualRelease)manualRelease.addEventListener('input',e=>{if(e.isTrusted){manualRelease.dataset.userEdited='true';if(manualCpi)manualCpi.dataset.autoSource='MANUAL';}});
 decision.addEventListener('input',prefillInitialMonthlyCpi);
 decision.addEventListener('change',prefillInitialMonthlyCpi);
-document.getElementById('cpi_2026')?.addEventListener('input',()=>{
+document.getElementById('cpi_2026')?.addEventListener('input',e=>{
+ if(e.isTrusted)e.currentTarget.dataset.userEdited='true';
  if(manualCpi?.dataset.autoSource==='SCENARIO_2026_BASELINE')prefillInitialMonthlyCpi();
 });
 async function load(){
  try{
   const r=await fetch('./data/cpi_verified.json',{cache:'no-store'});
   if(!r.ok)throw Error('HTTP '+r.status);
-  snapshot=validate(await r.json());loadError='';prefillInitialMonthlyCpi();
+  snapshot=validate(await r.json());loadError='';prefillReferenceFromPublishedMonths();prefillInitialMonthlyCpi();
  }catch(e){snapshot=null;loadError=e.message||'無法驗證快照'}
  paint();
 }
