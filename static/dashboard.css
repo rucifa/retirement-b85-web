@@ -270,3 +270,12 @@ body{color:var(--dash-ink);background:linear-gradient(150deg,#edf9fa 0%,#f6f8fb 
  .dash-scenario-controls{gap:5px}
  .dash-scenario-controls label{font-size:9px}
 }
+
+/* Per-user annual expenses: separate research profile, never a fixed policy claim. */
+.spending-profile-intro{margin:8px 0 13px;color:#4c7480;font-size:13px;line-height:1.65}
+.spending-profile-form{margin-top:8px}
+.spending-profile-preview{background:#ecf7f5;border:1px solid #d3eee6;color:#286d6d;
+ border-radius:11px;padding:10px 13px;font-size:12px;line-height:1.65;margin:12px 0 0}
+.spending-profile-preview[data-valid="false"]{background:#fff2ed;border-color:#edc9ba;color:#ad5133}
+#dashboard-baseline .baseline-grid article{min-width:0}
+#dashboard-baseline .baseline-grid strong{font-variant-numeric:tabular-nums}
