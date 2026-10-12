@@ -100,6 +100,27 @@ function display(view){
 }
 function metric(k,v,feature=false){return `<div class="metric ${feature?'featured':''}"><small>${esc(k)}</small><strong class="money-strong">${esc(v)}</strong></div>`}
 function lastYear(){return state?.years?.length?state.years[state.years.length-1]:null}
+function approvalSourceHtml(y){
+ const p=y?.withdrawal_sources;
+ if(!p)return '<section class="source-audit" role="note"><h3>年度核准資金來源</h3><p>舊紀錄未提供可驗證的資金來源；請核對年度原核准結果。</p></section>';
+ if(p.status!=='RECONCILED')
+  return '<section class="source-audit" role="note"><h3>年度核准資金來源</h3><p>'+esc(p.warning)+'</p></section>';
+ const row=(name,x)=>'<tr><th scope="row">'+esc(name)+'</th><td>'+esc(twMoney(x.invest_twd))+'</td><td>'+esc(twMoney(x.cash_twd))+'</td><td>'+esc(twMoney(x.total_twd))+'</td></tr>';
+ return '<section class="source-audit" aria-label="年度核准提款來源與資金守恆">'+
+ '<h3>年度核准資金來源（尚未實際提款）</h3>'+
+ '<p>以下是模型按原政策「預留」的支付來源，<strong>不是已出售 ETF、已轉帳或已支付車款</strong>；不含尚未發生的 Emergency。</p>'+
+ '<div class="mc-table-wrap"><table><thead><tr><th>核准項目</th><th>投資資產池</th><th>安全現金</th><th>預留合計</th></tr></thead><tbody>'+
+ row('生活費',p.living)+row('定期購車',p.car)+row('額外必要支出',p.extra)+
+ row('核准預留總計',p.total)+'</tbody></table></div>'+
+ '<p><strong>生活費中的熊市現金橋接：</strong>'+esc(twMoney(p.bridge_twd))+'（已包含在生活費的現金來源內，不可再加總）；'+
+ '<strong>安全現金補回：</strong>'+esc(twMoney(p.cash_refill_transfer_twd))+'（投資資產轉到現金，不是支出）。</p>'+
+ '<p><strong>核准預留後、尚未計市場報酬：</strong>投資資產 '+esc(twMoney(p.investment_after_approval_twd))+
+ '，安全現金 '+esc(twMoney(p.cash_after_approval_twd))+'。</p>'+
+ '<p><strong>提款順序：</strong>購車及額外必要支出由投資資產先支付，不足時才由安全現金補足。'+
+ '熊市橋接保護額參考 '+esc(twMoney(p.emergency_reserve_reference_twd))+'，僅限制「主動橋接」，不是任何情況都不能動用的帳戶限制。</p>'+
+ '<p><strong>實際交易待核對：</strong>本模型未指定賣股票、債券或哪一檔 ETF，也未執行券商下單／換匯／付款。年末仍應填入真實支出和帳戶餘額。</p>'+
+ '</section>';
+}
 function budgetHtml(y){
  if(!y)return '';
  const total=twMoney(y.living_authorized_twd),car=twMoney(y.car_authorized_twd),pos=pct(y.pos_pct);
@@ -140,6 +161,7 @@ function budgetHtml(y){
   <p><strong>安全現金補回：</strong>${esc(refillNote)}</p>
   <p>橋接屬於生活費的資金來源，<strong>不是生活費之外可以再加領的金額</strong>；補回只是由投資資產轉入現金，不是新的投資報酬。安全現金起始額也不是年底預估額。</p>
  </div>${extraPosWarning}
+ ${approvalSourceHtml(y)}
  <div class="progress-track"><div class="progress-bar" style="width:${Math.max(0,Math.min(100,y.pos_pct))}%"></div></div>
  <div class="status-line">● ${esc(cpiBasis)} ${esc(annual)} ${y.b85_restored?'符合 B＋85 生活預算恢復條件':'按當年 Guardrail 狀態計算'}，年度 Sticky 乘數 ${esc(y.sticky_after)}。</div>
  <p class="details-summary">換車專項預算：${car}　／　已核准其他必要支出：${twMoney(y.extra_authorized_twd)}。<br>費用與稅負使用模型既有整體淨報酬情境，年末核對不會重扣。PoS 採完整年度模型作參考，未針對首年短期間重新校準；成功率不是保證。</p>
