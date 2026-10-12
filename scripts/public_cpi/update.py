@@ -15,6 +15,7 @@ from pathlib import Path
 import re
 import ssl
 import sys
+import time
 from urllib.parse import urlsplit
 
 import cpi_sources as s
@@ -88,30 +89,55 @@ def parse_primary_with_stale_support(blob, now):
         return s.parse_official_xls(blob,as_of=reference)
 
 
+_RETRYABLE_TRANSPORT_ERRORS = (
+    'UNEXPECTED_EOF_WHILE_READING',
+    'EOF occurred in violation of protocol',
+    'timed out',
+    'Connection reset by peer',
+    'Remote end closed connection without response',
+    'IncompleteRead',
+)
+
+def verified_https_retry(fetch, stage, pause=time.sleep):
+    """Retry only transient transport failures; NEVER weaken TLS trust or source validation."""
+    for attempt in range(3):
+        try:
+            return fetch()
+        except (s.DataError, s.DualSourceError, OSError) as exc:
+            # Bad signatures, source conflicts, HTTPS certificate verification,
+            # schema and official-data mismatches must immediately fail closed.
+            if not any(marker in str(exc) for marker in _RETRYABLE_TRANSPORT_ERRORS):
+                raise
+            if attempt == 2:
+                raise
+            print(f'CPI_VERIFIED_HTTPS_RETRY: {stage}, attempt {attempt+2}/3, transport-only', file=sys.stderr)
+            pause(2 * (attempt + 1))
+
+
 def load_official(now):
     try:
-        context=s.twca_verified_context()
+        context=verified_https_retry(s.twca_verified_context, 'TWCA_CA_CHAIN')
     except (s.DataError,s.DualSourceError,OSError) as exc:
         raise PublishError('TLS_STAGE_TWCA_CA_CHAIN: '+str(exc)) from exc
     try:
-        raw=s.strict_https_xls(context_provider=lambda _opener:context)
+        raw=verified_https_retry(lambda:s.strict_https_xls(context_provider=lambda _opener:context), 'DGBAS_HISTORICAL_XLS')
     except (s.DataError,s.DualSourceError,OSError) as exc:
         raise PublishError('TLS_STAGE_DGBAS_HISTORICAL_XLS: '+str(exc)) from exc
     primary=check_primary_history(parse_primary_with_stale_support(raw,now))
     try:
-        listing=s.https_bytes(SOURCE_LIST,context,'www.stat.gov.tw',s.MAX_HTML)
+        listing=verified_https_retry(lambda:s.https_bytes(SOURCE_LIST,context,'www.stat.gov.tw',s.MAX_HTML), 'STAT_GOV_BULLETIN_LIST')
     except (s.DataError,s.DualSourceError,OSError) as exc:
         raise PublishError('TLS_STAGE_STAT_GOV_BULLETIN_LIST: '+str(exc)) from exc
     discovered=s.bulletin_list(listing,now)
     reports=[]
     for item in discovered:
         try:
-            article=s.https_bytes(item['url'],context,'www.stat.gov.tw',s.MAX_HTML)
+            article=verified_https_retry(lambda:s.https_bytes(item['url'],context,'www.stat.gov.tw',s.MAX_HTML), 'STAT_GOV_ARTICLE_'+item['month'])
         except (s.DataError,s.DualSourceError,OSError) as exc:
             raise PublishError('TLS_STAGE_STAT_GOV_ARTICLE_'+item['month']+': '+str(exc)) from exc
         meta=s.bulletin_article(article,item,now)
         try:
-            excel=s.https_bytes(meta['table1_url'],context,'ws.dgbas.gov.tw',s.MAX_XLSX)
+            excel=verified_https_retry(lambda:s.https_bytes(meta['table1_url'],context,'ws.dgbas.gov.tw',s.MAX_XLSX), 'DGBAS_TABLE1_'+item['month'])
         except (s.DataError,s.DualSourceError,OSError) as exc:
             raise PublishError('TLS_STAGE_DGBAS_TABLE1_'+item['month']+': '+str(exc)) from exc
         row=s.parse_table1(excel,meta)

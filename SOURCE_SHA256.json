@@ -15,8 +15,8 @@
   "data/cpi_verified.json": "86741b6d11cb2553711ce2ee060f348be1b38cef328baeeea38f2ef8e4d44437",
   "static/cpi-official.js": "f007350ceeb78660c9d3d6e63d186568c384bcd4a62ff253facdee62aca8cafe",
   "scripts/public_cpi/cpi_sources.py": "6e893e0bd5bb6330b14217ad26cce44ac590356d3231effdff1a1c63d26c7cf8",
-  "scripts/public_cpi/update.py": "2b028047d449547a8f6ef5aa45528c59a1929556745b33e1f528d00911ad66d3",
-  "scripts/public_cpi/tests/test_public_cpi.py": "614765dab403e83cbacc3c9e550dff7f22affd63d6f4ed7c0a601b7eef1bdb53",
+  "scripts/public_cpi/update.py": "4a7b7cd7489031757d85c820aaed014d4cbf171f1e84d33e5d1efa077eaee411",
+  "scripts/public_cpi/tests/test_public_cpi.py": "790ae9178f60e0d223849b1d5f8ffa4c699ce159fbc9103a37036d2f7d7d6a80",
   "static/dashboard.css": "eeb0f6a3c83cf84d843d49a6aa29d6ba9942bbaa47cd1168a3647ffd98bac9be",
   "static/dashboard.js": "a88ae3c44b4e75a33a57ca2da89ada13e5fa9b60064e3e726b5a03e87e2f68c5",
   "static/taiwan-time.js": "2a0e63ba7eff9ee308db9bd2d7a8c65aa47f86654c67f5c34630bed7317a202c"

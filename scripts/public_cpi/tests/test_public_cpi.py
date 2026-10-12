@@ -42,6 +42,37 @@ def assessment(*records):
             'verified_months':verified,'pending_months':pending,'conflicting_months':[]}
 
 class PublicCpiTests(unittest.TestCase):
+    def test_verified_https_transient_eof_retries_and_succeeds(self):
+        attempts=[]
+        delays=[]
+        def flaky():
+            attempts.append(len(attempts))
+            if len(attempts)<3:
+                raise src.DataError('SSL: UNEXPECTED_EOF_WHILE_READING')
+            return b'official-bytes'
+        result=update.verified_https_retry(flaky,'DGBAS_HISTORICAL_XLS',pause=delays.append)
+        self.assertEqual(result,b'official-bytes')
+        self.assertEqual(len(attempts),3)
+        self.assertEqual(delays,[2,4])
+
+    def test_verified_https_cert_error_must_not_retry(self):
+        attempts=[]
+        def invalid_chain():
+            attempts.append(1)
+            raise src.DataError('SSL: CERTIFICATE_VERIFY_FAILED')
+        with self.assertRaisesRegex(src.DataError,'CERTIFICATE_VERIFY_FAILED'):
+            update.verified_https_retry(invalid_chain,'STAT_GOV_BULLETIN_LIST',pause=lambda _:None)
+        self.assertEqual(len(attempts),1)
+
+    def test_verified_https_official_schema_mismatch_must_not_retry(self):
+        attempts=[]
+        def invalid_data():
+            attempts.append(1)
+            raise src.DualSourceError('Official CPI Table-1 schema changed')
+        with self.assertRaisesRegex(src.DualSourceError,'schema'):
+            update.verified_https_retry(invalid_data,'DGBAS_TABLE1',pause=lambda _:None)
+        self.assertEqual(len(attempts),1)
+
     def test_existing_public_official_fixture_matches_schema(self):
         current=__import__('json').loads((ROOT/'data/cpi_verified.json').read_text('utf-8'))
         history=update.valid_old(current,datetime.now(timezone.utc).date())
