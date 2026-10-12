@@ -162,7 +162,7 @@ decision.addEventListener('input',prefillInitialMonthlyCpi);
 decision.addEventListener('change',prefillInitialMonthlyCpi);
 document.getElementById('cpi_2026')?.addEventListener('input',e=>{
  if(e.isTrusted)e.currentTarget.dataset.userEdited='true';
- if(manualCpi?.dataset.autoSource==='SCENARIO_2026_BASELINE')prefillInitialMonthlyCpi();
+ if(['SCENARIO_2026_BASELINE','MISSING_HISTORICAL_CPI'].includes(manualCpi?.dataset.autoSource))prefillInitialMonthlyCpi();
 });
 async function load(){
  try{
