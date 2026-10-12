@@ -78,7 +78,7 @@ function inflationCards(current,reference,previous,year){
 function renderInflationPreview(){
  const el=$('inflation-preview');if(!el)return;
  const previous=lastYear()?.decision_cpi??null;
- const reference=state?.plan?.cpi_2026??Number($('cpi_2026').value);
+ const reference=state?.plan?.cpi_2026??Number($('cpi_2026').value||'110');
  el.innerHTML=inflationCards(Number($('decision_cpi').value),Number(reference),Number(previous),$('decision_date').value.slice(0,4));
 }
 
@@ -155,7 +155,7 @@ const fieldVal=id=>$(id).value;
 function initPayload(){return {
  decision_date:fieldVal('decision_date'),planned_extra_twd:fieldVal('planned_extra_twd'),start_age:fieldVal('start_age'),
  investment_twd:fieldVal('investment_twd'),cash_twd:fieldVal('cash_twd'),stock_bond:fieldVal('stock_bond'),
- cpi_2026:fieldVal('cpi_2026'),decision_cpi:fieldVal('decision_cpi'),decision_cpi_release:fieldVal('decision_cpi_release')};}
+ cpi_2026:fieldVal('cpi_2026')||'110',decision_cpi:fieldVal('decision_cpi'),decision_cpi_release:fieldVal('decision_cpi_release')};}
 function endPayload(){return {closing_date:fieldVal('closing_date'),closing_cpi:fieldVal('closing_cpi'),
  closing_cpi_release:fieldVal('closing_cpi_release'),living_paid_twd:fieldVal('living_paid_twd'),
  car_paid_twd:fieldVal('car_paid_twd'),extra_paid_twd:fieldVal('extra_paid_twd'),

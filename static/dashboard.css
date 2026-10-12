@@ -198,3 +198,8 @@ body{color:var(--dash-ink);background:linear-gradient(150deg,#edf9fa 0%,#f6f8fb 
 .decision-month-guidance{display:block;color:#8b6234!important;background:#fff8eb;border-left:3px solid #d9a965;padding:7px 10px;border-radius:5px;margin-top:8px;line-height:1.65}
 #use-january-date{display:block;margin-top:8px;padding:5px 0}
 #use-january-date[hidden]{display:none!important}
+
+/* Read-only latest official CPI; manual base CPI is the sole ordinary user option. */
+#latest-cpi-readonly{display:flex;flex-direction:column;gap:8px}
+.dash-live-value{font-size:1.65rem;line-height:1.25;font-weight:750;color:#0d6e78;letter-spacing:-0.02em}
+#cpi-simple-inputs{margin-top:12px}

@@ -50,10 +50,23 @@ async def main():
             assert eligible, 'Expected at least one published historical CPI month'
             latest_public=eligible[-1]
             latest_rate=('+' if latest_public['official_yoy_pct']>0 else '')+f"{latest_public['official_yoy_pct']:.2f}%"
-            await page.locator('#official-cpi-panel').filter(has_text='最新官方公告年增率').wait_for(timeout=15000)
+            await page.locator('#official-cpi-panel').filter(has_text='最新月份年增率').wait_for(timeout=15000)
             panel=await page.locator('#official-cpi-panel').inner_text()
             assert latest_rate in panel
             assert latest_public['month'] in panel
+            assert await page.locator('#latest-cpi-index').inner_text()==f"{latest_public['index']:.2f}"
+            assert await page.locator('#cpi_2026').input_value()=='110'
+            assert await page.locator('.cpi-manual-input').is_visible()
+            chart=snapshot.get('current_year_chart') or []
+            assert len(chart)<=12
+            if snapshot.get('latest_official_ytd'):
+                assert '平均較去年同期' in panel
+                assert chart and chart[0]['month'].endswith('-01')
+                assert chart[-1]['month']==latest_public['month']
+                expected_ytd=snapshot['latest_official_ytd']['average_yoy_pct']
+                assert f"{expected_ytd:+.2f}%" in panel
+                await page.locator('#dash-cpi-trend svg').wait_for(timeout=15000)
+                print('BROWSER_OFFICIAL_YTD_AND_JAN_TO_DATE_CHART_PASS')
             assert '上個月官方資料狀態' not in panel
             await page.locator('#dash-cpi-month').filter(has_text=latest_public['month'].replace('-',' / ')).wait_for(timeout=15000)
             assert latest_rate in (await page.locator('#dash-cpi-sub').inner_text())
