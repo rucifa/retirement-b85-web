@@ -29,7 +29,7 @@
  <article><span>Floor 最低支出</span><strong>NT$ 500,000</strong><small>每年・月均約 41,667 元</small></article>
  <article><span>安全現金目標</span><strong>NT$ 2,400,000</strong><small>退休啟動時名目政策基準</small></article></div></div>
  <form id="opening-form" class="form-card">
- <h3>年度基本資料</h3><div class="grid-form"><label class="field"><span>決策日期 <em>必填</em></span><input id="decision_date" type="date" required/><small>首次進入自動帶入台灣今天；已有年度紀錄時仍依下一年度接續。可自行選擇試算日期。</small></label>
+ <h3>年度基本資料</h3><div class="grid-form"><label class="field"><span>決策日期 <em>必填</em></span><input id="decision_date" type="date" required/><small>首次進入使用瀏覽器時鐘換算為台灣今天（非伺服器授時）；已儲存的年度接續日期不會覆寫。可自行選擇試算日期。</small></label>
  <label class="field"><span>預計額外必要支出（新台幣）</span><input id="planned_extra_twd" type="number" min="0" step="0.01" value="0" required/><small>例如已確定的大額醫療費用；定期換車由政策自動列入。</small></label></div>
  <div id="first-year-fields"><div class="inner-divider"></div><h3>首次建立：退休起始條件</h3><div class="grid-form"><label class="field"><span>退休開始年</span><input id="first_year" type="number" readonly/><small>與上方決策日期年份相同。</small></label>
  <label class="field"><span>退休開始年齡</span><input id="start_age" type="number" min="45" max="90" value="65" required/><small>一般試算預設 65 歲（2026 起勞保老年年金法定請領年齡），並非強制退休年齡；可自行修改。</small></label>
@@ -40,8 +40,8 @@
  <div class="inner-divider"></div><div class="hrow"><h3>生活費與通膨換算</h3><span class="tag subdued">先看金額；指數僅供後端換算</span></div>
  <details class="advanced cpi-manual-input"><summary>手動 CPI／演練假設（展開原始指數）</summary><p>只有手動確認並提交的 CPI 會送入 B＋85 演練計算。公開官方快照不會覆寫你的輸入或已保存年度。</p>
  <div class="grid-form"><label class="field" id="reference_cpi_field"><span>2026 年 CPI 基準指數（2021＝100）</span><input id="cpi_2026" type="number" step="0.01" min="10" value="110" required/><small>110 為<span class="em-strong">示範假設</span>，不是已認證的 2026 全年指數。</small></label>
- <label class="field"><span>決策時最近可用的 CPI 指數</span><input id="decision_cpi" type="number" step="0.01" min="10" value="125" required/><small>首次演練預設 125，同樣是假設；請確認與 2026 指數採相同比較基期。</small></label>
- <label class="field"><span>該 CPI 的官方公布日期</span><input id="decision_cpi_release" type="date" required value="2036-01-10"/><small>不可晚於決策日期；未連線查證官方來源。</small></label></div></details>
+ <label class="field"><span>決策時最近可用的 CPI 指數</span><input id="decision_cpi" type="number" step="0.01" min="10" placeholder="載入最近已查證 CPI…" required/><small>若可取得決策日以前已公布且雙來源已查證的月度 CPI，會於首次試算前帶入；可自行修改，未核對的上月資料不會自動帶入。</small></label>
+ <label class="field"><span>該 CPI 的官方公布日期</span><input id="decision_cpi_release" type="date" required/><small>首次試算會以已查證 CPI 的實際發布日帶入；修改 CPI 時請同步核對公布日期。</small></label></div></details>
  <div id="inflation-preview" class="inflation-preview hidden" role="status" aria-live="polite"></div><p class="privacy-help">通膨換算後正常生活費會在完成試算後，與 B＋85 核准結果一併顯示。2026 全年 CPI 尚未認證，手動假設不會被標示為官方資料。</p>
  <details class="advanced inflation-help"><summary>為什麼需要 CPI？這不是直接輸入通膨率嗎？</summary><p>通膨率是兩個可比較時點的 CPI 變化。底層需保留 CPI 以換算 2026 年實質生活費、年末資產購買力及跨年紀錄；畫面會優先呈現通膨和新台幣生活費。第一次建立時，若沒有去年同期 CPI，會顯示「尚無同期資料」，不會捏造全年通膨率。資料需採相同基期，且僅可使用當時已公布版本；本網站另顯示官方快照與核對狀態，但不會把尚未公布的 2026 全年基準或未查證月份自動回填模型。</p></details>
  <div class="form-footer"><div class="tiny-info">核准只保留一份額度，不等於資金已經支出。</div><button class="primary-btn" type="submit" id="approve-btn">計算今年可花多少 <span>→</span></button></div>
