@@ -1,16 +1,23 @@
-<!doctype html><html lang="zh-Hant"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>B＋85｜免安裝退休年度規劃工具</title><link rel="stylesheet" href="./static/style.css"/></head>
+<!doctype html><html lang="zh-Hant"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>B＋85｜免安裝退休年度規劃工具</title><link rel="stylesheet" href="./static/style.css"/><link rel="stylesheet" href="./static/dashboard.css"/></head>
 <body><div class="app-shell">
 <aside class="sidebar">
- <div class="brand"><div class="brand-icon">85</div><div><strong>退休年度中心</strong><small>B＋85 · v3.4.0</small></div></div>
- <div class="sidebar-kicker">操作流程</div>
- <button class="nav-link selected" data-go="opening"><span class="nav-no">01</span><span>年初核准<small>今年能花多少？</small></span></button>
- <button class="nav-link" data-go="closing"><span class="nav-no">02</span><span>年末結算<small>今年實際花多少？</small></span></button>
- <button class="nav-link" data-go="history"><span class="nav-no">03</span><span>歷年紀錄<small>明年從哪裡開始？</small></span></button>
+ <div class="brand"><div class="brand-icon">85</div><div><strong>安心退休計畫</strong><small>B＋85 · v3.4.0</small></div></div>
+ <div class="sidebar-kicker">年度操作</div>
+ <button type="button" class="nav-link selected" data-go="opening"><span class="nav-no">▣</span><span>年度試算<small>年初核准</small></span></button>
+ <button type="button" class="nav-link" data-go="closing"><span class="nav-no">◷</span><span>年末結算<small>核對年度支出</small></span></button>
+ <button type="button" class="nav-link" data-go="history"><span class="nav-no">▤</span><span>歷年紀錄<small>匯出與備份</small></span></button>
+ <button type="button" class="nav-link" id="nav-cpi" data-focus="dashboard-cpi-card"><span class="nav-no">▥</span><span>官方 CPI<small>通膨與來源</small></span></button>
  <div class="side-bottom"><div class="side-label"><span class="dot"></span> 此瀏覽器保存・無需帳號</div><p>不連接券商，不自動交易或提款。所有數字都是模擬與核對用途。</p><div class="fx-tag">USD/TWD 固定 30</div></div>
 </aside>
 <div class="main-col"><header class="topbar"><div class="breadcrumb">退休規劃 <span>／</span> <strong id="breadcrumb-current">年初核准</strong></div><div class="status-pill"><span class="status-dot"></span> 研究演練 · 尚未正式 ACTIVE</div></header>
 <main class="main-content">
  <div class="hero"><div class="hero-copy"><div class="eyebrow">一年只需兩次確認</div><h1>把退休過成你想要的生活。</h1><p>不用計算複雜公式。年初看可以花多少，年末核對還剩多少，其他交給已驗證的 B＋85 引擎。</p></div><div class="hero-art" aria-hidden="true"><div class="orbit orbit-a"></div><div class="orbit orbit-b"></div><div class="orb-core">B<span>＋</span>85<small>ANNUAL PLAN</small></div></div></div>
+ <section class="dash-kpis" id="dashboard-kpis" aria-label="年度規劃摘要">
+ <article class="dash-kpi dash-kpi-primary"><div class="dash-kpi-icon" aria-hidden="true">＄</div><div><small>本年度核准生活費</small><strong id="dash-budget">尚未試算</strong><p id="dash-budget-sub">完成年初核准後顯示</p></div></article>
+ <article class="dash-kpi"><div class="dash-kpi-icon" aria-hidden="true">◇</div><div><small>PoS 模型成功機率</small><strong id="dash-pos">—</strong><p id="dash-pos-sub">依 B＋85 政策計算</p></div></article>
+ <article class="dash-kpi"><div class="dash-kpi-icon" aria-hidden="true">▥</div><div><small>最近雙來源已查證 CPI</small><strong id="dash-cpi-month">讀取中</strong><p id="dash-cpi-sub">僅顯示官方已核對月份</p></div></article>
+ <article class="dash-kpi"><div class="dash-kpi-icon" aria-hidden="true">▤</div><div><small>已保存年度</small><strong id="dash-years">0 年</strong><p id="dash-years-sub">僅保存在此瀏覽器</p></div></article>
+ </section>
  <div class="notice"><span class="notice-icon">!</span><div><strong>目前為瀏覽器研究演練</strong><p>可實際輸入、儲存與匯出年度紀錄；但沒有連線驗證券商或實際支付；CPI 公開快照僅提供已知官方數字與來源核對狀態，因此不會把結果標示為已核准的真實提款指令。</p></div></div>
  <div id="runtime-status" class="notice" role="status"><span class="notice-icon">…</span><div><strong id="runtime-title">正在載入 B＋85 計算引擎</strong><p id="runtime-detail">第一次載入需下載瀏覽器版 Python 與 NumPy，請保持網路連線。</p></div></div>
  <div id="alert" class="alert" hidden role="alert"></div>
@@ -24,8 +31,12 @@
  <label class="field"><span>投資資產總市值（新台幣）</span><input id="investment_twd" type="number" min="0" step="0.01" value="27000000" required/><small>股票＋債券，與安全現金分開。</small></label>
  <label class="field"><span>安全現金（新台幣）</span><input id="cash_twd" type="number" min="0" step="0.01" value="2400000" required/><small>退休啟動日安全現金政策目標 240 萬元。</small></label>
  <label class="field"><span>股／債配置</span><select id="stock_bond"><option value="70/30">股票 70%／債券 30%（首選）</option><option value="65/35">股票 65%／債券 35%（保守備選）</option></select><small>這是股債比例，不是美國／非美國的股票地域比例。</small></label></div></div>
+ <div class="baseline-block" id="dashboard-baseline"><h3>生活費用基準 <small>2026 年實質金額／非當年核准額</small></h3>
+ <div class="baseline-grid"><article><span>正常生活費</span><strong>NT$ 650,000</strong><small>每年・月均約 54,167 元</small></article>
+ <article><span>核心生活費</span><strong>NT$ 600,000</strong><small>每年・月均 50,000 元</small></article>
+ <article><span>Floor 最低支出</span><strong>NT$ 500,000</strong><small>每年・月均約 41,667 元</small></article>
+ <article><span>安全現金目標</span><strong>NT$ 2,400,000</strong><small>退休啟動時名目政策基準</small></article></div></div>
  <div class="inner-divider"></div><div class="hrow"><h3>生活費與通膨換算</h3><span class="tag subdued">先看金額；指數僅供後端換算</span></div>
- <div id="official-cpi-panel" class="official-cpi-panel" role="status" aria-live="polite">正在讀取官方 CPI 快照…</div>
  <details class="advanced cpi-manual-input"><summary>手動 CPI／演練假設（展開原始指數）</summary><p>只有手動確認並提交的 CPI 會送入 B＋85 演練計算。公開官方快照不會覆寫你的輸入或已保存年度。</p>
  <div class="grid-form"><label class="field" id="reference_cpi_field"><span>2026 年 CPI 基準指數（2021＝100）</span><input id="cpi_2026" type="number" step="0.01" min="10" value="110" required/><small>110 為<span class="em-strong">示範假設</span>，不是已認證的 2026 全年指數。</small></label>
  <label class="field"><span>決策時最近可用的 CPI 指數</span><input id="decision_cpi" type="number" step="0.01" min="10" value="125" required/><small>首次演練預設 125，同樣是假設；請確認與 2026 指數採相同比較基期。</small></label>
@@ -33,7 +44,32 @@
  <div id="inflation-preview" class="inflation-preview" role="status" aria-live="polite"></div>
  <details class="advanced inflation-help"><summary>為什麼需要 CPI？這不是直接輸入通膨率嗎？</summary><p>通膨率是兩個可比較時點的 CPI 變化。底層需保留 CPI 以換算 2026 年實質生活費、年末資產購買力及跨年紀錄；畫面會優先呈現通膨和新台幣生活費。第一次建立時，若沒有去年同期 CPI，會顯示「尚無同期資料」，不會捏造全年通膨率。資料需採相同基期，且僅可使用當時已公布版本；本網站另顯示官方快照與核對狀態，但不會把尚未公布的 2026 全年基準或未查證月份自動回填模型。</p></details>
  <div class="form-footer"><div class="tiny-info">核准只保留一份額度，不等於資金已經支出。</div><button class="primary-btn" type="submit" id="approve-btn">計算今年可花多少 <span>→</span></button></div>
- </form></section>
+ </form>
+ <aside id="dashboard-rail" class="dashboard-rail" aria-label="官方物價與政策狀態">
+  <section class="dash-widget dash-cpi-card" id="dashboard-cpi-card" aria-labelledby="dash-cpi-title">
+   <div class="dash-widget-head"><h3 id="dash-cpi-title"><span class="dash-widget-icon" aria-hidden="true">▥</span> 官方 CPI 快照</h3><small>資料來源：行政院主計總處</small></div>
+   <div id="official-cpi-panel" class="official-cpi-panel" role="status" aria-live="polite">正在讀取官方 CPI 快照…</div>
+   <div id="dash-cpi-trend" class="dash-cpi-trend" aria-label="官方 CPI 已公布月份年增率圖">正在準備月度走勢…</div>
+   <a class="dash-outline-link" href="https://www.stat.gov.tw/News.aspx?n=2668" target="_blank" rel="noopener noreferrer">前往查看完整 CPI 資料 <span aria-hidden="true">↗</span></a>
+  </section>
+  <section class="dash-widget dash-policy-card" aria-labelledby="dash-policy-title">
+   <div class="dash-widget-head"><h3 id="dash-policy-title"><span class="dash-widget-icon" aria-hidden="true">◎</span> Guardrail 與風險提醒</h3></div>
+   <div class="dash-policy-ring"><div class="dash-policy-ring-inner"><strong>75 / 95</strong><small>Sticky 規則</small></div></div>
+   <p>提領水準必須依實際資產、通膨與 B＋85 引擎計算；不以固定百分比直接判定安全。</p>
+   <div class="dash-policy-status" id="dash-policy-status">目前尚無核准年度；請先執行年初試算。</div>
+  </section>
+ </aside>
+ <div class="dashboard-lower" id="dashboard-lower">
+   <section class="dash-widget dash-history-chart" aria-labelledby="dash-history-chart-title"><div class="dash-widget-head"><h3 id="dash-history-chart-title"><span class="dash-widget-icon" aria-hidden="true">↗</span> 資產走勢與年度預算</h3><small>本機紀錄・不冒充未來預測</small></div>
+   <div id="dash-asset-chart" class="dash-asset-chart" role="img" aria-label="已結算年度的實際資產走勢">建立至少一筆年末結算後，即可查看實際資產走勢。</div></section>
+   <section class="dash-widget dash-recommendation" aria-labelledby="dash-recommend-title"><div class="dash-widget-head"><h3 id="dash-recommend-title"><span class="dash-widget-icon" aria-hidden="true">✧</span> 退休提領建議</h3><small>B＋85 研究演練</small></div>
+   <div id="dash-recommend-body"><strong>尚未產生建議</strong><p>請填妥年度資料，執行年初核准。計算數字會直接來自 B＋85 核心引擎。</p></div>
+   <div class="dash-recommend-foot">模型結果不代表實際授權提款，也不是投資報酬保證。</div></section>
+   <section class="dash-widget dash-history-summary" aria-labelledby="dash-history-title"><div class="dash-widget-head"><h3 id="dash-history-title"><span class="dash-widget-icon" aria-hidden="true">▤</span> 年度紀錄</h3><button type="button" class="dash-text-link" data-go="history">查看全部 →</button></div><div id="dash-recent-years">尚無已保存年度</div></section>
+   <section class="dash-widget dash-risk-notes" aria-labelledby="dash-risk-title"><div class="dash-widget-head"><h3 id="dash-risk-title"><span class="dash-widget-icon" aria-hidden="true">!</span> 使用前的重要提醒</h3></div>
+     <p>官方 CPI 查證快照與手動演練數值彼此獨立；正式全年基準尚未完成時，不會當成已確認的通膨換算。</p>
+     <p>本網站不連接金融帳戶，所有年度紀錄只存在此瀏覽器，請定期匯出 JSON 備份。</p></section>
+ </div></section>
  <section id="panel-closing" class="panel hidden"><div class="section-head"><div><div class="eyebrow green">STEP 02</div><h2>年末・確認實際花了多少</h2><p>不用填報酬率。只要記錄實際支出及年底投資／現金餘額。</p></div><span id="closing-tag" class="tag">尚未核准</span></div>
  <div id="closing-readiness" class="empty-state"><span class="empty-icon">▧</span><h3>請先完成年初核准</h3><p>年初預算計算完成後，年末結算表單就會開放。</p><button class="secondary-btn" data-go="opening">回到年初核准</button></div>
  <div id="closing-form-wrap" class="hidden"><div id="closing-budget" class="summary-strip"></div>
@@ -51,4 +87,4 @@
  <div id="closing-result" class="results hidden"></div></section>
  <section id="panel-history" class="panel hidden"><div class="section-head"><div><div class="eyebrow green">STEP 03</div><h2>歷年紀錄・從哪一年接續</h2><p>年初核准與年末實際紀錄分開保存，避免重複支出。</p></div><div class="history-actions"><button id="export-btn" class="secondary-btn">匯出 JSON 備份</button> <button id="import-btn" class="secondary-btn">匯入 JSON 備份</button><input id="import-file" type="file" accept="application/json,.json" class="hidden" aria-label="匯入已保存的年度備份 JSON"/></div></div><div id="history-list" class="history-list"></div><div class="history-footer"><p>重設之前請先匯出備份。重設之前會自動下載一份 JSON 備份。</p><button id="reset-btn" type="button" class="danger-link">清除演練並重新開始</button></div></section>
  <div class="footnote">退休模型 B＋85 v3.4.0｜瀏覽器本機運算，資料僅儲存於此瀏覽器的網站空間｜研究演練｜非投資建議、稅務判定或真實提款授權。</div>
-</main></div></div><script src="./static/app.js" defer></script><script src="./static/cpi-official.js" defer></script></body></html>
+</main></div></div><script src="./static/app.js" defer></script><script src="./static/cpi-official.js" defer></script><script src="./static/dashboard.js" defer></script></body></html>
