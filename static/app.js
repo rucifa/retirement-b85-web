@@ -98,14 +98,16 @@ function budgetHtml(y){
  const total=twMoney(y.living_authorized_twd),car=twMoney(y.car_authorized_twd),pos=pct(y.pos_pct);
  const part=y.calendar_first_year;
  const cpiBasis=y.decision_cpi_source==='SCENARIO_2026_BASELINE'?'本年 CPI 為演練假設（非當時官方公布）。':'';
- const period=part?`首年 ${y.period_start}～${y.period_end}・含首日 ${y.calendar_days}/${y.calendar_year_days} 天（${(y.calendar_fraction*100).toFixed(2)}%）`:`完整年度・${y.year} 年`;
- const annual=part?`按日換算前全年生活費 ${twMoney(y.full_year_living_reference_twd)}，首年核准 ${total}。車輛及額外必要支出不按天數縮減。`:'';
+ const period=part?'退休開始年度・依實際日期計算':`完整年度・${y.year} 年`;
+ const annual=part?`模型全年生活費參考為 ${twMoney(y.full_year_living_reference_twd)}；本次依起始日至年底按日換算為 ${total}。換車及額外必要支出不按天數縮減。`:'';
+ const applicable=part?`適用期間：${String(y.period_start).replaceAll('-','/')}～${String(y.period_end).replaceAll('-','/')}（含起始日，共 ${y.calendar_days} 天）`:`適用期間：${y.year}/01/01～${y.year}/12/31（全年）`;
+ const budgetExplanation='這是上述期間可安排的生活費總預算，不代表需要在起始日一次提領整筆，也不包含換車或其他必要支出。';
  return `<div class="result-caption">${y.year} 年・${y.age} 歲・${period}・B＋85 研究演練</div>
  <div class="result-grid">
- ${metric('今年建議生活費',total,true)}
+ ${metric('本次建議生活費預算',total,true)}
  ${metric('全年模型參考 PoS',pos)}
  ${metric('換車專項預算',car)}
- </div><div class="progress-track"><div class="progress-bar" style="width:${Math.max(0,Math.min(100,y.pos_pct))}%"></div></div>
+ </div><p class="details-summary budget-period-note">${esc(applicable)}。${esc(budgetExplanation)}</p><div class="progress-track"><div class="progress-bar" style="width:${Math.max(0,Math.min(100,y.pos_pct))}%"></div></div>
  <div class="inflation-preview result-inflation">${inflationCards(Number(y.decision_cpi),Number(state?.plan?.cpi_2026),state?.years?.length>1?Number(state.years[state.years.length-2].decision_cpi):null,y.year,Number(state?.plan?.spending_profile?.normal_twd??650000))}</div>
  <div class="status-line">● ${esc(cpiBasis)} ${esc(annual)} ${y.b85_restored?'符合 B＋85 生活預算恢復條件':'按當年 Guardrail 狀態計算'}，年度 Sticky 乘數 ${esc(y.sticky_after)}。</div>
  <p class="details-summary">熊市現金橋接：${twMoney(y.bridge_from_cash_twd)}　／　已核准其他必要支出：${twMoney(y.extra_authorized_twd)}。<br>費用與稅負使用模型既有整體淨報酬情境，年末核對不會重扣。PoS 採完整年度模型作參考，未針對首年短期間重新校準；成功率不是保證。</p>
@@ -128,12 +130,12 @@ function inflationCards(current,reference,previous,year,normalBase){
  const priorText=annual===null
  ? '首次使用尚未保存上一年度可比的 CPI；不能把 2026 至退休年的累計通膨當作今年通膨率。'
  : '以本次與上次「年初決策時可用 CPI」比較，屬期間參考變動；若兩次 CPI 非相同月份，不能稱為官方年增率。';
- return '<div class="inflation-head"><strong>'+esc(year||'本年度')+' 年物價與生活費</strong><span>以 2026 年設定的正常生活費 '+esc(twMoney(normalBase))+' 為基準</span></div>'
+ return '<div class="inflation-head"><strong>'+esc(year||'本年度')+' 年物價與生活費</strong><span>以 2026 年輸入或預設的全年生活費 '+esc(twMoney(normalBase))+' 為基準</span></div>'
    +'<div class="inflation-cards">'
    +'<div><small>最近一年物價變動（參考）</small><strong>'+esc(signedPct(annual))+'</strong></div>'
    +'<div><small>自 2026 年累計物價變動</small><strong>'+esc(signedPct(cumulative))+'</strong></div>'
-   +'<div class="inflation-normal"><small>通膨換算後正常生活費</small><strong>'+esc(twMoney(normal))+'</strong></div>'
-   +'</div><p class="inflation-hint">'+esc(priorText)+' 正常生活費不是 B＋85 最終核准額；仍會依 Guardrail、PoS 和 Prosperity 調整。以上數值取決於手動輸入的 CPI，並非官方即時通膨率。</p>';
+   +'<div class="inflation-normal"><small>原設定的全年生活費（通膨換算後）</small><strong>'+esc(twMoney(normal))+'</strong></div>'
+   +'</div><p class="inflation-hint">'+esc(priorText)+' 這是完整一年的生活費設定參考，不是本次適用期間的建議生活費預算，也不是應立即提領的金額。B＋85 仍會依 Guardrail、PoS 和 Prosperity 調整；以上數值依本次使用的 CPI 計算，不等於即時官方通膨率。</p>';
 }
 function renderInflationPreview(){
  const el=$('inflation-preview');if(!el)return;

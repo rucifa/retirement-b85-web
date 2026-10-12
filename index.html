@@ -14,11 +14,11 @@
  <div class="hero"><div class="hero-copy"><div class="eyebrow">一年只需兩次確認</div><h1>把退休過成你想要的生活。</h1><p>不用計算複雜公式。年初看可以花多少，年末核對還剩多少，其他交給 B＋85 基準或個人化研究引擎；研究結果尚非正式提款建議。</p></div><div class="hero-art" aria-hidden="true"><div class="orbit orbit-a"></div><div class="orbit orbit-b"></div><div class="orb-core">B<span>＋</span>85<small>ANNUAL PLAN</small></div></div></div>
  <section class="dash-kpis dash-spending-overview" id="dashboard-kpis" aria-label="退休生活費比較摘要">
  <article class="dash-kpi" id="dash-minimum-card"><div class="dash-kpi-icon" aria-hidden="true">▤</div><div><small>我的最低必要生活費</small><strong id="dash-minimum">待試算</strong><p id="dash-minimum-sub">試算後按相同期間與物價換算</p></div></article>
- <article class="dash-kpi dash-kpi-primary" id="dash-budget-card"><div class="dash-kpi-icon" aria-hidden="true">＄</div><div><small>今年建議生活費</small><strong id="dash-budget">尚未試算</strong><p id="dash-budget-sub">依輸入資產與 B＋85 模型試算</p></div></article>
+ <article class="dash-kpi dash-kpi-primary" id="dash-budget-card"><div class="dash-kpi-icon" aria-hidden="true">＄</div><div><small>本次建議生活費預算</small><strong id="dash-budget">尚未試算</strong><p id="dash-budget-sub">依輸入資產與 B＋85 模型試算</p></div></article>
  <article class="dash-kpi dash-kpi-difference" id="dash-difference-card" data-state="pending"><div class="dash-kpi-icon" aria-hidden="true">↗</div><div><small id="dash-difference-title">與最低需求相比</small><strong id="dash-difference">待試算</strong><p id="dash-difference-sub" role="status">完成試算後顯示可增加的預算或缺口</p></div></article>
  <article class="dash-kpi" id="dash-pos-card"><div class="dash-kpi-icon" aria-hidden="true">◇</div><div><small>模型成功機率（PoS）</small><strong id="dash-pos">—</strong><p id="dash-pos-sub">完整年度模型參考值，非保證</p></div></article>
  </section>
- <p class="dash-overview-hint" id="dash-overview-hint">生活費比較僅包含一般生活費，不含換車與其他必要支出；首年會按實際退休天數及通膨調整。模型結果不是終生保證或最高安全提款額。</p>
+ <p class="dash-overview-hint" id="dash-overview-hint">本次生活費預算指試算的退休開始日至當年年底、這段期間可安排的生活費總額，不代表需要立即一次提領。最低需求以相同期間與物價比較；換車與其他必要支出另計。模型結果不是終生保證或最高安全提款額。</p>
  <div class="notice"><span class="notice-icon">!</span><div><strong>目前為瀏覽器研究演練</strong><p>可實際輸入、儲存與匯出年度紀錄；但沒有連線驗證券商或實際支付；CPI 公開快照僅提供已知官方數字與來源核對狀態，因此不會把結果標示為已核准的真實提款指令。</p></div></div>
  <section id="runtime-status" class="notice runtime-progress" role="status" aria-live="polite">
   <div class="runtime-progress-head"><span class="notice-icon">◎</span><div><strong id="runtime-title">正在準備退休年度工具</strong><p id="runtime-detail">第一次載入需下載瀏覽器版 Python 與 NumPy，請保持網路連線。</p></div></div>
@@ -62,7 +62,7 @@
   <div class="grid-form"><label class="field"><span>此次試算採用的 CPI 指數</span><input id="decision_cpi" type="number" step="0.01" min="10" placeholder="正在比對資料庫…" required/><small>以當時已正式公布、基期一致的官方 CPI 指數為準，無法取得時請手動提供有效資料。</small></label>
   <label class="field"><span id="decision-cpi-date-caption">CPI 官方公布日期</span><input id="decision_cpi_release" type="date" required/><small>自動帶入來源公布日；若自行修改，公布日期不得晚於決策日期。</small></label></div>
  </details>
- <div id="inflation-preview" class="inflation-preview hidden" role="status" aria-live="polite"></div><p class="privacy-help">通膨換算後正常生活費會在完成試算後，與 B＋85 核准結果一併顯示。2026 全年 CPI 尚未認證，手動假設不會被標示為官方資料。</p>
+ <div id="inflation-preview" class="inflation-preview hidden" role="status" aria-live="polite"></div><p class="privacy-help">原設定的全年生活費（通膨換算後）會在試算結果中作為全年比較基準，不是本次建議生活費預算。2026 全年 CPI 尚未認證，手動假設不會被標示為官方資料。</p>
  <details class="advanced inflation-help"><summary>為什麼需要 CPI？這不是直接輸入通膨率嗎？</summary><p>通膨率是兩個可比較時點的 CPI 變化。底層需保留 CPI 以換算 2026 年實質生活費、年末資產購買力及跨年紀錄；畫面會優先呈現通膨和新台幣生活費。第一次建立時，若沒有去年同期 CPI，會顯示「尚無同期資料」，不會捏造全年通膨率。資料需採相同基期，且僅可使用當時已公布版本；本網站另顯示官方快照與核對狀態，但不會把尚未公布的 2026 全年基準或未查證月份自動回填模型。</p></details>
  <div class="form-footer"><div class="tiny-info">試算結果會建立本機年度帳本。顯示的是模型給的生活費預算，不是保證能花的金額或「最大可提款額」。</div><button class="primary-btn" type="submit" id="approve-btn">試算今年可安排的生活費 <span>→</span></button></div>
  </form>

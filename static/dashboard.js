@@ -38,20 +38,19 @@ function updateKpis(){
  const s=stateRead(),y=lastAnnual(),years=s?.years||[];
  const comparison=compareAnnualLivingBudget(y);
  text('dash-budget',y&&Number.isFinite(Number(y.living_authorized_twd))?money(Number(y.living_authorized_twd)):'尚未試算');
- text('dash-budget-sub',y?(y.calendar_first_year?
-  y.year+' 年首年 '+y.calendar_days+'/'+y.calendar_year_days+' 天・按日計算':
-  y.year+' 年全年生活費・依 B＋85 計算')+'（不含換車與額外支出）':
+ const budgetPeriod=y?(y.calendar_first_year&&y.period_start&&y.period_end?
+  String(y.period_start).replaceAll('-','/')+'～'+String(y.period_end).replaceAll('-','/')+'（共 '+y.calendar_days+' 天）':
+  y.year+'/01/01～'+y.year+'/12/31（全年）'):'';
+ text('dash-budget-sub',y?'適用 '+budgetPeriod+'・這段期間的生活費預算，非一次提款指令':
   '依輸入資產與 B＋85 模型試算');
  text('dash-minimum',comparison?money(comparison.minimum):'待試算');
- text('dash-minimum-sub',comparison?
-  (comparison.prorated?y.year+' 年首年 '+y.calendar_days+'/'+y.calendar_year_days+' 天':'本年度全年')+'・已換算當年物價':
-  '試算後按相同期間與物價換算');
+ text('dash-minimum-sub',comparison?'與本次建議預算相同期間・已換算當年物價':'試算後按相同期間與物價換算');
  const differenceCard=$('dash-difference-card');
  let stateLabel='pending',title='與最低需求相比',value='待試算',explanation='完成試算後顯示可增加的預算或缺口';
  if(comparison){
   const delta=comparison.difference;
   if(delta>0){stateLabel='surplus';title='比最低需求多出的生活費';value='＋'+money(delta);
-   explanation='同期間多 '+comparison.pct.toFixed(1)+'%・僅今年預算，不代表往後都能增加';}
+   explanation='同期間多 '+comparison.pct.toFixed(1)+'%・僅本次預算，不代表往後都能增加';}
   else if(delta<0){stateLabel='shortfall';title='距離最低生活需求的缺口';value='−'+money(Math.abs(delta));
    explanation='低於最低需求 '+comparison.pct.toFixed(1)+'%・請重新檢視資產與生活費';}
   else{stateLabel='equal';title='與最低生活需求相當';value='NT$ 0';
@@ -222,7 +221,7 @@ function updateGuardrail(y){
   (fine(y.living_authorized_twd)?Number(y.living_authorized_twd):null);
  if(full!==null)rows.push(['Guardrail 後全年額度',money(full)]);
  if(y.calendar_first_year&&fine(y.calendar_fraction))rows.push([
-  '首年按日換算（'+y.calendar_days+'/'+y.calendar_year_days+' 天）',
+  '本次適用期間生活費（共 '+y.calendar_days+' 天）',
   money(Number(y.living_authorized_twd))
  ]);
  else if(fine(y.living_authorized_twd))rows.push(['本年核准生活費',money(Number(y.living_authorized_twd))]);

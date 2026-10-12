@@ -158,8 +158,8 @@ async def main():
             await page.locator('#opening-tag').filter(has_text='等待年末結算').wait_for(timeout=180000)
             a=await page.locator('#opening-result').inner_text()
             assert 'PoS' in a and '建議生活費' in a
-            assert '通膨換算後正常生活費' in a
-            assert '今年建議生活費' in a
+            assert '原設定的全年生活費（通膨換算後）' in a
+            assert '本次建議生活費預算' in a
             # A single primary annual result; no second large recommendation widget.
             assert await page.locator('#opening-result .metric.featured').count()==1
             assert await page.locator('.dash-recommendation, #dash-recommend-body').count()==0
@@ -168,12 +168,16 @@ async def main():
             assert await page.locator('#dash-budget').inner_text()!='尚未試算'
             import re
             converted=650000*125/float(await page.locator('#cpi_2026').input_value())
-            match=re.search(r'通膨換算後正常生活費\s+NT\$\s*([\d,]+)',a)
+            match=re.search(r'原設定的全年生活費（通膨換算後）\s+NT\$\s*([\d,]+)',a)
             assert match is not None, a
             assert abs(float(match.group(1).replace(',',''))-converted)<2
-            assert '81/366' in a
+            assert '適用期間：2036/10/12～2036/12/31（含起始日，共 81 天）' in a
+            assert '不代表需要在起始日一次提領整筆' in a
+            assert '這是完整一年的生活費設定參考' in a
             assert '全年模型參考 PoS' in a
-            assert '首年' in (await page.locator('#dash-budget-sub').inner_text())
+            assert '2036/10/12～2036/12/31（共 81 天）' in (await page.locator('#dash-budget-sub').inner_text())
+            assert '非一次提款指令' in (await page.locator('#dash-budget-sub').inner_text())
+            assert '本次建議生活費預算' in (await page.locator('#dash-budget-card').inner_text())
             # Year-one floor/recommendation difference uses the SAME CPI-adjusted
             # nominal year and the same 81/366-day spending period as the engine.
             model_year=await page.evaluate('() => state.years[state.years.length-1]')
@@ -356,7 +360,7 @@ async def main():
                 assert saved['normal_twd']==350000
                 assert saved['core_twd']==350000
                 assert saved['floor_twd']==350000
-                assert '今年建議生活費' in (await essential.locator('#opening-result').inner_text())
+                assert '本次建議生活費預算' in (await essential.locator('#opening-result').inner_text())
                 await essential.locator('.capacity-research .capacity-grid article').first.wait_for(timeout=180000)
                 inverse_text=await essential.locator('.capacity-research').inner_text()
                 assert '95%' in inverse_text and '99%' in inverse_text
