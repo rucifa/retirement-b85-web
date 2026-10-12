@@ -3,7 +3,7 @@
 'use strict';
 const $=id=>document.getElementById(id),money=n=>new Intl.NumberFormat('zh-TW',{maximumFractionDigits:0}).format(n);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
- let result=null,sourceKey=null,runningKey=null,simulationWorker=null,timer=null,generation=0,running=false;
+ let result=null,lastDiagnostic=null,sourceKey=null,runningKey=null,simulationWorker=null,timer=null,generation=0,running=false;
 const currentKey=()=>{const y=state?.years?.at(-1);return y?y.approval_id+'|'+(y.closing?.sha256||'pending'):null;};
 function status(message,mode){$('mc-status').textContent=message;$('mc-status').dataset.state=mode;}
  function finish(){simulationWorker?.terminate();simulationWorker=null;clearTimeout(timer);timer=null;running=false;runningKey=null;$('mc-run').disabled=false;$('mc-cancel').classList.add('hidden');}
@@ -63,7 +63,7 @@ async function run(){
    if(m.type==='progress'){status(m.message,'running');return;}
    if(m.type==='simulation-progress'){status('正在模擬退休年度：'+m.done+'／'+m.total+'，可隨時取消。','running');return;}
    if(m.type!=='result')return;
-   if(!m.ok){finish();status(m.error||'模擬失敗，紀錄保持原狀。','error');return;}
+   if(!m.ok){lastDiagnostic=m.diagnostic||m.error;finish();status(m.error||'模擬失敗，紀錄保持原狀。','error');return;}
    if(m.id===1){simulationWorker.postMessage({id:2,op:'projection',data:{paths:higher?8192:2048,inner_paths:higher?2048:512,inflation_pct:inflation}});return;}
    finish();if(currentKey()!==key){status('年度紀錄已改變，研究結果未套用；請重新計算。','stale');return;}
    result=m.data;sourceKey=key;draw();status('模擬完成：'+result.paths+' 條隨機路徑，至 104 歲。百分位與成功率分開呈現。','complete');
@@ -83,5 +83,5 @@ const observer=new MutationObserver(()=>{
  if((running||result)&&currentKey()!==sourceKey&&result){result=null;sourceKey=null;$('mc-chart').textContent='年度紀錄已更新，請重新計算。';$('mc-diagnostics').replaceChildren();$('mc-provenance').replaceChildren();$('mc-table').replaceChildren();$('mc-export').classList.add('hidden');if(running)cancel('紀錄已更新，請重新計算。');else status('年度紀錄已更新，舊模擬結果已清除。','stale');}
 });
 observer.observe($('history-list'),{childList:true});
-window.B85_MC_RESEARCH=Object.freeze({getResult:()=>result,isRunning:()=>running});
+window.B85_MC_RESEARCH=Object.freeze({getResult:()=>result,getError:()=>lastDiagnostic,isRunning:()=>running});
 })();

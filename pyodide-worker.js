@@ -59,7 +59,9 @@ _out`);
     }
     self.postMessage({type:'result',id,ok:true,...response});
   }catch(error){
-    self.postMessage({type:'result',id,ok:false,error:(error?.message||String(error)).slice(-1800)});
+    const detail=error?.message||String(error);
+    if(req.op==='projection')self.postMessage({type:'result',id,ok:false,error:'蒙地卡羅研究未完成，請稍後重試或改用快速模式。',diagnostic:detail.slice(-1800)});
+    else self.postMessage({type:'result',id,ok:false,error:detail.slice(0,700)});
   }
 }
 self.addEventListener('message',event=>{

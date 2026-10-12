@@ -428,7 +428,7 @@ async def main():
                 await extra_page.locator('#dash-mc-tab').click()
                 await extra_page.locator('#mc-run').click()
                 await extra_page.wait_for_function("['complete','error','cancelled','stale'].includes(document.getElementById('mc-status').dataset.state)",timeout=240000)
-                assert await extra_page.locator('#mc-status').get_attribute('data-state')=='complete', await extra_page.locator('#mc-status').inner_text()
+                assert await extra_page.locator('#mc-status').get_attribute('data-state')=='complete', (await extra_page.locator('#mc-status').inner_text(), await extra_page.evaluate('window.B85_MC_RESEARCH.getError()'))
                 result=await extra_page.evaluate('window.B85_MC_RESEARCH.getResult()')
                 independent=project_saved(saved,paths=2048,inner_paths=512)
                 assert result['end_age']==104 and result['all_paths_included']
@@ -468,6 +468,8 @@ async def main():
                 await extra_page.locator('#closing-result').filter(has_text='已完成年度結算').wait_for(timeout=120000)
                 assert await extra_page.evaluate('window.B85_MC_RESEARCH.getResult()') is None
                 await extra_page.locator('[data-go="opening"]').first.click()
+                if not await extra_page.locator('#decision_cpi').is_visible():
+                    await extra_page.locator('.cpi-manual-input summary').click()
                 await extra_page.locator('#decision_cpi').fill('113')
                 await extra_page.locator('#decision_cpi_release').fill('2027-01-07')
                 await extra_page.locator('#approve-btn').click()
@@ -480,7 +482,7 @@ async def main():
                 await extra_page.locator('#mc-precision').select_option('higher')
                 await extra_page.locator('#mc-run').click()
                 await extra_page.wait_for_function("['complete','error','cancelled','stale'].includes(document.getElementById('mc-status').dataset.state)",timeout=240000)
-                assert await extra_page.locator('#mc-status').get_attribute('data-state')=='complete', await extra_page.locator('#mc-status').inner_text()
+                assert await extra_page.locator('#mc-status').get_attribute('data-state')=='complete', (await extra_page.locator('#mc-status').inner_text(), await extra_page.evaluate('window.B85_MC_RESEARCH.getError()'))
                 high=await extra_page.evaluate('window.B85_MC_RESEARCH.getResult()')
                 assert high['paths']==8192 and high['inner_paths']==2048
                 assert high['years'][0]['year']==2027 and high['years'][-1]['age']==104
