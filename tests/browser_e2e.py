@@ -16,6 +16,13 @@ async def main():
         try:
             await page.goto('http://127.0.0.1:8766/',wait_until='domcontentloaded')
             await page.locator('#runtime-status.ready').wait_for(timeout=180000)
+            assert await page.locator('#dashboard-kpis .dash-kpi').count()==4
+            assert await page.locator('#dashboard-cpi-card').count()==1
+            assert await page.locator('#dashboard-baseline article').count()==4
+            assert await page.locator('#dashboard-lower .dash-widget').count()==4
+            assert await page.locator('.sidebar').evaluate('(x)=>getComputedStyle(x).flexDirection')=='row'
+            assert '尚未試算' in (await page.locator('#dash-budget').inner_text())
+            print('BROWSER_DASHBOARD_NAV_AND_LAYOUT_PASS')
             print('BROWSER_PYODIDE_LOADED')
             await page.locator('#official-cpi-panel[data-status="no-year-data"]').wait_for(timeout=120000)
             assert '2036 年尚未有' in (await page.locator('#official-cpi-panel').inner_text())
@@ -50,6 +57,55 @@ async def main():
             assert '通膨換算後正常生活費' in a
             assert '今年核准生活費' in a
             print('BROWSER_INFLATION_SPENDING_RESULT_PASS')
+            await page.locator('#dash-budget').filter(has_text='NT
+            await page.locator('[data-go="closing"]').first.click()
+            await page.locator('#demo-close-btn').click()
+            await page.locator('#close-btn').click()
+            await page.locator('#closing-result').filter(has_text='已完成年度結算').wait_for(timeout=120000)
+            print('BROWSER_2036_YEAR_CLOSE_PASS')
+            await page.reload(wait_until='domcontentloaded')
+            await page.locator('#runtime-status.ready').wait_for(timeout=180000)
+            await page.locator('#opening-form').wait_for()
+            assert '2037-01-15' == await page.locator('#decision_date').input_value()
+            await page.locator('#dash-asset-chart svg').wait_for(timeout=15000)
+            assert '1 年' in (await page.locator('#dash-years').inner_text())
+            print('BROWSER_DASHBOARD_REAL_YEAR_CHART_PASS')
+            print('BROWSER_LOCAL_INDEXEDDB_RESTART_PASS')
+            await page.locator('[data-go="history"]').first.click()
+            async with page.expect_download() as dl:
+                await page.locator('#export-btn').click()
+            data=json.loads(Path(await (await dl.value).path()).read_text('utf-8'))
+            assert data['file_kind']=='local_yearly_research_export'
+            assert len(data['payload']['years'])==1
+            print('BROWSER_LOCAL_JSON_EXPORT_PASS')
+            await page.locator('#import-file').set_input_files({'name':'B85_年度研究備份.json','mimeType':'application/json','buffer':json.dumps(data,ensure_ascii=False).encode('utf-8')})
+            await page.locator('#alert').filter(has_text='匯入完成').wait_for(timeout=120000)
+            print('BROWSER_LOCAL_JSON_IMPORT_PASS')
+            assert '2036' in (await page.locator('#history-list').inner_text())
+            print('B85_PAGES_BROWSER_PYODIDE_E2E_PASS')
+            await page.route('**/data/cpi_verified.json',lambda route:route.abort())
+            await page.reload(wait_until='domcontentloaded')
+            await page.locator('#official-cpi-panel[data-status="error"]').wait_for(timeout=15000)
+            assert '保留原手動輸入' in (await page.locator('#official-cpi-panel').inner_text())
+            await page.unroute('**/data/cpi_verified.json')
+            async def bad_json(route):
+                await route.fulfill(status=200,content_type='application/json',body='{}')
+            await page.route('**/data/cpi_verified.json',bad_json)
+            await page.reload(wait_until='domcontentloaded')
+            await page.locator('#official-cpi-panel[data-status="error"]').wait_for(timeout=15000)
+            print('BROWSER_CPI_OFFLINE_AND_INVALID_SCHEMA_PASS')
+        except Exception:
+            print('BROWSER_FAILURE_LAST_LOGS',json.dumps(logs[-15:],ensure_ascii=False))
+            try: await page.screenshot(path='/tmp/b85_pages_browser_failure.png',full_page=True,timeout=2000)
+            except Exception:pass
+            raise
+        finally:
+            await browser.close()
+
+if __name__=='__main__':asyncio.run(main())
+).wait_for(timeout=120000)
+            assert '2036' in (await page.locator('#dash-budget-sub').inner_text())
+            print('BROWSER_DASHBOARD_USES_ACTUAL_POLICY_RESULT_PASS')
             print('BROWSER_2036_B85_APPROVAL_PASS')
             await page.locator('[data-go="closing"]').first.click()
             await page.locator('#demo-close-btn').click()
