@@ -82,8 +82,10 @@ function inflationCards(current,reference,previous,year,normalBase){
 function renderInflationPreview(){
  const el=$('inflation-preview');if(!el)return;
  const previous=lastYear()?.decision_cpi??null;
- const reference=state?.plan?.cpi_2026??Number($('cpi_2026').value||'110');
- const normal=Number(state?.plan?.spending_profile?.normal_twd??$('normal_spend_2026_twd')?.value??650000);
+ const reference=state?.plan?.cpi_2026??Number($('cpi_2026').value||0);
+ const floorInput=Number($('floor_spend_2026_twd')?.value||0);
+ const wish=$('normal_spend_2026_twd')?.value;
+ const normal=Number(state?.plan?.spending_profile?.normal_twd??(wish||floorInput||650000));
  el.innerHTML=inflationCards(Number($('decision_cpi').value),Number(reference),Number(previous),$('decision_date').value.slice(0,4),normal);
 }
 
@@ -155,10 +157,10 @@ const fieldVal=id=>$(id).value;
 function initPayload(){return {
  decision_date:fieldVal('decision_date'),planned_extra_twd:fieldVal('planned_extra_twd'),start_age:fieldVal('start_age'),
  investment_twd:fieldVal('investment_twd'),cash_twd:fieldVal('cash_twd'),stock_bond:fieldVal('stock_bond'),
- cpi_2026:fieldVal('cpi_2026')||'110',decision_cpi:fieldVal('decision_cpi'),decision_cpi_release:fieldVal('decision_cpi_release'),
+ cpi_2026:fieldVal('cpi_2026'),decision_cpi:fieldVal('decision_cpi'),decision_cpi_release:fieldVal('decision_cpi_release'),
  decision_cpi_source:$('decision_cpi').dataset.autoSource||'MANUAL',
  spending_profile_mode:'GENERALIZED_RESEARCH_SPENDING_V1',
- normal_spend_2026_twd:fieldVal('normal_spend_2026_twd'),
+ normal_spend_2026_twd:fieldVal('normal_spend_2026_twd')||fieldVal('floor_spend_2026_twd'),
  core_spend_2026_twd:fieldVal('core_spend_2026_twd'),
  floor_spend_2026_twd:fieldVal('floor_spend_2026_twd')};}
 function endPayload(){return {closing_date:fieldVal('closing_date'),closing_cpi:fieldVal('closing_cpi'),
@@ -184,7 +186,7 @@ $('import-file').addEventListener('change',async e=>{const file=e.target.files?.
  }catch(err){flash('匯入失敗：'+err.message)}finally{e.target.value='';}});
 $('reset-btn').addEventListener('click',async()=>{
  if(!engineReady){flash('計算引擎尚未就緒，暫時無法清除');return;}
- if(!confirm('確定清除這個瀏覽器的全部退休演練紀錄？\\n\\n按「確定」後會先下載 JSON 備份，再刪除本機年度資料。\\n這項動作無法由網頁復原，需使用備份重新匯入。'))return;
+ if(!confirm('確定清除這個瀏覽器的全部退休演練紀錄？\n\n按「確定」後會先下載 JSON 備份，再刪除本機年度資料。\n這項動作無法由網頁復原，需使用備份重新匯入。'))return;
  const btn=$('reset-btn');btn.disabled=true;
  try{
   const backup=await request('/api/export',{});
@@ -197,25 +199,41 @@ $('reset-btn').addEventListener('click',async()=>{
 document.addEventListener('click',e=>{const b=e.target.closest('[data-go]');if(b&&!b.disabled){display(b.dataset.go);}});
 $('decision_date').addEventListener('change',()=>{$('first_year').value=$('decision_date').value.slice(0,4);updateDecisionMonthHelp();});
 function renderSpendingProfileInput(){
- const n=Number($('normal_spend_2026_twd').value),c=Number($('core_spend_2026_twd').value),
-   f=Number($('floor_spend_2026_twd').value),out=$('spending-profile-preview');
+ const floorEl=$('floor_spend_2026_twd'),wishEl=$('normal_spend_2026_twd'),
+       coreEl=$('core_spend_2026_twd'),out=$('spending-profile-preview');
  if(!out)return;
- if(![n,c,f].every(x=>Number.isInteger(x)&&x>=12000&&x<=10000000)){
-  out.textContent='請填三個每年整數金額，範圍 12,000～10,000,000 元。';
+ const f=Number(floorEl.value),n=wishEl.value.trim()?Number(wishEl.value):f;
+ if(!floorEl.value.trim()||![f,n].every(x=>Number.isInteger(x)&&x>=12000&&x<=10000000)){
+  out.textContent='請先填一年最低省不掉的生活費（12,000～10,000,000 元）。希望的生活費可以不填。';
   out.dataset.valid='false';return;
  }
- if(!(f<=c&&c<=n)){
-  out.textContent='支出金額需符合：Floor 最低必要支出 ≤ 核心生活費 ≤ 正常生活費。';
+ if(n<f){
+  out.textContent='「希望每年花多少」不能低於最低必要生活費。';
+  out.dataset.valid='false';return;
+ }
+ // The legacy 65/60/50 example places Core 2/3 of the way from Floor
+ // toward desired spending. Core is an internal reference, NOT a second expense.
+ if(coreEl.dataset.userEdited!=='true'){
+  coreEl.value=String(Math.min(n,Math.max(f,Math.round(f+(n-f)*2/3))));
+ }
+ const c=Number(coreEl.value);
+ if(!Number.isInteger(c)||c<f||c>n){
+  out.textContent='進階的中間生活費參考值必須介於最低需求與希望的生活費之間。';
   out.dataset.valid='false';return;
  }
  out.dataset.valid='true';
- out.textContent='正常每月約 '+twMoney(n/12)+'；核心每月約 '+twMoney(c/12)+
-  '；Floor 每月約 '+twMoney(f/12)+
-  '。核心層僅供參考；PoS 與 Guardrail 使用個人正常支出與 Floor 重新試算。安全現金政策目標仍為 240 萬。';
+ const selected=wishEl.value.trim()?'以你希望的年度生活費 '+twMoney(n)+' 作為模型預算起點。':
+  '未填希望支出：先以最低需求 '+twMoney(f)+' 作為模型預算起點。';
+ out.textContent='最低生活費每月約 '+twMoney(f/12)+'。'+selected+
+  ' 按「試算」才會依資產、PoS 和 Guardrail 計算今年可安排的生活費；不是最大安全提領額。安全現金政策目標仍為 240 萬。';
 }
-for(const id of ['normal_spend_2026_twd','core_spend_2026_twd','floor_spend_2026_twd']){
+for(const id of ['normal_spend_2026_twd','floor_spend_2026_twd']){
  $(id).addEventListener('input',()=>{renderSpendingProfileInput();renderInflationPreview();});
 }
+$('core_spend_2026_twd').addEventListener('input',e=>{
+ if(e.isTrusted)e.currentTarget.dataset.userEdited='true';
+ renderSpendingProfileInput();renderInflationPreview();
+});
 renderSpendingProfileInput();
 for(const id of ['decision_date','cpi_2026','decision_cpi']){
  $(id).addEventListener('input',renderInflationPreview);
