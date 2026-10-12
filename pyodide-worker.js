@@ -59,7 +59,7 @@ _out`);
     }
     self.postMessage({type:'result',id,ok:true,...response});
   }catch(error){
-    self.postMessage({type:'result',id,ok:false,error:(error?.message||String(error)).slice(0,700)});
+    self.postMessage({type:'result',id,ok:false,error:(error?.message||String(error)).slice(-1800)});
   }
 }
 self.addEventListener('message',event=>{

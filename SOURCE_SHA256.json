@@ -17,7 +17,7 @@
   "policy/retirement_model_v340.py": "54dd2718a098c7f8182fcc44db980c523c2859fdaa276c50e81e8f8ea8712f10",
   "policy/simple_annual_ledger.py": "f1bc90cde15cbe08edb466297f693099c20aa5b78779ea8d818b01df8af0e4b6",
   "projection_research.py": "66a5c838b26b6db77da732ca81fd68ad9df5293edb8e9c64a80a90971ec7bd61",
-  "pyodide-worker.js": "dd5f328074725488f37e56c89022050803ebc0725c9c8372ee18903528da8de2",
+  "pyodide-worker.js": "a4dc8440cdc530fd82d6864f4bb33f6cacc0538fc1f99c697e56988c8deb93ba",
   "scripts/public_cpi/cpi_sources.py": "6e893e0bd5bb6330b14217ad26cce44ac590356d3231effdff1a1c63d26c7cf8",
   "scripts/public_cpi/tests/test_public_cpi.py": "790ae9178f60e0d223849b1d5f8ffa4c699ce159fbc9103a37036d2f7d7d6a80",
   "scripts/public_cpi/update.py": "604dfed24b86e1d871b6b824ed73c9dfc142f912818f6f35122d649fbe1c7d4a",
