@@ -127,30 +127,14 @@ function renderHistory(){
 }
 async function refresh(){state=await request('/api/state');render();}
 function updateDecisionMonthHelp(){
- const val=$('decision_date')?.value||'';
- const hint=$('decision-month-guidance'),btn=$('use-january-date');
- if(!hint||!btn)return;
- const allowed=/^\d{4}-01-\d{2}$/.test(val);
- hint.textContent=allowed?
-  '年度決策日在 1 月；CPI 公布日仍不得晚於這個日期。':
-  '台灣今天可作資料查詢基準；B＋85 年初一次提領規則只允許每年 1 月作年度決策。不能將其他月份當成整年年初。';
- btn.hidden=allowed||!/^\d{4}-\d{2}-\d{2}$/.test(val);
+ const first=!(state?.years?.length);
+ const hint=$('decision-month-guidance'),button=$('use-january-date');
+ if(hint)hint.textContent=first?
+   '首次退休可選任何日期。只核准當日至 12 月 31 日（含當日）的生活費；隔年一月重新核准全年。':
+   '第二年以後每年一月重新核准完整年度，保留已保存的曆年帳本。';
+ if(button)button.hidden=true;
 }
-$('use-january-date')?.addEventListener('click',()=>{
- const d=$('decision_date').value;
- if(!/^\d{4}-\d{2}-\d{2}$/.test(d))return;
- const newDate=d.slice(0,4)+'-01-15';
- $('decision_date').value=newDate;
- const published=$('decision_cpi_release'),index=$('decision_cpi');
- if(published&&published.value&&published.value>newDate){
-  published.value='';
-  if(index)index.value='';
-  const small=index?.closest('label')?.querySelector('small');
-  if(small)small.textContent='原先帶入的月度 CPI 公布日在選定的一月決策日之後，因此已清除。請填入該決策日前已公開的有效 CPI 與真正公布日。';
- }
- $('decision_date').dispatchEvent(new Event('change',{bubbles:true}));
- renderInflationPreview();
-});
+
 const fieldVal=id=>$(id).value;
 function initPayload(){return {
  decision_date:fieldVal('decision_date'),planned_extra_twd:fieldVal('planned_extra_twd'),start_age:fieldVal('start_age'),

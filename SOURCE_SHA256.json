@@ -1,16 +1,16 @@
 {
   ".nojekyll": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "bridge.py": "d1397517091fee07f9f608ef953b632bc633c9c63388ec7af9324790bcd07f1a",
-  "index.html": "12f48ef21b06e0d4d4d4faf0f6bfd64838067e2830bcbfd3c81f2e9a4f2f07e2",
+  "bridge.py": "e0630aaac9a1af658b20082e549ee9ca30a73b2b6348222ed48d13010d85ec50",
+  "index.html": "d3dad14de7239d558eee4934750091a4e85aab05b4493cf933e03fae7782753a",
   "policy/__init__.py": "c351713828d38702d7b6562661a8e52511e0c63d370d55a77109263a4a7ea0e1",
   "policy/annual_execution_v340.py": "4e92b2a6b3d7166ca7536b6afdcb3ce6bffd90ac8f94d7a47e0231c266eee0df",
   "policy/retirement_model_v340.py": "54dd2718a098c7f8182fcc44db980c523c2859fdaa276c50e81e8f8ea8712f10",
-  "policy/simple_annual_ledger.py": "297901aaf5b43cb18fc72870755e562148b170e7ef34c6b3f462f981a387a11c",
-  "pyodide-worker.js": "397023dbcece709fbdd3e80b9d91e71011bc3f167333474413491c6bcd4f4e64",
-  "static/app.js": "20e9337d9ab80b96471770082ffbdb02e8a7395cf491170cee33b5e39f09099e",
+  "policy/simple_annual_ledger.py": "f1bc90cde15cbe08edb466297f693099c20aa5b78779ea8d818b01df8af0e4b6",
+  "pyodide-worker.js": "1e57ab6d9f467c2f2dc496d065b5b50ed45b47b356a443c8da3a9eb15d4a8673",
+  "static/app.js": "1b01e039215f6140d612cfe44c33c04c4ddf4c59f673b7b423f9dde2edc89918",
   "static/style.css": "36f229f3a94ece742274f4ca1bc7c95ff3c06f40346fb25b8da09d172b8561f8",
   "tests/test_pages_bridge.py": "b365c0a78815047f3fd9b3b5b560cc48802cdd9c0d48217a4ee31aa4d60e79e1",
-  "workflow.py": "130809eaf5863ed960a56bfc0596b18abb811cf9b5794b21682b526e6de58ffe",
+  "workflow.py": "82678f21fd1cb1dbf0b7f88c76e7fe2ea36da83aa17c9b0212d644b6d5ad67ca",
   "tests/browser_e2e.py": "5513b12d74818d0625e74175d4f4cd1f610e0bd0a7985ab557163c91efecc949",
   "data/cpi_verified.json": "bef1d0acf690bac4edc62ba91af7e0a9aab35825a1d478598f0702264d9d17c8",
   "static/cpi-official.js": "45c2272fc90ecd7a0e0b787d7aba7b27fa45158e8ec82dd8957610efe034dcd1",
@@ -19,5 +19,6 @@
   "scripts/public_cpi/tests/test_public_cpi.py": "790ae9178f60e0d223849b1d5f8ffa4c699ce159fbc9103a37036d2f7d7d6a80",
   "static/dashboard.css": "a9bb50d80d313e6b1335c02264c66045ddd1ed97861632f74fbc0b505f219893",
   "static/dashboard.js": "2a2ca72d74b3bebdf73bc53c719e106ecda9207726a34814951cc4dfeaf2104e",
-  "static/taiwan-time.js": "2a0e63ba7eff9ee308db9bd2d7a8c65aa47f86654c67f5c34630bed7317a202c"
+  "static/taiwan-time.js": "2a0e63ba7eff9ee308db9bd2d7a8c65aa47f86654c67f5c34630bed7317a202c",
+  "calendar_first_year.py": "32820dbc95b55944e50f1cd5ad6c426428418cfca55d124f8d0566166192c67e"
 }

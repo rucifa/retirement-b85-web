@@ -168,7 +168,7 @@ def approve_year(opening: AnnualOpening, cfg: policy.ModelConfig,
 
 def close_year(approval:YearApproval, actual:YearActual) -> YearClose:
     d=date.fromisoformat(actual.closing_date)
-    if d.year != approval.opening.year or d<=date.fromisoformat(approval.opening.decision_date):
+    if d.year != approval.opening.year or d<date.fromisoformat(approval.opening.decision_date) or (d==date.fromisoformat(approval.opening.decision_date) and approval.mode!="CALENDAR_FIRST_YEAR_RESEARCH_V1"):
         raise ValueError("close must be after approval within same year")
     if not actual.event_id or len(actual.event_id)>128:
         raise ValueError("unique year-end closing event ID required")

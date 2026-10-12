@@ -9,6 +9,7 @@ import json
 from pathlib import Path
 from datetime import date
 from workflow import AnnualWorkflow, InputError, digest, hydrate_approval, hydrate_close
+from calendar_first_year import MODE as CALENDAR_MODE, validate_metadata
 
 STATE_PATH=Path('/home/pyodide/private/annual_records.json')
 ENGINE: AnnualWorkflow | None = None
@@ -36,6 +37,9 @@ def _validate_import(export: dict):
             if not isinstance(plan.get(key),(int,float)) or not 10 < plan[key] < 500:
                 raise InputError('備份 CPI 值異常')
         first_year=plan.get('first_year');start_age=plan.get('start_age')
+        calendar_contract=plan.get('calendar_first_year_contract')
+        if calendar_contract is not None and calendar_contract != CALENDAR_MODE:
+            raise InputError('未知的曆年首年規格')
         if not isinstance(first_year,int) or not isinstance(start_age,int):raise InputError('備份起始資訊錯誤')
         for i,row in enumerate(years):
             if not isinstance(row,dict) or not isinstance(row.get('approval'),dict):raise InputError('備份年度格式不正確')
@@ -43,6 +47,15 @@ def _validate_import(export: dict):
             if opening.year!=first_year+i or opening.age!=start_age+i:
                 raise InputError('年度或年齡有跳號，已拒絕還原')
             if opening.decision_date[:4]!=str(opening.year):raise InputError('決策年分異常')
+            try:
+                if i==0 and calendar_contract==CALENDAR_MODE:
+                    validate_metadata(row,first_year)
+                elif row.get('calendar_first_year'):
+                    raise ValueError('只有首年可以使用部分年度核准')
+                if i>0 and date.fromisoformat(opening.decision_date).month!=1:
+                    raise ValueError('非首年必須在一月重新核准全年')
+            except (ValueError,TypeError,KeyError) as exc:
+                raise InputError('匯入的曆年制日期或資產守恆不一致：'+str(exc)) from exc
             if date.fromisoformat(row['cpi_decision_release'])>date.fromisoformat(opening.decision_date):
                 raise InputError('備份包含決策日尚未公布的 CPI')
             if row.get('close') is None:

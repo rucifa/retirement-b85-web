@@ -25,6 +25,7 @@ from policy.simple_annual_ledger import (
     close_from_balances, nominal_to_activation_real, USD_TWD_ASSUMED,
 )
 from policy.annual_execution_v340 import AnnualResult
+from calendar_first_year import MODE as CALENDAR_MODE, prorate_first_year
 
 MILLION = 1_000_000
 STATE_VERSION = 1
@@ -186,6 +187,20 @@ class AnnualWorkflow:
             'emergency_pending':opening.emergency_pending,
             'assumed_drag_description':'已在 B+85 市場模型的 net_central_2026ref 情境中計入一次，年末不重扣。',
         }
+        meta=y.get('calendar_first_year')
+        if meta:
+            result.update({
+                'calendar_first_year':True,
+                'period_start':meta['period_start'],'period_end':meta['period_end'],
+                'calendar_days':meta['calendar_days'],'calendar_year_days':meta['calendar_year_days'],
+                'calendar_fraction':meta['calendar_fraction'],
+                'full_year_living_reference_twd':nominal_twd(meta['full_year_living_budget_m'],decision_cpi,activation_cpi),
+                'pos_period_label':'全年政策 PoS 參考，尚非部分年度精算'
+            })
+        else:
+            result.update({'calendar_first_year':False,'period_start':opening.decision_date,
+                           'period_end':f'{opening.year}-12-31','calendar_fraction':1,
+                           'pos_period_label':'全年政策 PoS 參考'})
         if closing:
             c=hydrate_close(closing)
             close_cpi=y['closing_cpi']
@@ -221,8 +236,8 @@ class AnnualWorkflow:
                 raise InputError('已到達 104 歲模型終點')
             dt=data.get('decision_date','')
             decision=valid_date(dt,'年初決策')
-            if decision.month!=1:
-                raise InputError('研究模型採每年一月決策；請輸入一月日期')
+            if prior is not None and decision.month!=1:
+                raise InputError('曆年制在第一年後必須於每年一月核准完整年度')
             current_cpi,release=self._validate_asof(data,dt,'decision')
             if prior is None:
                 start_age=integral(data,'start_age',45,90)
@@ -247,7 +262,8 @@ class AnnualWorkflow:
                       'mode':'SIMULATION_SHADOW_ONLY',
                       'cost_assumption':'net_central_2026ref',
                       'model_version':'v3.4.0_B85',
-                      'seed':SEED,'inner_paths':INNER_DRAWS}
+                      'seed':SEED,'inner_paths':INNER_DRAWS,
+                      'calendar_first_year_contract':CALENDAR_MODE}
                 prior_close=None
             else:
                 plan=self._state['plan']
@@ -266,14 +282,21 @@ class AnnualWorkflow:
                 # Beginning-of-year nominal values are reference previews only;
                 # no unverified external contributions/transfers are inferred.
             cfg=policy_config(plan)
-            try:approval=approve_year(opening,cfg,n_inner=INNER_DRAWS,seed=SEED,prior_close=prior_close)
-            except (ValueError,ArithmeticError,OverflowError) as e:raise InputError('B＋85 年初核准遭拒：'+str(e)) from e
+            try:
+                approval=approve_year(opening,cfg,n_inner=INNER_DRAWS,seed=SEED,prior_close=prior_close)
+                first_calendar=None
+                if prior is None:
+                    approval,first_calendar=prorate_first_year(approval)
+            except (ValueError,ArithmeticError,OverflowError) as e:raise InputError('B＋85 年度核准遭拒：'+str(e)) from e
             row={
                 'approval':asdict(approval),
                 'cpi_decision':current_cpi,'cpi_decision_release':release,
                 'closing_cpi':None,'closing_cpi_release':None,
                 'closing_date':None,'close':None,'statement':None,
             }
+            if first_calendar is not None:
+                row['calendar_first_year']=first_calendar
+
             new=copy.deepcopy(self._state)
             new['plan']=plan;new['years'].append(row)
             self._commit(new)
@@ -287,7 +310,7 @@ class AnnualWorkflow:
             approval=hydrate_approval(row['approval'])
             closing_date=data.get('closing_date','')
             closing=valid_date(closing_date,'年末結算')
-            if closing.year!=approval.opening.year or closing<=date.fromisoformat(approval.opening.decision_date):
+            if closing.year!=approval.opening.year or closing<date.fromisoformat(approval.opening.decision_date) or (closing==date.fromisoformat(approval.opening.decision_date) and approval.mode!=CALENDAR_MODE):
                 raise InputError('結算日期必須在核准後且同一年度')
             close_cpi,pub=self._validate_asof(data,closing_date,'closing')
             if close_cpi + 1e-8 < row['cpi_decision']*.5 or close_cpi>row['cpi_decision']*2:
