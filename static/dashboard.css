@@ -194,3 +194,7 @@ body{color:var(--dash-ink);background:linear-gradient(150deg,#edf9fa 0%,#f6f8fb 
 #inflation-preview.hidden{display:none!important}
 @media(max-width:890px){#panel-opening>.baseline-block .baseline-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:480px){#panel-opening>.baseline-block .baseline-grid{grid-template-columns:1fr}}
+
+.decision-month-guidance{display:block;color:#8b6234!important;background:#fff8eb;border-left:3px solid #d9a965;padding:7px 10px;border-radius:5px;margin-top:8px;line-height:1.65}
+#use-january-date{display:block;margin-top:8px;padding:5px 0}
+#use-january-date[hidden]{display:none!important}
