@@ -186,3 +186,11 @@ body{color:var(--dash-ink);background:linear-gradient(150deg,#edf9fa 0%,#f6f8fb 
 }
 #dashboard-cpi-card{scroll-margin-top:95px}
 @media(max-width:630px){#dashboard-cpi-card{scroll-margin-top:75px}}
+
+/* Spending reference is not an input card: show only after an approved model result. */
+#panel-opening>.baseline-block{grid-column:1/-1;margin:0 0 1px}
+#panel-opening>.baseline-block .baseline-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+#panel-opening>.baseline-block.hidden{display:none!important}
+#inflation-preview.hidden{display:none!important}
+@media(max-width:890px){#panel-opening>.baseline-block .baseline-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:480px){#panel-opening>.baseline-block .baseline-grid{grid-template-columns:1fr}}
