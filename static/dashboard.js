@@ -19,13 +19,15 @@ function updateKpis(){
  const s=stateRead(),y=lastAnnual(),years=s?.years||[];
  if(y&&fine(y.living_authorized_twd)){
   text('dash-budget',money(Number(y.living_authorized_twd)));
-  text('dash-budget-sub',y.year+' 年・依 B＋85 計算（研究演練）');
+  text('dash-budget-sub',y.calendar_first_year?
+   y.year+' 年首年 '+y.calendar_days+'/'+y.calendar_year_days+' 天・生活費按日換算':
+   y.year+' 年・依 B＋85 計算（研究演練）');
  }else{
   text('dash-budget','尚未試算');
   text('dash-budget-sub','完成年初核准後顯示');
  }
  text('dash-pos',y&&fine(y.pos_pct)?Number(y.pos_pct).toFixed(1)+'%':'—');
- text('dash-pos-sub',y?'計算於 '+y.year+' 年（非保證）':'依 B＋85 政策計算');
+ text('dash-pos-sub',y?'完整年度模型參考 PoS（未校準首年短期間）':'依 B＋85 政策計算');
  text('dash-years',years.length+' 年');
  text('dash-years-sub',years.length?'最早 '+years[0].year+' 年 · 最新 '+years[years.length-1].year+' 年':'僅保存在此瀏覽器');
  text('dash-policy-status',y?'已計算 '+y.year+' 年預算；'+(y.b85_restored?'符合 B＋85 恢復條件。':'以當年的 Guardrail／Sticky 結果為準。'):'目前尚無核准年度；請先執行年初試算。');
@@ -37,7 +39,7 @@ function updateKpis(){
   result.append(heading);
   const p=document.createElement('p');
   p.textContent=y?
-   y.year+' 年已核准生活費 · '+(y.age||'—')+' 歲（研究演練）；不等於實際已提領金額。':
+   y.year+' 年已核准'+(y.calendar_first_year?'首年按日生活費':'全年生活費')+' · '+(y.age||'—')+' 歲（研究演練）；不等於實際已提領金額。':
    '請填妥年度資料並執行年初核准，建議金額將直接採用 B＋85 計算結果。';
   result.append(p);
   if(y&&fine(y.pos_pct)){

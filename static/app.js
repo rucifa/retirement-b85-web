@@ -40,15 +40,18 @@ function lastYear(){return state?.years?.length?state.years[state.years.length-1
 function budgetHtml(y){
  if(!y)return '';
  const total=twMoney(y.living_authorized_twd),car=twMoney(y.car_authorized_twd),pos=pct(y.pos_pct);
- return `<div class="result-caption">${y.year} 年・${y.age} 歲・B＋85 政策計算結果</div>
+ const part=y.calendar_first_year;
+ const period=part?`首年 ${y.period_start}～${y.period_end}・含首日 ${y.calendar_days}/${y.calendar_year_days} 天（${(y.calendar_fraction*100).toFixed(2)}%）`:`完整年度・${y.year} 年`;
+ const annual=part?`按日換算前全年生活費 ${twMoney(y.full_year_living_reference_twd)}，首年核准 ${total}。車輛及額外必要支出不按天數縮減。`:'';
+ return `<div class="result-caption">${y.year} 年・${y.age} 歲・${period}・B＋85 研究演練</div>
  <div class="result-grid">
  ${metric('今年核准生活費',total,true)}
- ${metric('模型推估成功率 PoS',pos)}
+ ${metric('全年模型參考 PoS',pos)}
  ${metric('換車專項預算',car)}
  </div><div class="progress-track"><div class="progress-bar" style="width:${Math.max(0,Math.min(100,y.pos_pct))}%"></div></div>
  <div class="inflation-preview result-inflation">${inflationCards(Number(y.decision_cpi),Number(state?.plan?.cpi_2026),state?.years?.length>1?Number(state.years[state.years.length-2].decision_cpi):null,y.year)}</div>
- <div class="status-line">● ${y.b85_restored?'符合 B＋85 生活預算恢復條件':'按當年 Guardrail 狀態計算'}，年度 Sticky 乘數 ${esc(y.sticky_after)}</div>
- <p class="details-summary">熊市現金橋接：${twMoney(y.bridge_from_cash_twd)}　／　已核准其他必要支出：${twMoney(y.extra_authorized_twd)}。<br>費用與稅負使用模型既有整體淨報酬情境，年末核對不會重扣。成功率是模型條件下的估算，不是保證。</p>
+ <div class="status-line">● ${esc(annual)} ${y.b85_restored?'符合 B＋85 生活預算恢復條件':'按當年 Guardrail 狀態計算'}，年度 Sticky 乘數 ${esc(y.sticky_after)}。</div>
+ <p class="details-summary">熊市現金橋接：${twMoney(y.bridge_from_cash_twd)}　／　已核准其他必要支出：${twMoney(y.extra_authorized_twd)}。<br>費用與稅負使用模型既有整體淨報酬情境，年末核對不會重扣。PoS 採完整年度模型作參考，未針對首年短期間重新校準；成功率不是保證。</p>
  ${!y.closing?'<div class="result-buttons"><button class="primary-btn" data-go="closing">下一步：年末結算 →</button></div>':'<div class="result-buttons"><button class="secondary-btn" data-go="history">查看已結算紀錄</button></div>'}`;
 }
 

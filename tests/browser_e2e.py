@@ -23,13 +23,8 @@ async def main():
             assert await page.locator('#start_age').input_value()=='65'
             assert await page.evaluate("window.B85_TAIWAN_TIME.prevMonth('2027-01-01')")=='2026-12'
             assert await page.evaluate("window.B85_TAIWAN_TIME.prevMonth('2026-03-31')")=='2026-02'
-            if today[5:7]!='01':
-                assert await page.locator('#use-january-date').is_visible()
-                await page.locator('#use-january-date').click()
-                assert await page.locator('#decision_date').input_value()==today[:4]+'-01-15'
-                cpi_release=await page.locator('#decision_cpi_release').input_value()
-                assert not cpi_release or cpi_release<=today[:4]+'-01-15'
-                await page.locator('#decision_date').fill(today)
+            assert await page.locator('#use-january-date').is_hidden()
+            assert '首次退休可選任何日期' in (await page.locator('#decision-month-guidance').inner_text())
 
             assert await page.locator('#dashboard-baseline').is_hidden()
             assert await page.locator('#inflation-preview').is_hidden()
@@ -74,14 +69,14 @@ async def main():
             assert previous_month in (await page.locator('#official-cpi-panel').inner_text())
             assert '尚無全年官方基準' not in (await page.locator('#official-cpi-panel').inner_text())
             # A simulation date is independent of the public as-of-Taiwan CPI snapshot.
-            await page.locator('#decision_date').fill('2036-01-15')
+            await page.locator('#decision_date').fill('2036-10-12')
             assert previous_month in (await page.locator('#official-cpi-panel').inner_text())
             assert await page.locator('#first_year').input_value()=='2036'
             assert await page.locator('#dashboard-baseline').is_hidden()
             await page.locator('#start_age').fill('54')
             await page.locator('.cpi-manual-input summary').click()
             await page.locator('#decision_cpi').fill('125')
-            await page.locator('#decision_cpi_release').fill('2036-01-10')
+            await page.locator('#decision_cpi_release').fill('2036-10-07')
             assert await page.locator('#cpi_2026').input_value()=='110'
             assert await page.locator('#inflation-preview').is_hidden()
             print('BROWSER_CPI_TAIWAN_ASOF_AND_SIMULATION_ISOLATION_PASS')
@@ -92,6 +87,10 @@ async def main():
             assert '通膨換算後正常生活費' in a
             assert '今年核准生活費' in a
             assert '738,636' in a
+            assert '81/366' in a
+            assert '全年模型參考 PoS' in a
+            assert '首年' in (await page.locator('#dash-budget-sub').inner_text())
+            print('BROWSER_OCTOBER_FIRST_YEAR_ACTUAL_DAY_PRORATION_PASS')
             assert await page.locator('#dashboard-baseline').is_visible()
             print('BROWSER_SPENDING_BASELINE_AND_INFLATION_REVEAL_ONLY_AFTER_APPROVAL_PASS')
             print('BROWSER_INFLATION_SPENDING_RESULT_PASS')

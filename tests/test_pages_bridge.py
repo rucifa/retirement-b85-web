@@ -16,7 +16,13 @@ class PagesBridgeTests(unittest.TestCase):
     def invoke(self,op,data=None):return json.loads(bridge.dispatch(json.dumps({'op':op,'data':data or {}},ensure_ascii=False)))
     def approve(self):return self.invoke('approve',OPEN)
     def test_pages_matches_actual_engine_policy_budget(self):
-        r=self.approve();self.assertGreaterEqual(r['data']['approval']['living_authorized_twd'],500000*125/110);self.assertLessEqual(r['data']['approval']['living_authorized_twd'],715000*125/110)
+        r=self.approve()
+        first=r['data']['approval']
+        self.assertEqual(first['calendar_days'],352)
+        self.assertEqual(first['calendar_year_days'],366)
+        self.assertAlmostEqual(first['living_authorized_twd'],
+                               first['full_year_living_reference_twd']*352/366,delta=0.05)
+        self.assertFalse(first['calendar_fraction']==1)
         self.assertEqual(r['record']['plan']['fx_assumption'],30)
         self.assertFalse(r['data']['overview']['policy_active'])
     def test_year_end_and_next_year_and_browser_reload(self):
