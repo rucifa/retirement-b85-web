@@ -195,7 +195,7 @@ function fillNext(){
  $('decision_date').value=(last.year+1)+'-01-15';
  $('decision_cpi').value='';$('decision_cpi_release').value='';
  $('decision_cpi').dataset.autoSource='';
- $('planned_extra_twd').value=0;
+ $('planned_extra_twd').value='';
  $('decision_date').dispatchEvent(new Event('change',{bubbles:true}));
 }
 }
@@ -219,14 +219,24 @@ function render(){
  $('closing-form-wrap').classList.toggle('hidden',!pending);
  $('closing-result').classList.toggle('hidden',!last?.closing);
  if(last?.closing)$('closing-result').innerHTML=closeHtml(last);
+ if(!last)$('closing-form').dataset.recordYear='';
  if(pending){
+ // Blank actual-input fields once per new year; preserve edits on same-year redraw.
+ const closingForm=$('closing-form');
+ if(closingForm.dataset.recordYear!==String(last.year)){
+  for(const id of ['living_paid_twd','car_paid_twd','extra_paid_twd','investment_end_twd','cash_end_twd',
+                   'closing_date','closing_cpi','closing_cpi_release','emergency_paid_twd','external_flow_twd']){
+   $(id).value='';
+  }
+  closingForm.dataset.recordYear=String(last.year);
+ }
  $('closing-budget').innerHTML='<span>本年度核准生活費 <strong>'+twMoney(last.living_authorized_twd)+'</strong></span><span>額外預算 '+twMoney(last.car_authorized_twd+last.extra_authorized_twd)+'</span>';
  const today=last.year;
  if(!$('closing_date').value||Number($('closing_date').value.slice(0,4))!==today)$('closing_date').value=today+'-12-31';
- if(!$('closing_cpi').value)$('closing_cpi').value=last.decision_cpi;
+ // Year-end CPI is a separately verified actual input, not the opening CPI.
  // Do not invent an official CPI release date; user must provide verified provenance.
  if(!$('closing_cpi_release').value||Number($('closing_cpi_release').value.slice(0,4))!==today)$('closing_cpi_release').value='';
- if(!$('living_paid_twd').value)$('living_paid_twd').value=Math.floor(last.living_authorized_twd);
+ // Do not represent an approved budget as the actual payment amount.
  }
  fillNext();
  renderInflationPreview();
@@ -248,7 +258,7 @@ function updateDecisionMonthHelp(){
 
 const fieldVal=id=>$(id).value;
 function initPayload(){return {
- decision_date:fieldVal('decision_date'),planned_extra_twd:fieldVal('planned_extra_twd'),start_age:fieldVal('start_age'),
+ decision_date:fieldVal('decision_date'),planned_extra_twd:fieldVal('planned_extra_twd')||'0',start_age:fieldVal('start_age'),
  investment_twd:fieldVal('investment_twd'),cash_twd:fieldVal('cash_twd'),stock_bond:fieldVal('stock_bond'),
  cpi_2026:fieldVal('cpi_2026'),decision_cpi:fieldVal('decision_cpi'),decision_cpi_release:fieldVal('decision_cpi_release'),
  decision_cpi_source:$('decision_cpi').dataset.autoSource||'MANUAL',
@@ -258,9 +268,9 @@ function initPayload(){return {
  floor_spend_2026_twd:fieldVal('floor_spend_2026_twd')};}
 function endPayload(){return {closing_date:fieldVal('closing_date'),closing_cpi:fieldVal('closing_cpi'),
  closing_cpi_release:fieldVal('closing_cpi_release'),living_paid_twd:fieldVal('living_paid_twd'),
- car_paid_twd:fieldVal('car_paid_twd'),extra_paid_twd:fieldVal('extra_paid_twd'),
+ car_paid_twd:fieldVal('car_paid_twd')||'0',extra_paid_twd:fieldVal('extra_paid_twd')||'0',
  investment_end_twd:fieldVal('investment_end_twd'),cash_end_twd:fieldVal('cash_end_twd'),
- emergency_paid_twd:fieldVal('emergency_paid_twd'),external_flow_twd:fieldVal('external_flow_twd')};}
+ emergency_paid_twd:fieldVal('emergency_paid_twd')||'0',external_flow_twd:fieldVal('external_flow_twd')||'0'};}
 function loading(id,flag){$(id).disabled=flag;$(id).classList.toggle('loading',flag)}
 $('opening-form').addEventListener('submit',async e=>{e.preventDefault();renderSpendingProfileInput();
  if(!state?.years?.length&&$('spending-profile-preview').dataset.valid!=='true'){flash($('spending-profile-preview').textContent);return;}
@@ -275,7 +285,7 @@ $('import-btn').addEventListener('click',()=>{if(!engineReady){flash('計算引�
 $('import-file').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;
  try{if(file.size>5_000_000)throw Error('備份檔案過大');const imported=JSON.parse(await file.text());
  if(!confirm('匯入備份將覆蓋此瀏覽器目前的年度紀錄。建議先匯出現有資料。確定匯入？'))return;
- await request('/api/import',imported);capacityEstimate=null;capacityApprovalId=null;await refresh();display('history');flash('備份 SHA256 與年度連續性已驗證，匯入完成。','success');
+ await request('/api/import',imported);$('closing-form').dataset.recordYear='';capacityEstimate=null;capacityApprovalId=null;await refresh();display('history');flash('備份 SHA256 與年度連續性已驗證，匯入完成。','success');
  }catch(err){flash('匯入失敗：'+err.message)}finally{e.target.value='';}});
 $('reset-btn').addEventListener('click',async()=>{
  if(!engineReady){flash('計算引擎尚未就緒，暫時無法清除');return;}
@@ -285,7 +295,15 @@ $('reset-btn').addEventListener('click',async()=>{
   const backup=await request('/api/export',{});
   downloadJson(backup);
   await request('/api/reset',{confirm:'清除演練'});
-  capacityEstimate=null;capacityApprovalId=null;await refresh();display('opening');flash('已先下載 JSON 備份，並清除本瀏覽器的演練紀錄。','success');
+  capacityEstimate=null;capacityApprovalId=null;
+  for(const id of ['planned_extra_twd','start_age','investment_twd','cash_twd',
+                   'floor_spend_2026_twd','normal_spend_2026_twd','core_spend_2026_twd'])$(id).value='';
+  $('core_spend_2026_twd').dataset.userEdited='';
+  $('closing-form').dataset.recordYear='';
+  $('decision_date').value=window.B85_TAIWAN_TIME.today();
+  $('decision_date').dispatchEvent(new Event('change',{bubbles:true}));
+  renderSpendingProfileInput();
+  await refresh();display('opening');flash('已先下載 JSON 備份，並清除本瀏覽器的演練紀錄。','success');
  }catch(e){flash('清除未完成：'+e.message+'。請使用先前備份復原。')}
  finally{btn.disabled=false;}
 });
