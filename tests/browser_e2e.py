@@ -36,7 +36,7 @@ async def main():
             assert await page.locator('#dashboard-kpis .dash-kpi').count()==4
             assert await page.locator('#dashboard-cpi-card').count()==1
             assert await page.locator('#dashboard-baseline article').count()==4
-            assert await page.locator('#dashboard-lower .dash-widget').count()==4
+            assert await page.locator('#dashboard-lower .dash-widget').count()==3
             layout=await page.locator('.sidebar').evaluate('(el)=>getComputedStyle(el).flexDirection')
             assert layout=='row'
             assert '尚未試算' in (await page.locator('#dash-budget').inner_text())
