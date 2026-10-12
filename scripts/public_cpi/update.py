@@ -99,14 +99,14 @@ def load_official(now):
         raise PublishError('TLS_STAGE_DGBAS_HISTORICAL_XLS: '+str(exc)) from exc
     primary=check_primary_history(parse_primary_with_stale_support(raw,now))
     try:
-        listing=s.https_bytes(SOURCE_LIST,ssl.create_default_context(),'www.stat.gov.tw',s.MAX_HTML)
+        listing=s.https_bytes(SOURCE_LIST,context,'www.stat.gov.tw',s.MAX_HTML)
     except (s.DataError,s.DualSourceError,OSError) as exc:
         raise PublishError('TLS_STAGE_STAT_GOV_BULLETIN_LIST: '+str(exc)) from exc
     discovered=s.bulletin_list(listing,now)
     reports=[]
     for item in discovered:
         try:
-            article=s.https_bytes(item['url'],ssl.create_default_context(),'www.stat.gov.tw',s.MAX_HTML)
+            article=s.https_bytes(item['url'],context,'www.stat.gov.tw',s.MAX_HTML)
         except (s.DataError,s.DualSourceError,OSError) as exc:
             raise PublishError('TLS_STAGE_STAT_GOV_ARTICLE_'+item['month']+': '+str(exc)) from exc
         meta=s.bulletin_article(article,item,now)
