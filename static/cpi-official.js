@@ -72,11 +72,38 @@ function paint(){
   '（UTC）。來源狀態：'+safe(snapshot.source_status)+'。<a href="'+safe(snapshot.source_list_url)+'" target="_blank" rel="noopener noreferrer">主計總處物價新聞稿</a></p>'+
   '<ul>'+details+'</ul><p>來源原始檔 SHA256：<code>'+safe(snapshot.primary_source_sha256)+'</code></p></details>';
 }
+function prefillInitialMonthlyCpi(){
+ // Never overwrite submitted history or a user-adjusted CPI assumption.
+ const manual=document.getElementById('decision_cpi');
+ const release=document.getElementById('decision_cpi_release');
+ const ref=document.getElementById('reference_cpi_field');
+ if(!manual||!release||!decision||!snapshot||!window.B85_TAIWAN_TIME)return;
+ if(manual.value||release.value||manual.dataset.userEdited==='true'||release.dataset.userEdited==='true')return;
+ try{
+  if(typeof state!=='undefined'&&state&&Array.isArray(state.years)&&state.years.length)return;
+ }catch{return}
+ const day=decision.value;
+ if(!validDate(day))return;
+ const now=window.B85_TAIWAN_TIME.today(),lastMonth=window.B85_TAIWAN_TIME.prevMonth(day);
+ const checked=snapshot.records.filter(r=>
+  r.verification==='CROSS_VERIFIED'&&r.month<=lastMonth&&r.publication_date<=day&&r.publication_date<=now
+ ).at(-1);
+ if(!checked||days(day,checked.publication_date)>120||days(day,checked.publication_date)<0)return;
+ manual.value=checked.index.toFixed(2);
+ release.value=checked.publication_date;
+ manual.dataset.officialMonth=checked.month;
+ const note=manual.closest('label')?.querySelector('small');
+ if(note)note.textContent='已帶入 '+checked.month+' 的雙來源已查證月度 CPI（公布 '+checked.publication_date+'）。此數值不是 2026 全年 CPI；可改為手動假設。';
+ manual.dispatchEvent(new Event('input',{bubbles:true}));
+}
+const manualCpi=document.getElementById('decision_cpi'),manualRelease=document.getElementById('decision_cpi_release');
+if(manualCpi)manualCpi.addEventListener('input',e=>{if(e.isTrusted)manualCpi.dataset.userEdited='true';});
+if(manualRelease)manualRelease.addEventListener('input',e=>{if(e.isTrusted)manualRelease.dataset.userEdited='true';});
 async function load(){
  try{
   const r=await fetch('./data/cpi_verified.json',{cache:'no-store'});
   if(!r.ok)throw Error('HTTP '+r.status);
-  snapshot=validate(await r.json());loadError='';
+  snapshot=validate(await r.json());loadError='';prefillInitialMonthlyCpi();
  }catch(e){snapshot=null;loadError=e.message||'無法驗證快照'}
  paint();
 }
