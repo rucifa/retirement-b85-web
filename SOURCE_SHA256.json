@@ -25,5 +25,6 @@
   "spending_profile.py": "d279b1cb56f30c1e64de0fcb0e2a27a6703b1508bf5c5060d7eff502ec043f29",
   "policy/personalized_research_engine.py": "9cbbd4d71b4ee2f04dbdcd2dd46cfcddd193e80baada85bc658f5c4dd8a9ad5d",
   "policy/personalized_research_annual.py": "3f42fcf86a0076a12f87b7ac40f252d24cf79318f7db939e979dea9906a93456",
-  "policy/personalized_research_ledger.py": "0e2af1102fd6b038fb1226b18f8922ddd454bdbe37028ed8643ecba4b1682da1"
+  "policy/personalized_research_ledger.py": "0e2af1102fd6b038fb1226b18f8922ddd454bdbe37028ed8643ecba4b1682da1",
+  "tests/test_personalized_spending.py": "e3cdb2c8d8b94ff1296686af7956a4ce174ca887d15691ceb5a67966dd2879be"
 }
