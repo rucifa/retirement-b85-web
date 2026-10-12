@@ -26,6 +26,9 @@ from policy.simple_annual_ledger import (
 )
 from policy.annual_execution_v340 import AnnualResult
 from calendar_first_year import MODE as CALENDAR_MODE, prorate_first_year
+import spending_profile as personal
+from policy import personalized_research_engine as research_model
+from policy.personalized_research_ledger import approve_year as research_approve_year
 
 MILLION = 1_000_000
 STATE_VERSION = 1
@@ -90,6 +93,17 @@ def digest(obj)->str:
 
 
 def policy_config(base:dict)->ModelConfig:
+    profile=base.get('spending_profile')
+    if profile is not None:
+        p=personal.validate(profile)
+        return research_model.ModelConfig(
+            start_age=base['start_age'],end_age=104,stock_weight=base['stock_weight'],
+            activation_cpi_factor_from_2026=base['activation_cpi']/base['cpi_2026'],
+            floor_spend=p['floor_twd']/MILLION,
+            personalized_normal_spend=p['normal_twd']/MILLION,
+            personalized_core_spend=p['core_twd']/MILLION,
+            use_prosperity=True,prosperity_spending_mode='recommended_target',
+            use_charity=False,friction=research_model.FRICTIONS['net_central_2026ref'])
     return ModelConfig(
         start_age=base['start_age'],end_age=104,
         stock_weight=base['stock_weight'],
@@ -148,7 +162,9 @@ class AnnualWorkflow:
         with self.lock:
             return copy_json({
                 'mode':'SIMULATION_SHADOW_ONLY',
-                'model':'v3.4.0 B+85',
+                'model':('PERSONALIZED_RESEARCH_V1 / original v3.4.0 engine fork'
+                  if self._state.get('plan') and self._state['plan'].get('spending_profile')
+                  else 'v3.4.0 B+85'),
                 'money':'TWD_nominal_in_UI; retirement_activation_year_real_in_model',
                 'usd_twd':USD_TWD_ASSUMED,
                 'poS_method':'Inner Monte Carlo, fixed seed and %d paths (research, not guarantee)'%INNER_DRAWS,
@@ -167,6 +183,9 @@ class AnnualWorkflow:
         activation_cpi=self._state['plan']['activation_cpi']
         pv=approval.policy_preview
         cfg=policy_config(self._state['plan'])
+        profile=self._state['plan'].get('spending_profile')
+        normal_reference=((profile['normal_twd']/MILLION if profile else .65)*cfg.activation_cpi_factor_from_2026)
+        core_reference=((profile['core_twd']/MILLION if profile else .60)*cfg.activation_cpi_factor_from_2026)
         action=('B85_RESTORED' if pv.b85_restored
                 else 'CUT_10_PERCENT' if pv.pos<=cfg.guardrail_low
                 else 'RAISE_10_PERCENT' if pv.pos>=cfg.guardrail_high else 'HOLD')
@@ -184,7 +203,10 @@ class AnnualWorkflow:
             'guardrail_action':action,
             'guardrail_low_pct':cfg.guardrail_low*100,
             'guardrail_high_pct':cfg.guardrail_high*100,
-            'normal_reference_twd':nominal_twd(normal_living_spend(opening.age,cfg),decision_cpi,activation_cpi),
+            'normal_reference_twd':nominal_twd(normal_reference,decision_cpi,activation_cpi),
+            'core_reference_twd':nominal_twd(core_reference,decision_cpi,activation_cpi),
+            'spending_profile_mode':personal.MODE if profile else 'FROZEN_BASELINE',
+            'spending_profile_2026_real':copy_json(profile) if profile else None,
             'floor_reference_twd':nominal_twd(cfg.floor_spend*cfg.activation_cpi_factor_from_2026,decision_cpi,activation_cpi),
             'living_authorized_twd':nominal_twd(approval.living_budget_m,decision_cpi,activation_cpi),
             'car_authorized_twd':nominal_twd(approval.car_budget_m,decision_cpi,activation_cpi),
@@ -281,14 +303,23 @@ class AnnualWorkflow:
                 opening=AnnualOpening(year=y,decision_date=dt,age=start_age,start_age=start_age,
                                       investment_m=inv/MILLION,safety_cash_m=cash/MILLION,
                                       planned_extra_m=amt(data,'planned_extra_twd')/MILLION)
+                profile=None
+                if 'spending_profile_mode' in data:
+                    if data.get('spending_profile_mode')!=personal.MODE:
+                        raise InputError('不支援的個人化生活費研究版本')
+                    try:profile=personal.from_input(data)
+                    except ValueError as err:raise InputError(str(err)) from err
                 plan={'first_year':y,'start_age':start_age,'stock_bond':strategy,
                       'stock_weight':stock_weight,'cpi_2026':cpi_2026,
                       'activation_cpi':current_cpi,'fx_assumption':30,
                       'mode':'SIMULATION_SHADOW_ONLY',
                       'cost_assumption':'net_central_2026ref',
-                      'model_version':'v3.4.0_B85',
+                      'model_version':('research_personalized_spending_v1' if profile else 'v3.4.0_B85'),
                       'seed':SEED,'inner_paths':INNER_DRAWS,
                       'calendar_first_year_contract':CALENDAR_MODE}
+                if profile:
+                    plan['spending_profile']=profile
+                    plan['spending_profile_sha256']=personal.digest(profile)
                 prior_close=None
             else:
                 plan=self._state['plan']
@@ -308,7 +339,8 @@ class AnnualWorkflow:
                 # no unverified external contributions/transfers are inferred.
             cfg=policy_config(plan)
             try:
-                approval=approve_year(opening,cfg,n_inner=INNER_DRAWS,seed=SEED,prior_close=prior_close)
+                approval_fun=research_approve_year if plan.get('spending_profile') else approve_year
+                approval=approval_fun(opening,cfg,n_inner=INNER_DRAWS,seed=SEED,prior_close=prior_close)
                 first_calendar=None
                 if prior is None:
                     approval,first_calendar=prorate_first_year(approval)
