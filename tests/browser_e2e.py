@@ -72,7 +72,15 @@ async def main():
             previous_month=await page.evaluate('window.B85_TAIWAN_TIME.prevMonth(window.B85_TAIWAN_TIME.today())')
             assert await page.locator('#decision_date').input_value()==today
             assert await page.locator('#first_year').input_value()==today[:4]
-            assert await page.locator('#start_age').input_value()=='65'
+            assert await page.locator('#start_age').input_value()==''
+            for field in ['start_age','investment_twd','cash_twd','planned_extra_twd',
+                          'floor_spend_2026_twd','normal_spend_2026_twd','core_spend_2026_twd']:
+                assert await page.locator('#'+field).input_value()=='', field
+                assert await page.locator('#'+field).get_attribute('placeholder'), field
+            assert await page.locator('#first_year').input_value()==today[:4]  # 唯讀年份由日期推算
+            assert not await page.locator('#opening-form').evaluate('(form)=>form.checkValidity()')
+            assert not await page.locator('#stock_bond').input_value()==''  # 政策配置下拉仍有效
+            print('BROWSER_FRESH_PERSONAL_FIELDS_ARE_EXAMPLES_NOT_SAVED_AMOUNTS_PASS')
             assert await page.evaluate("window.B85_TAIWAN_TIME.prevMonth('2027-01-01')")=='2026-12'
             assert await page.evaluate("window.B85_TAIWAN_TIME.prevMonth('2026-03-31')")=='2026-02'
             assert await page.locator('#use-january-date').is_hidden()
@@ -145,6 +153,8 @@ async def main():
             assert previous_month in (await page.locator('#official-cpi-panel').inner_text())
             assert await page.locator('#first_year').input_value()=='2036'
             await page.locator('#start_age').fill('54')
+            await page.locator('#investment_twd').fill('27000000')
+            await page.locator('#cash_twd').fill('2400000')
             await page.locator('.cpi-manual-input summary').click()
             await page.locator('#decision_cpi').fill('125')
             await page.locator('#decision_cpi_release').fill('2036-10-07')
@@ -270,6 +280,12 @@ async def main():
             print('BROWSER_DASHBOARD_USES_POLICY_RESULT_PASS')
             print('BROWSER_2036_B85_APPROVAL_PASS')
             await page.locator('[data-go="closing"]').first.click()
+            for field in ['living_paid_twd','car_paid_twd','extra_paid_twd','investment_end_twd',
+                          'cash_end_twd','closing_cpi','emergency_paid_twd','external_flow_twd']:
+                assert await page.locator('#'+field).input_value()=='',field
+                assert await page.locator('#'+field).get_attribute('placeholder'),field
+            assert not await page.locator('#closing-form').evaluate('(form)=>form.checkValidity()')
+            print('BROWSER_REAL_YEAR_END_AMOUNTS_NOT_AUTOFILLED_FROM_BUDGET_PASS')
             await page.locator('#demo-close-btn').click()
             await page.locator('#close-btn').click()
             await page.locator('#closing-result').filter(has_text='已完成年度結算').wait_for(timeout=120000)
@@ -278,6 +294,7 @@ async def main():
             await page.locator('#runtime-status.ready').wait_for(timeout=180000)
             await page.locator('#opening-form').wait_for()
             assert '2037-01-15' == await page.locator('#decision_date').input_value()
+            assert await page.locator('#planned_extra_twd').input_value()==''
             assert await page.locator('#decision_cpi_release').input_value()!='2037-01-10', 'Fabricated future CPI publication date'
             print('BROWSER_CPI_NEXT_YEAR_NO_FABRICATED_RELEASE_DATE_PASS')
             await page.locator('#dash-asset-chart svg').wait_for(timeout=15000)
@@ -328,6 +345,10 @@ async def main():
             assert downloaded['payload']['years'] and downloaded['file_kind']=='local_yearly_research_export'
             await page.locator('#dash-years').filter(has_text='0 年').wait_for(timeout=180000)
             assert '還沒有年度紀錄' in (await page.locator('#history-list').inner_text())
+            for field in ['start_age','investment_twd','cash_twd','floor_spend_2026_twd',
+                          'normal_spend_2026_twd','core_spend_2026_twd','planned_extra_twd']:
+                assert await page.locator('#'+field).input_value()=='',field
+            print('BROWSER_RESET_RESTORES_EMPTY_PERSONAL_INPUTS_PASS')
             print('BROWSER_RESET_BY_CONFIRM_BUTTON_AND_AUTO_JSON_BACKUP_PASS')
             # Fresh, separate IndexedDB state: Jan 1, 2026 has no historical
             # published record in the current public JSON; use explicitly
@@ -338,6 +359,9 @@ async def main():
                 await jan.goto('http://127.0.0.1:8766/',wait_until='domcontentloaded')
                 await jan.locator('#runtime-status.ready').wait_for(timeout=180000)
                 await jan.locator('#decision_date').fill('2026-01-01')
+                await jan.locator('#start_age').fill('54')
+                await jan.locator('#investment_twd').fill('27000000')
+                await jan.locator('#cash_twd').fill('2400000')
                 await jan.locator('#decision_cpi').evaluate("(el)=>{el.blur()}")
                 await jan.locator('#cpi-decision-asof-note').filter(has_text='演練假設').wait_for(timeout=15000)
                 assert abs(float(await jan.locator('#decision_cpi').input_value())-annual_proxy)<0.011
@@ -360,6 +384,9 @@ async def main():
                 await custom.goto('http://127.0.0.1:8766/',wait_until='domcontentloaded')
                 await custom.locator('#runtime-status.ready').wait_for(timeout=180000)
                 await custom.locator('#decision_date').fill('2026-01-01')
+                await custom.locator('#start_age').fill('54')
+                await custom.locator('#investment_twd').fill('27000000')
+                await custom.locator('#cash_twd').fill('2400000')
                 await custom.locator('#cpi-decision-asof-note').filter(has_text='演練假設').wait_for(timeout=15000)
                 await custom.locator('#floor_spend_2026_twd').fill('520000')
                 await custom.locator('#normal_spend_2026_twd').fill('920000')
@@ -387,6 +414,7 @@ async def main():
                 await extra_page.goto('http://127.0.0.1:8766/',wait_until='domcontentloaded')
                 await extra_page.locator('#runtime-status.ready').wait_for(timeout=180000)
                 await extra_page.locator('#decision_date').fill('2026-01-16')
+                await extra_page.locator('#start_age').fill('54')
                 await extra_page.locator('#cpi-decision-asof-note').filter(has_text='演練假設').wait_for(timeout=15000)
                 await extra_page.locator('#investment_twd').fill('27000000')
                 await extra_page.locator('#cash_twd').fill('2400000')
