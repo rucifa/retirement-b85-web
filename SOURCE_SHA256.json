@@ -29,7 +29,7 @@
   "static/mc-projection.js": "b43c11439738cf8d66fc9fd2f1f65d7f15519d1ea0a01f511035caa145a8c756",
   "static/style.css": "63f61b68ae7bae47702ddbfefc4b9a926398f5761b057337bf7e6208265691a8",
   "static/taiwan-time.js": "2a0e63ba7eff9ee308db9bd2d7a8c65aa47f86654c67f5c34630bed7317a202c",
-  "tests/browser_e2e.py": "b35649b65ad1451cad137326851d73429f20ef198d84aad9e6b855ac51fadf47",
+  "tests/browser_e2e.py": "ea1027d2697926141023b1b104fc40f5143c8024fbe3e4b0f7b74c9e6c145b44",
   "tests/test_calendar_first_year.py": "32126bf5570e0f811a11d13f4efac6fb3b140fd236edcb4ac1ce42492e322429",
   "tests/test_expense_contract.py": "73b093dfceab3fb7b9ff25729a7bce8b920a163a750ffa90fce50b032d7eeb96",
   "tests/test_inverse_capacity.py": "733d3ddb6ad460b07dc1c709ea7c2fa70a97941f2c58ffcb7713685385853d6f",
