@@ -105,6 +105,9 @@ async def main():
             await page.route('**/data/cpi_verified.json',lambda route:route.abort())
             await page.reload(wait_until='domcontentloaded')
             await page.locator('#official-cpi-panel[data-status="error"]').wait_for(timeout=15000)
+            # CPI fetch fails before the worker restores IndexedDB. Wait for both.
+            await page.locator('#runtime-status.ready').wait_for(timeout=180000)
+            assert '1 年' in (await page.locator('#dash-years').inner_text())
             assert await page.locator('#decision_cpi').input_value()==saved_manual_cpi
             assert '1 年' in (await page.locator('#dash-years').inner_text())
             print('BROWSER_CPI_OFFLINE_PRESERVES_MANUAL_INPUT_AND_HISTORY_PASS')
@@ -114,6 +117,9 @@ async def main():
             await page.route('**/data/cpi_verified.json',bad_json)
             await page.reload(wait_until='domcontentloaded')
             await page.locator('#official-cpi-panel[data-status="error"]').wait_for(timeout=15000)
+            # CPI fetch fails before the worker restores IndexedDB. Wait for both.
+            await page.locator('#runtime-status.ready').wait_for(timeout=180000)
+            assert '1 年' in (await page.locator('#dash-years').inner_text())
             assert await page.locator('#decision_cpi').input_value()==saved_manual_cpi
             print('BROWSER_CPI_OFFLINE_AND_INVALID_SCHEMA_PASS')
         except Exception:

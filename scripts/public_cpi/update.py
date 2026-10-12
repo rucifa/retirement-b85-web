@@ -89,16 +89,31 @@ def parse_primary_with_stale_support(blob, now):
 
 
 def load_official(now):
-    context=s.twca_verified_context()
-    raw=s.strict_https_xls(context_provider=lambda _opener:context)
+    try:
+        context=s.twca_verified_context()
+    except (s.DataError,s.DualSourceError,OSError) as exc:
+        raise PublishError('TLS_STAGE_TWCA_CA_CHAIN: '+str(exc)) from exc
+    try:
+        raw=s.strict_https_xls(context_provider=lambda _opener:context)
+    except (s.DataError,s.DualSourceError,OSError) as exc:
+        raise PublishError('TLS_STAGE_DGBAS_HISTORICAL_XLS: '+str(exc)) from exc
     primary=check_primary_history(parse_primary_with_stale_support(raw,now))
-    listing=s.https_bytes(SOURCE_LIST,ssl.create_default_context(),'www.stat.gov.tw',s.MAX_HTML)
+    try:
+        listing=s.https_bytes(SOURCE_LIST,ssl.create_default_context(),'www.stat.gov.tw',s.MAX_HTML)
+    except (s.DataError,s.DualSourceError,OSError) as exc:
+        raise PublishError('TLS_STAGE_STAT_GOV_BULLETIN_LIST: '+str(exc)) from exc
     discovered=s.bulletin_list(listing,now)
     reports=[]
     for item in discovered:
-        article=s.https_bytes(item['url'],ssl.create_default_context(),'www.stat.gov.tw',s.MAX_HTML)
+        try:
+            article=s.https_bytes(item['url'],ssl.create_default_context(),'www.stat.gov.tw',s.MAX_HTML)
+        except (s.DataError,s.DualSourceError,OSError) as exc:
+            raise PublishError('TLS_STAGE_STAT_GOV_ARTICLE_'+item['month']+': '+str(exc)) from exc
         meta=s.bulletin_article(article,item,now)
-        excel=s.https_bytes(meta['table1_url'],context,'ws.dgbas.gov.tw',s.MAX_XLSX)
+        try:
+            excel=s.https_bytes(meta['table1_url'],context,'ws.dgbas.gov.tw',s.MAX_XLSX)
+        except (s.DataError,s.DualSourceError,OSError) as exc:
+            raise PublishError('TLS_STAGE_DGBAS_TABLE1_'+item['month']+': '+str(exc)) from exc
         row=s.parse_table1(excel,meta)
         row['xlsx_sha256']=s.digest(excel)
         row['html_sha256']=s.digest(article)
