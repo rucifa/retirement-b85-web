@@ -29,7 +29,7 @@
  <article><span>Floor 最低支出</span><strong>NT$ 500,000</strong><small>每年・月均約 41,667 元</small></article>
  <article><span>安全現金目標</span><strong>NT$ 2,400,000</strong><small>退休啟動時名目政策基準</small></article></div></div>
  <form id="opening-form" class="form-card">
- <h3>年度基本資料</h3><div class="grid-form"><label class="field"><span>決策日期 <em>必填</em></span><input id="decision_date" type="date" required/><small>首次進入使用瀏覽器時鐘換算為台灣今天（非伺服器授時）；已儲存的年度接續日期不會覆寫。可自行選擇試算日期。</small></label>
+ <h3>年度基本資料</h3><div class="grid-form"><label class="field"><span>決策日期 <em>必填</em></span><input id="decision_date" type="date" required/><small>首次進入使用瀏覽器時鐘換算為台灣今天（非伺服器授時）；已儲存的年度接續日期不會覆寫。可自行選擇試算日期。</small><small id="decision-month-guidance" class="decision-month-guidance" role="status">B＋85 年度計算僅接受 1 月決策日期。</small><button type="button" id="use-january-date" class="dash-text-link" hidden>改用該年度 1 月 15 日試算 →</button></label>
  <label class="field"><span>預計額外必要支出（新台幣）</span><input id="planned_extra_twd" type="number" min="0" step="0.01" value="0" required/><small>例如已確定的大額醫療費用；定期換車由政策自動列入。</small></label></div>
  <div id="first-year-fields"><div class="inner-divider"></div><h3>首次建立：退休起始條件</h3><div class="grid-form"><label class="field"><span>退休開始年</span><input id="first_year" type="number" readonly/><small>與上方決策日期年份相同。</small></label>
  <label class="field"><span>退休開始年齡</span><input id="start_age" type="number" min="45" max="90" value="65" required/><small>一般試算預設 65 歲（2026 起勞保老年年金法定請領年齡），並非強制退休年齡；可自行修改。</small></label>
