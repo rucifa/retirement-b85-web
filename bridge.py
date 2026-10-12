@@ -10,6 +10,7 @@ from pathlib import Path
 from datetime import date
 from workflow import AnnualWorkflow, InputError, digest, hydrate_approval, hydrate_close
 from calendar_first_year import MODE as CALENDAR_MODE, validate_metadata
+import spending_profile as personal
 
 STATE_PATH=Path('/home/pyodide/private/annual_records.json')
 ENGINE: AnnualWorkflow | None = None
@@ -29,8 +30,17 @@ def _validate_import(export: dict):
         raise InputError('退休計畫與年度紀錄不一致')
     if years:
         plan=record['plan']
-        if not isinstance(plan,dict) or plan.get('mode')!='SIMULATION_SHADOW_ONLY' or plan.get('fx_assumption')!=30 or plan.get('model_version')!='v3.4.0_B85':
+        if not isinstance(plan,dict) or plan.get('mode')!='SIMULATION_SHADOW_ONLY' or plan.get('fx_assumption')!=30 or plan.get('model_version') not in ('v3.4.0_B85','research_personalized_spending_v1'):
             raise InputError('不接受不同政策或不同匯率的年度備份')
+        if plan.get('model_version')=='research_personalized_spending_v1':
+            try:
+                checked=personal.validate(plan.get('spending_profile'))
+                if plan.get('spending_profile_sha256')!=personal.digest(checked):
+                    raise ValueError('生活費指紋與設定不相符')
+            except ValueError as exc:
+                raise InputError('個人化生活費備份驗證失敗：'+str(exc)) from exc
+        elif plan.get('spending_profile') or plan.get('spending_profile_sha256'):
+            raise InputError('原始政策備份不得混入研究版生活費設定')
         if plan.get('stock_bond') not in ('70/30','65/35'):
             raise InputError('備份股債配置異常')
         for key in ('cpi_2026','activation_cpi'):
