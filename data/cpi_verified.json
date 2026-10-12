@@ -3,7 +3,7 @@
   "source_authority": "行政院主計總處（DGBAS）",
   "index_base": "2021=100",
   "source_status": "RESEARCH_STAGED_NOT_ACTIVE",
-  "source_checked_at_utc": "2026-10-12T02:47:41.781596+00:00",
+  "source_checked_at_utc": "2026-10-12T04:21:19.743886+00:00",
   "primary_source_sha256": "b162edf6946f1e12d21090d56917f66edd59cb45a4cb197b9b4fe1a7305e511f",
   "primary_status": "RESEARCH_STAGED_NOT_ACTIVE",
   "primary_latest_month": "2026-07",
@@ -12,6 +12,69 @@
   "annual_2026_index": null,
   "annual_2026_release_date": null,
   "source_list_url": "https://www.stat.gov.tw/News.aspx?n=2668",
+  "latest_official_ytd": {
+    "period": "2026-09",
+    "average_yoy_pct": 1.94,
+    "publication_date": "2026-10-07",
+    "source_url": "https://www.stat.gov.tw/News_Content.aspx?n=2668&s=236759",
+    "metric": "JAN_TO_LATEST_AVG_VS_PRIOR_YEAR_SAME_MONTHS"
+  },
+  "current_year_chart": [
+    {
+      "month": "2026-01",
+      "yoy_pct": 0.71,
+      "index": 110.22,
+      "origin": "OFFICIAL_HISTORICAL_INDEX_DERIVED"
+    },
+    {
+      "month": "2026-02",
+      "yoy_pct": 1.75,
+      "index": 110.91,
+      "origin": "OFFICIAL_HISTORICAL_INDEX_DERIVED"
+    },
+    {
+      "month": "2026-03",
+      "yoy_pct": 1.2,
+      "index": 110.36,
+      "origin": "OFFICIAL_HISTORICAL_INDEX_DERIVED"
+    },
+    {
+      "month": "2026-04",
+      "yoy_pct": 1.72,
+      "index": 111.21,
+      "origin": "OFFICIAL_HISTORICAL_INDEX_DERIVED"
+    },
+    {
+      "month": "2026-05",
+      "yoy_pct": 2.19,
+      "index": 111.42,
+      "origin": "OFFICIAL_HISTORICAL_INDEX_DERIVED"
+    },
+    {
+      "month": "2026-06",
+      "yoy_pct": 2.6,
+      "index": 112.01,
+      "origin": "OFFICIAL_BULLETIN"
+    },
+    {
+      "month": "2026-07",
+      "yoy_pct": 2.54,
+      "index": 112.35,
+      "origin": "OFFICIAL_BULLETIN"
+    },
+    {
+      "month": "2026-08",
+      "yoy_pct": 2.04,
+      "index": 112.32,
+      "origin": "OFFICIAL_BULLETIN"
+    },
+    {
+      "month": "2026-09",
+      "yoy_pct": 2.73,
+      "index": 112.82,
+      "origin": "OFFICIAL_BULLETIN"
+    }
+  ],
   "records": [
     {
       "month": "2026-06",
