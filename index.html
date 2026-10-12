@@ -59,14 +59,37 @@
   </section>
   <section class="dash-widget dash-policy-card" aria-labelledby="dash-policy-title">
    <div class="dash-widget-head"><h3 id="dash-policy-title"><span class="dash-widget-icon" aria-hidden="true">◎</span> Guardrail 與風險提醒</h3></div>
-   <div class="dash-policy-ring"><div class="dash-policy-ring-inner"><strong>75 / 95</strong><small>Sticky 規則</small></div></div>
-   <p>提領水準必須依實際資產、通膨與 B＋85 引擎計算；不以固定百分比直接判定安全。</p>
-   <div class="dash-policy-status" id="dash-policy-status">目前尚無核准年度；請先執行年初試算。</div>
+   <div class="dash-guardrail-layout">
+    <div class="dash-policy-ring" id="dash-policy-ring"><div class="dash-policy-ring-inner"><strong id="dash-guardrail-pos">—</strong><small>全年模型 PoS</small></div></div>
+    <div class="dash-guardrail-levels" aria-label="B＋85 Guardrail 成功率分區">
+     <div class="dash-guardrail-zone" data-guardrail-zone="cut"><span class="dash-zone-dot cut"></span><span>減支區間 <small>PoS ≤ 75%</small></span><strong>−10%</strong></div>
+     <div class="dash-guardrail-zone" data-guardrail-zone="hold"><span class="dash-zone-dot hold"></span><span>維持區間 <small>75% ＜ PoS ＜ 95%</small></span><strong>維持</strong></div>
+     <div class="dash-guardrail-zone" data-guardrail-zone="raise"><span class="dash-zone-dot raise"></span><span>增支區間 <small>PoS ≥ 95%</small></span><strong>＋10%</strong></div>
+    </div>
+   </div>
+   <div class="dash-policy-status" id="dash-policy-status" role="status">尚未試算：Guardrail 將依 PoS 與 Sticky 規則判定。</div>
+   <div class="dash-guardrail-breakdown" id="dash-guardrail-breakdown">核准後顯示正常生活費、Guardrail 調整與首年實際額度。</div>
+   <p class="dash-guardrail-disclaimer">分區依 PoS（成功機率），不是固定提領率；首次退休按日換算，PoS 仍是完整年度模型參考值。</p>
   </section>
  </aside>
  <div class="dashboard-lower" id="dashboard-lower">
    <section class="dash-widget dash-history-chart" aria-labelledby="dash-history-chart-title"><div class="dash-widget-head"><h3 id="dash-history-chart-title"><span class="dash-widget-icon" aria-hidden="true">↗</span> 資產走勢與年度預算</h3><small>本機紀錄・不冒充未來預測</small></div>
-   <div id="dash-asset-chart" class="dash-asset-chart" role="img" aria-label="已結算年度的實際資產走勢">建立至少一筆年末結算後，即可查看實際資產走勢。</div></section>
+   <div class="dash-chart-tabs" role="group" aria-label="資產圖表內容">
+    <button type="button" id="dash-actual-tab" class="dash-chart-tab selected" aria-pressed="true">已結算資產紀錄</button>
+    <button type="button" id="dash-scenario-tab" class="dash-chart-tab" aria-pressed="false">順風／逆風情境對照</button>
+   </div>
+   <div id="dash-asset-chart" class="dash-asset-chart" role="img" aria-label="已結算年度的實際資產走勢">建立至少一筆年末結算後，即可查看實際資產走勢。</div>
+   <div id="dash-scenario-pane" class="dash-scenario-pane hidden">
+    <div class="dash-scenario-controls">
+     <label>逆風：年實質報酬 (%)<input id="dash-return-low" type="number" min="-99" max="30" step="0.5" value="-2"/></label>
+     <label>中性：年實質報酬 (%)<input id="dash-return-mid" type="number" min="-99" max="30" step="0.5" value="2"/></label>
+     <label>順風：年實質報酬 (%)<input id="dash-return-high" type="number" min="-99" max="30" step="0.5" value="5"/></label>
+    </div>
+    <div class="dash-scenario-legend"><span class="dash-scenario-key low">逆風假設</span><span class="dash-scenario-key mid">中性假設</span><span class="dash-scenario-key high">順風假設</span></div>
+    <div id="dash-scenario-chart" class="dash-scenario-chart" role="img" aria-label="三組可自行調整的固定實質報酬假設下之資產示意；非模型預測">尚未核准年度。核准後才會依本機金額顯示假設情境。</div>
+    <p class="dash-scenario-disclaimer">上方 −2%／＋2%／＋5% 是可調整的<strong>假設值</strong>，不是 B＋85 蒙地卡羅分位數或報酬預測。以當前核准生活費作為後續每年固定實質支出，未模擬未來 Guardrail、換車、稅務、臨時支出或逐年重新核准；不可作為正式提款決定。</p>
+   </div>
+  </section>
    <section class="dash-widget dash-recommendation" aria-labelledby="dash-recommend-title"><div class="dash-widget-head"><h3 id="dash-recommend-title"><span class="dash-widget-icon" aria-hidden="true">✧</span> 退休提領建議</h3><small>B＋85 研究演練</small></div>
    <div id="dash-recommend-body"><strong>尚未產生建議</strong><p>請填妥年度資料，執行年初核准。計算數字會直接來自 B＋85 核心引擎。</p></div>
    <div class="dash-recommend-foot">模型結果不代表實際授權提款，也不是投資報酬保證。</div></section>
