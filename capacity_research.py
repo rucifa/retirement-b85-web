@@ -13,6 +13,7 @@ from typing import Any
 import numpy as np
 from policy import personalized_research_engine as model
 from policy.personalized_research_annual import AnnualInput, decide_year
+from expense_contract import bind_current_expense
 
 CONTRACT = 'B85_INVERSE_95_99_RESEARCH_V1'
 TARGETS = (0.95, 0.99)
@@ -47,6 +48,7 @@ def _capital_capacity(cfg, investments: float, cash: float, *, paths: int, seed:
     if cfg.external_income_by_age:
         raise ValueError('external income calibration is not enabled in this contract')
     age = cfg.start_age
+    cfg = bind_current_expense(cfg, age, planned_extra_m)
     cache = model.RequiredAssetCache(cfg, paths, seed, end_age=cfg.end_age)
     cache.required_distribution(age, 1.0, True)
     discount = cache._age_discount
@@ -61,7 +63,6 @@ def _capital_capacity(cfg, investments: float, cash: float, *, paths: int, seed:
                                 cfg.emergency_max*model._activation_scale(cfg), size=paths)
         nonliving += emergency * discount[np.arange(paths), t]
     total = investments + cash
-    nonliving += planned_extra_m  # First-year confirmed mandatory extras, not a second life annuity.
     capacity_m_2026 = (total - nonliving) / life_coeff / model._activation_scale(cfg)
     if np.any(~np.isfinite(capacity_m_2026)) or np.any(life_coeff <= 0):
         raise ValueError('invalid capacity distribution')
@@ -111,8 +112,9 @@ def _annual_preview(config, year: dict, f_m: float, normal_twd: int,
 
 
 def _validation(cfg, normal_twd: int, floor_m: float, inv: float, cash: float,
-                *, paths: int, inner: int, seed: int) -> dict:
+                *, paths: int, inner: int, seed: int, planned_extra_m: float = 0.0) -> dict:
     candidate = _normal_cfg(cfg, floor_m, normal_twd/1_000_000, inv, cash)
+    candidate = bind_current_expense(candidate, candidate.start_age, planned_extra_m)
     result = model.simulate_outer(candidate, n_outer=paths, n_inner=inner, seed=seed)
     floor_success = 1 - result['floor']
     whole_success = result['success']
@@ -166,7 +168,7 @@ def evaluate_saved_first_year(state: dict, *, paths: int = 4096,
                     raise ValueError('unsupported outer draw count')
                 row['validation'] = _validation(cfg,raw,f_m,invest,cash,
                     paths=validation_paths, inner=validation_inner,
-                    seed=VALIDATION_SEED)
+                    seed=VALIDATION_SEED, planned_extra_m=float(initial.get('planned_extra_m', 0.0)))
                 v = row['validation']
                 row['meets_lifetime_success_gate'] = bool(v['model_success_wilson_lower_95'] >= probability)
                 row['meets_lifetime_floor_gate'] = bool(v['floor_wilson_lower_95'] >= probability)

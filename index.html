@@ -34,7 +34,7 @@
  <div id="opening-result" class="results hidden"></div>
  <form id="opening-form" class="form-card">
  <h3>年度基本資料</h3><div class="grid-form"><label class="field"><span>決策日期 <em>必填</em></span><input id="decision_date" type="date" required/><small>首次進入使用瀏覽器時鐘換算為台灣今天（非伺服器授時）；已儲存的年度接續日期不會覆寫。可自行選擇試算日期。</small><small id="decision-month-guidance" class="decision-month-guidance" role="status">首年可自選日期，生活費按剩餘曆年天數計算。</small><button type="button" id="use-january-date" class="dash-text-link" hidden>舊版一月試算快捷鍵</button></label>
- <label class="field"><span>預計額外必要支出（新台幣）</span><input id="planned_extra_twd" type="number" min="0" step="0.01" value="0" required/><small>例如另外安排的醫療、購車等已確定費用。已由政策安排的定期換車請勿重複輸入。此金額會列入本年度支出，但原始 PoS 不會因本次額外輸入而重新校準。</small></label></div>
+ <label class="field"><span>預計額外必要支出（新台幣）</span><input id="planned_extra_twd" type="number" min="0" step="0.01" value="0" required/><small>例如另外安排的醫療、購車等已確定費用。已由政策安排的定期換車請勿重複輸入。此金額會納入本年度 PoS 與必要支出預算，實際付款只扣一次。</small></label></div>
  <div id="first-year-fields"><div class="inner-divider"></div><h3>首次建立：退休起始條件</h3><div class="grid-form"><label class="field"><span>退休開始年</span><input id="first_year" type="number" readonly/><small>與上方決策日期年份相同。</small></label>
  <label class="field"><span>退休開始年齡</span><input id="start_age" type="number" min="45" max="90" value="65" required/><small>一般試算預設 65 歲（2026 起勞保老年年金法定請領年齡），並非強制退休年齡；可自行修改。</small></label>
  <label class="field"><span>投資資產總市值（新台幣）</span><input id="investment_twd" type="number" min="0" step="0.01" value="27000000" required/><small>股票＋債券，與安全現金分開。</small></label>
@@ -90,12 +90,28 @@
   </section>
  </div>
  <div class="dashboard-lower" id="dashboard-lower">
-   <section class="dash-widget dash-history-chart" aria-labelledby="dash-history-chart-title"><div class="dash-widget-head"><h3 id="dash-history-chart-title"><span class="dash-widget-icon" aria-hidden="true">↗</span> 歷年資產紀錄與報酬假設</h3><small>實際紀錄優先・假設圖僅為示意</small></div>
+   <section class="dash-widget dash-history-chart" aria-labelledby="dash-history-chart-title"><div class="dash-widget-head"><h3 id="dash-history-chart-title"><span class="dash-widget-icon" aria-hidden="true">↗</span> 資產演進與年度紀錄</h3><small>蒙地卡羅為模型研究</small></div>
    <div class="dash-chart-tabs" role="group" aria-label="資產圖表內容">
     <button type="button" id="dash-actual-tab" class="dash-chart-tab selected" aria-pressed="true">已結算資產紀錄</button>
+    <button type="button" id="dash-mc-tab" class="dash-chart-tab" aria-pressed="false">蒙地卡羅 P10／P50／P90</button>
     <button type="button" id="dash-scenario-tab" class="dash-chart-tab" aria-pressed="false">固定報酬情境（進階示意）</button>
    </div>
    <div id="dash-asset-chart" class="dash-asset-chart" role="img" aria-label="已結算年度的實際資產走勢">建立至少一筆年末結算後，即可查看實際資產走勢。</div>
+   <div id="dash-mc-pane" class="hidden">
+    <p class="dash-scenario-disclaimer">使用隨機市場報酬與逐年 B＋85 決策，從最新年度延伸至 104 歲。P10／P50／P90 是各年度資產分布，<strong>不等於退休成功率，也不是三條固定報酬路徑</strong>。</p>
+    <div class="dash-mc-controls">
+     <label>資產範圍<select id="mc-asset"><option value="total">總資產</option><option value="investment">投資資產</option><option value="cash">安全現金</option></select></label>
+     <label>金額口徑<select id="mc-basis"><option value="real_2026">固定購買力（2026 年）</option><option value="nominal">名目金額（通膨情境）</option></select></label>
+     <label>未來年通膨假設 (%)<input id="mc-inflation" type="number" min="-5" max="15" step="0.5" value="2"/></label>
+     <label>研究精度<select id="mc-precision"><option value="quick">快速：2,048 外層／512 內層</option><option value="higher">較高：8,192 外層／2,048 內層</option></select></label>
+    </div>
+    <div class="dash-mc-actions"><button id="mc-run" type="button" class="secondary-btn">執行蒙地卡羅研究</button><button id="mc-cancel" type="button" class="secondary-btn hidden">取消計算</button><button id="mc-export" type="button" class="secondary-btn hidden">下載模擬資料</button></div>
+    <p id="mc-status" role="status" aria-live="polite">完成年度試算後即可執行；不會修改已保存紀錄。</p>
+    <div id="mc-chart" class="dash-scenario-chart" role="img" aria-label="各年度年末資產 P10、P50、P90">尚未執行模擬。</div>
+    <div id="mc-diagnostics"></div>
+    <details id="mc-data-details"><summary>查看逐年百分位與模型假設</summary><div id="mc-provenance"></div><div id="mc-table" class="mc-table-wrap"></div></details>
+    <p class="dash-scenario-disclaimer">總資產是各路徑的投資資產＋安全現金後再取百分位，兩個百分位不能直接相加。所有成功及失敗路徑均納入。固定購買力以 2026 年為基準；名目金額使用可修改的通膨情境，<strong>不是未來官方 CPI</strong>。內層 PoS、完整動態計畫成功率及最低生活費達成率分別計算；尚未完成外部長期校準。</p>
+   </div>
    <div id="dash-scenario-pane" class="dash-scenario-pane hidden">
     <div class="dash-scenario-controls">
      <label>假設 A：固定年實質報酬 (%)<input id="dash-return-low" type="number" min="-99" max="30" step="0.5" value="-2"/></label>
@@ -129,4 +145,4 @@
  <div id="closing-result" class="results hidden"></div></section>
  <section id="panel-history" class="panel hidden"><div class="section-head"><div><div class="eyebrow green">STEP 03</div><h2>歷年紀錄・從哪一年接續</h2><p>年初核准與年末實際紀錄分開保存，避免重複支出。</p></div><div class="history-actions"><button id="export-btn" class="secondary-btn">匯出 JSON 備份</button> <button id="import-btn" class="secondary-btn">匯入 JSON 備份</button><input id="import-file" type="file" accept="application/json,.json" class="hidden" aria-label="匯入已保存的年度備份 JSON"/></div></div><div id="history-list" class="history-list"></div><div class="history-footer"><p>重設之前請先匯出備份。重設之前會自動下載一份 JSON 備份。</p><button id="reset-btn" type="button" class="danger-link">清除演練並重新開始</button></div></section>
  <div class="footnote">退休模型 B＋85 v3.4.0｜瀏覽器本機運算，資料僅儲存於此瀏覽器的網站空間｜研究演練｜非投資建議、稅務判定或真實提款授權。</div>
-</main></div></div><script src="./static/taiwan-time.js" defer></script><script src="./static/app.js" defer></script><script src="./static/cpi-official.js" defer></script><script src="./static/dashboard.js" defer></script></body></html>
+</main></div></div><script src="./static/taiwan-time.js" defer></script><script src="./static/app.js" defer></script><script src="./static/cpi-official.js" defer></script><script src="./static/dashboard.js" defer></script><script src="./static/mc-projection.js" defer></script></body></html>

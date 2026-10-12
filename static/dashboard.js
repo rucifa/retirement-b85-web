@@ -62,7 +62,7 @@ function updateKpis(){
  text('dash-difference-sub',explanation);
  text('dash-pos',y&&Number.isFinite(Number(y.pos_pct))?Number(y.pos_pct).toFixed(1)+'%':'—');
  const extraOneOff=y&&fine(y.extra_authorized_twd)?Number(y.extra_authorized_twd):0;
- text('dash-pos-sub',y?(extraOneOff>0?'尚未將本次另列必要支出 '+money(extraOneOff)+' 納入原始 PoS 估算；不是保證':'完整年度模型參考值（非首年短期間保證）'):'完整年度模型參考值，非保證');
+ text('dash-pos-sub',y?(extraOneOff>0&&!y.extra_included_in_pos?'舊紀錄：尚未將另列必要支出 '+money(extraOneOff)+' 納入原始 PoS':'完整年度模型參考值・'+(extraOneOff>0?'已納入本年必要支出・':'')+'非保證'):'完整年度模型參考值，非保證');
  text('dash-years',years.length+' 年');
  text('dash-years-sub',years.length?'最早 '+years[0].year+' 年 · 最新 '+years[years.length-1].year+' 年':'僅保存在此瀏覽器');
  text('dash-policy-status',y?'已計算 '+y.year+' 年預算；'+(y.b85_restored?'符合 B＋85 恢復條件。':'以當年的 Guardrail／Sticky 結果為準。'):'目前尚無核准年度；請先執行年初試算。');
@@ -215,7 +215,7 @@ function updateGuardrail(y){
   B85_RESTORED:'符合 B＋85 恢復條件，Sticky 恢復至正常額度。'
  };
  status.textContent=(changes[action]||'本年度依 B＋85 政策 Guardrail／Sticky 規則核准。')+
-  (Number(y.extra_authorized_twd)>0?' 已另列本次新增必要支出，但原始 PoS 未把這筆新增支出納入計算。':'');
+  (Number(y.extra_authorized_twd)>0?(y.extra_included_in_pos?' 本年度必要支出已納入 PoS 並只支付一次。':' 舊紀錄另列的必要支出未納入原始 PoS。'):'');
  detail.replaceChildren();
  const rows=[];
  if(fine(y.normal_reference_twd))rows.push(['正常生活費參考（全年）',money(Number(y.normal_reference_twd))]);
@@ -239,17 +239,19 @@ let assetMode='actual',assetModeChanged=false;
 function updateChartMode(y,years){
  if(!assetModeChanged)assetMode='actual';
  const scenario=assetMode==='scenarios';
+ const mc=assetMode==='mc';
  const history=$('dash-asset-chart'),pane=$('dash-scenario-pane');
  if(!history||!pane)return;
- history.classList.toggle('hidden',scenario);
+ history.classList.toggle('hidden',scenario||mc);
  pane.classList.toggle('hidden',!scenario);
- for(const [id,chosen] of [['dash-actual-tab',!scenario],['dash-scenario-tab',scenario]]){
+ $('dash-mc-pane')?.classList.toggle('hidden',!mc);
+ for(const [id,chosen] of [['dash-actual-tab',!scenario&&!mc],['dash-scenario-tab',scenario],['dash-mc-tab',mc]]){
   const btn=$(id);if(!btn)continue;
   btn.classList.toggle('selected',chosen);
   btn.setAttribute('aria-pressed',chosen?'true':'false');
  }
 }
-for(const [id,mode] of [['dash-actual-tab','actual'],['dash-scenario-tab','scenarios']]){
+for(const [id,mode] of [['dash-actual-tab','actual'],['dash-scenario-tab','scenarios'],['dash-mc-tab','mc']]){
  $(id)?.addEventListener('click',()=>{
   assetModeChanged=true;assetMode=mode;
   updateChartMode(lastAnnual(),stateRead()?.years||[]);

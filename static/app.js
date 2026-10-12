@@ -122,7 +122,7 @@ function budgetHtml(y){
  const refillNote=!refillValid?'舊年度資料缺少現金補回數據，請核對備份。':
   Number(y.cash_refill_twd)>0?`本次由投資資產移回安全現金 ${refill}；屬資產間移轉，不是新增收入。`:
   '本次未補回。只有 PoS 高於 75%、現金低於政策目標的 95%、必要支出可支付且仍有投資資產時，才會逐步補回；不是每逢多頭就自動補滿。';
- const extraKnown=amountOK(y.extra_authorized_twd)&&Number(y.extra_authorized_twd)>0;
+ const extraKnown=amountOK(y.extra_authorized_twd)&&Number(y.extra_authorized_twd)>0&&!y.extra_included_in_pos;
  const extraPosWarning=extraKnown?
   `<p class="policy-caveat"><strong>重要：本次新增必要支出 ${esc(twMoney(y.extra_authorized_twd))} 雖已列入年度預算，卻沒有加入本年度原始 PoS 的內層試算。</strong> 上方成功機率不能視為已包含這筆新增支出的完整終生風險評估；請勿因此認定資產已充分支應未來所有費用。</p>`:'';
  const budgetTotal=amountOK(y.total_budget_twd)?twMoney(y.total_budget_twd):'資料待確認';
