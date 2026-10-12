@@ -13,8 +13,9 @@ let database=null, worker=null, seq=0;
 const pending=new Map();
 let capacityEstimate=null, capacityApprovalId=null;
 function capacityHtml(result){
- if(result==='pending')return '<section class="capacity-research"><h3>資產支持的生活費容量（95%／99%）</h3><p>正在計算兩種初始 PoS 研究門檻；原本年度核准金額不受影響。</p></section>';
- if(!result)return '<section class="capacity-research"><h3>資產支持的生活費容量</h3><p>完成年度核准後，這裡會另外顯示 95%／99% 研究容量候選值。</p></section>';
+ if(result==='pending')return '<section class="capacity-research" aria-live="polite"><h3>正在執行進階研究</h3><p>正在計算兩種初始 PoS 研究門檻；不影響已核准的年度生活費。</p></section>';
+ if(!result)return '<section class="capacity-research"><p>按此區塊展開後才會啟動 95%／99% 初始 PoS 研究計算；不會更動年度核准結果。</p></section>';
+ if(result.error)return '<section class="capacity-research" role="alert"><p>進階研究暫時無法完成：'+esc(result.error)+'</p><button id="capacity-retry-btn" type="button" class="secondary-btn">重新計算研究候選值</button></section>';
  const tile=(r,label)=>{
   const ok=Number.isFinite(r?.normal_2026_real_twd);
   const amount=ok?twMoney(r.normal_2026_real_twd):'最低必要生活費未達該門檻';
@@ -26,8 +27,15 @@ function capacityHtml(result){
  return '<section class="capacity-research" aria-label="退休生活費容量雙門檻研究">'+
   '<div class="capacity-heading"><h3>資產可支持的起始生活費（研究候選）</h3><span>2026 年實質金額 · 非核准提款</span></div>'+
   '<div class="capacity-grid">'+tile(result.results.p95,'95%')+tile(result.results.p99,'99%')+'</div>'+
-  '<p>最低必要生活費 '+twMoney(result.floor_2026_real_twd)+' 固定不變。雙金額只是「初始、固定 Sticky 的必要資產 PoS」容量，<strong>不是經完整動態驗證的最高安全提領額</strong>，不能直接領走。實際年度預算依下方 B＋85 核准結果。</p>'+
+  '<p>最低必要生活費 '+twMoney(result.floor_2026_real_twd)+' 固定不變。雙金額只是「初始、固定 Sticky 的必要資產 PoS」容量，<strong>不是經完整動態驗證的最高安全提領額</strong>，不能直接領走。實際年度預算請以上方 B＋85 試算結果為準。</p>'+
   '<button id="capacity-audit-btn" class="secondary-btn" type="button">追加獨立動態 MC 研究驗證（初步樣本）</button></section>';
+}
+function capacityAdvancedHtml(result){
+ if(!state?.plan?.spending_profile)return '';
+ return '<details id="capacity-research-details" class="advanced capacity-research-details">'+
+  '<summary>進階風險研究：95%／99% 初始模型容量（選用）</summary>'+
+  '<p class="research-disclaimer">一般退休試算不需要使用此功能。此處是尚未完成終生動態認證的初始 PoS 研究，<strong>不是建議提領額</strong>，也不會降低你設定的最低必要生活費。展開後才會另外計算。</p>'+
+  capacityHtml(result)+'</details>';
 }
 async function showCapacity(withValidation=false){
  const first=state?.years?.[0];
@@ -40,9 +48,8 @@ async function showCapacity(withValidation=false){
   const result=await request('/api/capacity',args);
   if(state?.years?.[0]?.approval_id!==key)return;
   capacityEstimate=result;
- }catch(e){capacityEstimate={results:{p95:null,p99:null},floor_2026_real_twd:0};
+ }catch(e){capacityEstimate={error:e.message};
   const panel=$('opening-result');if(panel)panel.dataset.capacityError=e.message;
-  flash('研究容量目前無法計算：'+e.message);
  }
  render();
 }
@@ -83,7 +90,7 @@ async function load(){try{
   };
   worker.onerror=e=>{engineReady=false;setLoadingStatus('B＋85 背景運算錯誤；請重新整理並確認網路或瀏覽器設定。',true);flash('模型載入失敗：'+e.message)};
   const result=await callWorker('init', {saved});
-  engineReady=true;setLoadingStatus('已就緒。資料保存在此瀏覽器，建議定期匯出 JSON 備份。');state=result;render();void showCapacity();
+  engineReady=true;setLoadingStatus('已就緒。資料保存在此瀏覽器，建議定期匯出 JSON 備份。');state=result;render();
  }catch(e){engineReady=false;setLoadingStatus('載入失敗：'+e.message+'。請確認瀏覽器支援 WebAssembly、IndexedDB，並能連接 Pyodide CDN。',true);flash('退休工具無法啟動：'+e.message)}}
 function display(view){
  active=view;for(const id of ['opening','closing','history']){$('panel-'+id).classList.toggle('hidden',id!==view)}
@@ -102,15 +109,24 @@ function budgetHtml(y){
  const annual=part?`模型全年生活費參考為 ${twMoney(y.full_year_living_reference_twd)}；本次依起始日至年底按日換算為 ${total}。換車及額外必要支出不按天數縮減。`:'';
  const applicable=part?`適用期間：${String(y.period_start).replaceAll('-','/')}～${String(y.period_end).replaceAll('-','/')}（含起始日，共 ${y.calendar_days} 天）`:`適用期間：${y.year}/01/01～${y.year}/12/31（全年）`;
  const budgetExplanation='這是上述期間可安排的生活費總預算，不代表需要在起始日一次提領整筆，也不包含換車或其他必要支出。';
+ const bridgeValid=y.bridge_from_cash_twd!==null&&y.bridge_from_cash_twd!==undefined&&Number.isFinite(Number(y.bridge_from_cash_twd))&&Number(y.bridge_from_cash_twd)>=0;
+ const cashValid=y.cash_open_twd!==null&&y.cash_open_twd!==undefined&&Number.isFinite(Number(y.cash_open_twd))&&Number(y.cash_open_twd)>=0;
+ const bridge=bridgeValid?twMoney(y.bridge_from_cash_twd):'資料待確認';
+ const startingCash=cashValid?twMoney(y.cash_open_twd):'資料待確認';
+ const bridgeNote=!bridgeValid?'舊年度資料缺少現金橋接金額，請核對備份來源。':
+  Number(y.bridge_from_cash_twd)>0?`本次使用安全現金 ${bridge} 支應生活費的一部分。`:'本次未動用安全現金橋接。';
  return `<div class="result-caption">${y.year} 年・${y.age} 歲・${period}・B＋85 研究演練</div>
- <div class="result-grid">
+ <div class="result-grid result-grid-finance">
  ${metric('本次建議生活費預算',total,true)}
- ${metric('全年模型參考 PoS',pos)}
- ${metric('換車專項預算',car)}
- </div><p class="details-summary budget-period-note">${esc(applicable)}。${esc(budgetExplanation)}</p><div class="progress-track"><div class="progress-bar" style="width:${Math.max(0,Math.min(100,y.pos_pct))}%"></div></div>
- <div class="inflation-preview result-inflation">${inflationCards(Number(y.decision_cpi),Number(state?.plan?.cpi_2026),state?.years?.length>1?Number(state.years[state.years.length-2].decision_cpi):null,y.year,Number(state?.plan?.spending_profile?.normal_twd??650000))}</div>
+ ${metric('模型成功機率（PoS）',pos)}
+ ${metric('本次安全現金橋接',bridge)}
+ ${metric('試算開始時安全現金',startingCash)}
+ </div>
+ <p class="details-summary budget-period-note">${esc(applicable)}。${esc(budgetExplanation)}</p>
+ <div class="cash-bridge-explain" role="note"><strong>${esc(bridgeNote)}</strong> 現金橋接是生活費的資金來源，<strong>不是生活費之外可以再加領的金額</strong>。安全現金顯示的是本次試算的起始餘額，並非年底預估餘額。</div>
+ <div class="progress-track"><div class="progress-bar" style="width:${Math.max(0,Math.min(100,y.pos_pct))}%"></div></div>
  <div class="status-line">● ${esc(cpiBasis)} ${esc(annual)} ${y.b85_restored?'符合 B＋85 生活預算恢復條件':'按當年 Guardrail 狀態計算'}，年度 Sticky 乘數 ${esc(y.sticky_after)}。</div>
- <p class="details-summary">熊市現金橋接：${twMoney(y.bridge_from_cash_twd)}　／　已核准其他必要支出：${twMoney(y.extra_authorized_twd)}。<br>費用與稅負使用模型既有整體淨報酬情境，年末核對不會重扣。PoS 採完整年度模型作參考，未針對首年短期間重新校準；成功率不是保證。</p>
+ <p class="details-summary">換車專項預算：${car}　／　已核准其他必要支出：${twMoney(y.extra_authorized_twd)}。<br>費用與稅負使用模型既有整體淨報酬情境，年末核對不會重扣。PoS 採完整年度模型作參考，未針對首年短期間重新校準；成功率不是保證。</p>
  ${!y.closing?'<div class="result-buttons"><button class="primary-btn" data-go="closing">下一步：年末結算 →</button></div>':'<div class="result-buttons"><button class="secondary-btn" data-go="history">查看已結算紀錄</button></div>'}`;
 }
 
@@ -172,7 +188,12 @@ function render(){
  if(modelLabel)modelLabel.textContent=state?.plan?.spending_profile?
   '個人化生活費研究 v1 · B＋85 衍生版':'B＋85 基準 · v3.4.0';
  const last=lastYear();
- $('opening-result').classList.toggle('hidden',!last);if(last)$('opening-result').innerHTML=capacityHtml(capacityEstimate)+budgetHtml(last);
+ const advancedOpen=$('capacity-research-details')?.open===true;
+ $('opening-result').classList.toggle('hidden',!last);
+ if(last){
+  $('opening-result').innerHTML=budgetHtml(last)+capacityAdvancedHtml(capacityEstimate);
+  const advanced=$('capacity-research-details');if(advanced&&advancedOpen)advanced.open=true;
+ }
  const sp=state?.plan?.spending_profile;
  const pending=!!(last && !last.closing);
  $('opening-form').classList.toggle('hidden',pending||!!(last&&last.age>=104));
@@ -227,7 +248,7 @@ function endPayload(){return {closing_date:fieldVal('closing_date'),closing_cpi:
 function loading(id,flag){$(id).disabled=flag;$(id).classList.toggle('loading',flag)}
 $('opening-form').addEventListener('submit',async e=>{e.preventDefault();renderSpendingProfileInput();
  if(!state?.years?.length&&$('spending-profile-preview').dataset.valid!=='true'){flash($('spending-profile-preview').textContent);return;}
- loading('approve-btn',true);try{await request('/api/approve',initPayload());await refresh();display('opening');void showCapacity();flash('本年度預算已核准（研究演練），請核對後進行年末結算。','success')}catch(err){flash(err.message)}finally{loading('approve-btn',false)}});
+ loading('approve-btn',true);try{await request('/api/approve',initPayload());await refresh();display('opening');flash('本年度預算已核准（研究演練），請核對後進行年末結算。','success')}catch(err){flash(err.message)}finally{loading('approve-btn',false)}});
 $('closing-form').addEventListener('submit',async e=>{e.preventDefault();loading('close-btn',true);try{await request('/api/close',endPayload());await refresh();display('closing');flash('年末帳務已對帳並保存；可以開始下一年度。','success')}catch(err){flash(err.message)}finally{loading('close-btn',false)}});
 $('demo-close-btn').addEventListener('click',async()=>{try{const x=await request('/api/demo-close',{});
  for(const k of ['closing_date','closing_cpi','closing_cpi_release','investment_end_twd','cash_end_twd','living_paid_twd','car_paid_twd','extra_paid_twd','emergency_paid_twd','external_flow_twd'])$(k).value=x[k];
@@ -238,7 +259,7 @@ $('import-btn').addEventListener('click',()=>{if(!engineReady){flash('計算引�
 $('import-file').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;
  try{if(file.size>5_000_000)throw Error('備份檔案過大');const imported=JSON.parse(await file.text());
  if(!confirm('匯入備份將覆蓋此瀏覽器目前的年度紀錄。建議先匯出現有資料。確定匯入？'))return;
- await request('/api/import',imported);capacityEstimate=null;capacityApprovalId=null;await refresh();void showCapacity();display('history');flash('備份 SHA256 與年度連續性已驗證，匯入完成。','success');
+ await request('/api/import',imported);capacityEstimate=null;capacityApprovalId=null;await refresh();display('history');flash('備份 SHA256 與年度連續性已驗證，匯入完成。','success');
  }catch(err){flash('匯入失敗：'+err.message)}finally{e.target.value='';}});
 $('reset-btn').addEventListener('click',async()=>{
  if(!engineReady){flash('計算引擎尚未就緒，暫時無法清除');return;}
@@ -252,7 +273,14 @@ $('reset-btn').addEventListener('click',async()=>{
  }catch(e){flash('清除未完成：'+e.message+'。請使用先前備份復原。')}
  finally{btn.disabled=false;}
 });
-document.addEventListener('click',e=>{if(e.target.closest('#capacity-audit-btn')){void showCapacity(true);return;}const b=e.target.closest('[data-go]');if(b&&!b.disabled){display(b.dataset.go);}});
+document.addEventListener('click',e=>{
+ if(e.target.closest('#capacity-audit-btn')){void showCapacity(true);return;}
+ if(e.target.closest('#capacity-retry-btn')){capacityEstimate=null;void showCapacity();return;}
+ const b=e.target.closest('[data-go]');if(b&&!b.disabled){display(b.dataset.go);}
+});
+document.addEventListener('toggle',e=>{
+ if(e.target.id==='capacity-research-details'&&e.target.open&&capacityEstimate===null)void showCapacity();
+},true);
 $('decision_date').addEventListener('change',()=>{$('first_year').value=$('decision_date').value.slice(0,4);updateDecisionMonthHelp();});
 function renderSpendingProfileInput(){
  const floorEl=$('floor_spend_2026_twd'),wishEl=$('normal_spend_2026_twd'),

@@ -77,7 +77,7 @@ async def main():
             assert await page.locator('#use-january-date').is_hidden()
             assert '首次退休可選任何日期' in (await page.locator('#decision-month-guidance').inner_text())
 
-            assert await page.locator('#inflation-preview').is_hidden()
+            assert await page.locator('#inflation-preview').count()==0
             assert await page.locator('#dashboard-kpis .dash-kpi').count()==4
             assert await page.locator('#dashboard-kpis #dash-cpi-month, #dashboard-kpis #dash-years').count()==0
             assert await page.locator('#dashboard-cpi-card').count()==1
@@ -152,29 +152,49 @@ async def main():
             assert '最低需求' in (await page.locator('#spending-profile-preview').inner_text())
             await page.locator('#normal_spend_2026_twd').fill('650000')
             assert await page.locator('#core_spend_2026_twd').input_value()=='600000'
-            assert await page.locator('#inflation-preview').is_hidden()
+            assert await page.locator('#inflation-preview').count()==0
             print('BROWSER_CPI_TAIWAN_ASOF_AND_SIMULATION_ISOLATION_PASS')
             await page.locator('#approve-btn').click()
             await page.locator('#opening-tag').filter(has_text='等待年末結算').wait_for(timeout=180000)
             a=await page.locator('#opening-result').inner_text()
             assert 'PoS' in a and '建議生活費' in a
-            assert '原設定的全年生活費（通膨換算後）' in a
+            assert '原設定的全年生活費（通膨換算後）' not in a
+            assert await page.locator('#opening-result .result-inflation').count()==0
             assert '本次建議生活費預算' in a
+            assert '本次安全現金橋接' in a
+            assert '試算開始時安全現金' in a
+            assert '現金橋接是生活費的資金來源' in a
+            assert '不是生活費之外可以再加領的金額' in a
+            assert await page.locator('#opening-result .result-grid-finance .metric').count()==4
             # A single primary annual result; no second large recommendation widget.
             assert await page.locator('#opening-result .metric.featured').count()==1
             assert await page.locator('.dash-recommendation, #dash-recommend-body').count()==0
             assert await page.locator('.dash-history-summary').count()==1
             assert await page.locator('.dash-risk-notes').count()==1
             assert await page.locator('#dash-budget').inner_text()!='尚未試算'
-            import re
+            # CPI conversion remains in the model despite removing the confusing card.
             converted=650000*125/float(await page.locator('#cpi_2026').input_value())
-            match=re.search(r'原設定的全年生活費（通膨換算後）\s+NT\$\s*([\d,]+)',a)
-            assert match is not None, a
-            assert abs(float(match.group(1).replace(',',''))-converted)<2
+            model_year=await page.evaluate('() => state.years[state.years.length-1]')
+            assert abs(float(model_year['normal_reference_twd'])-converted)<2
+            currency=await page.evaluate('''y => ({
+              bridge: 'NT$ '+new Intl.NumberFormat('zh-TW',{maximumFractionDigits:0}).format(Math.round(y.bridge_from_cash_twd)),
+              cash: 'NT$ '+new Intl.NumberFormat('zh-TW',{maximumFractionDigits:0}).format(Math.round(y.cash_open_twd))
+            })''',model_year)
+            bridge_card=page.locator('#opening-result .result-grid-finance .metric').nth(2)
+            cash_card=page.locator('#opening-result .result-grid-finance .metric').nth(3)
+            assert await bridge_card.locator('strong').inner_text()==currency['bridge']
+            assert await cash_card.locator('strong').inner_text()==currency['cash']
+            if model_year['bridge_from_cash_twd']>0:
+                assert '本次使用安全現金' in a
+            else:
+                assert '本次未動用安全現金橋接' in a
+            candidate_markup=await page.evaluate('y => budgetHtml({...y,bridge_from_cash_twd:123456.7,cash_open_twd:2000000})',model_year)
+            assert 'NT$ 123,457' in candidate_markup and 'NT$ 2,000,000' in candidate_markup
+            print('BROWSER_CASH_BRIDGE_AND_OPENING_CASH_FROM_POLICY_NO_DOUBLE_COUNT_PASS')
             assert '適用期間：2036/10/12～2036/12/31（含起始日，共 81 天）' in a
             assert '不代表需要在起始日一次提領整筆' in a
-            assert '這是完整一年的生活費設定參考' in a
-            assert '全年模型參考 PoS' in a
+            assert '模型全年生活費參考為' in a
+            assert '模型成功機率（PoS）' in a
             assert '2036/10/12～2036/12/31（共 81 天）' in (await page.locator('#dash-budget-sub').inner_text())
             assert '非一次提款指令' in (await page.locator('#dash-budget-sub').inner_text())
             assert '本次建議生活費預算' in (await page.locator('#dash-budget-card').inner_text())
@@ -227,7 +247,7 @@ async def main():
             print('BROWSER_OCTOBER_FIRST_YEAR_ACTUAL_DAY_PRORATION_PASS')
             assert await page.locator('#dashboard-baseline').count()==0
             print('BROWSER_SPENDING_BASELINE_REMOVED_TO_AVOID_DUPLICATION_PASS')
-            print('BROWSER_INFLATION_SPENDING_RESULT_PASS')
+            print('BROWSER_CPI_MODEL_PARITY_WITHOUT_DUPLICATE_INFLATION_CARD_PASS')
             await page.locator('#dash-budget').filter(has_text='NT$').wait_for(timeout=15000)
             assert '2036' in (await page.locator('#dash-budget-sub').inner_text())
             print('BROWSER_DASHBOARD_USES_POLICY_RESULT_PASS')
@@ -361,13 +381,24 @@ async def main():
                 assert saved['core_twd']==350000
                 assert saved['floor_twd']==350000
                 assert '本次建議生活費預算' in (await essential.locator('#opening-result').inner_text())
+                assert await essential.locator('#capacity-research-details').count()==1
+                assert await essential.locator('#capacity-research-details').get_attribute('open') is None
+                assert await essential.locator('.capacity-research').is_hidden()
+                assert await essential.evaluate('() => capacityEstimate===null')
+                await essential.locator('#capacity-research-details summary').click()
                 await essential.locator('.capacity-research .capacity-grid article').first.wait_for(timeout=180000)
+                assert await essential.locator('#capacity-research-details').get_attribute('open') is not None
                 inverse_text=await essential.locator('.capacity-research').inner_text()
                 assert '95%' in inverse_text and '99%' in inverse_text
                 assert '不是經完整動態驗證的最高安全提領額' in inverse_text
                 read_only=await essential.evaluate('() => state.years.length')
                 assert read_only==1
-                print('BROWSER_INVERSE_CAPACITY_RESEARCH_ONLY_AND_DUAL_THRESHOLD_PASS')
+                await essential.locator('#capacity-research-details summary').click()
+                assert await essential.locator('.capacity-research').is_hidden()
+                await essential.locator('#capacity-research-details summary').click()
+                assert await essential.locator('.capacity-research .capacity-grid article').count()==2
+                assert await essential.evaluate('() => state.years.length')==1
+                print('BROWSER_INVERSE_CAPACITY_ADVANCED_LAZY_READONLY_DUAL_THRESHOLD_PASS')
                 print('BROWSER_MINIMUM_ONLY_OPTIONAL_DESIRED_SPENDING_PASS')
             finally:
                 await context_basic.close()

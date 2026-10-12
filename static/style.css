@@ -50,3 +50,20 @@ button:disabled{opacity:.6;cursor:progress}.privacy-help{font-size:12px;color:#6
 .capacity-grid article p,.capacity-research>p{font-size:.86rem;line-height:1.6;color:#335c66}
 .capacity-grid .capacity-risk{border-top:1px dashed #b5d6d4;padding-top:8px;color:#8a5b16}
 @media(max-width:640px){.capacity-grid{grid-template-columns:1fr}.capacity-research{padding:16px}}
+
+
+/* Retirement living-budget result: real policy outputs, cash bridge is a funding source. */
+.result-grid-finance{grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.result-grid-finance .metric{min-width:0}
+.result-grid-finance .metric strong{font-size:clamp(16px,1.45vw,22px);overflow-wrap:anywhere}
+.result-grid-finance .metric:nth-child(3){background:#f1f9fa;border-color:#d3e7e5}
+.result-grid-finance .metric:nth-child(4){background:#f8fafc;border-color:#e0e9ec}
+.budget-period-note{margin-top:14px;margin-bottom:10px;font-weight:600;color:#3f6158}
+.cash-bridge-explain{padding:12px 15px;border:1px solid #dce8e1;background:#f7fbf8;border-radius:11px;color:#536f64;font-size:12px;line-height:1.75}
+.cash-bridge-explain strong{color:#285b48}
+.capacity-research-details{margin-top:22px;background:#f8fbfa;border:1px solid #d7e5e3}
+.capacity-research-details>summary{font-size:13px;color:#2c686d}
+.capacity-research-details .research-disclaimer{font-size:12px;color:#557378;line-height:1.7;margin:12px 0}
+.capacity-research-details .capacity-research{margin:12px 0 0}
+@media(max-width:1050px){.result-grid-finance{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){.result-grid-finance{grid-template-columns:1fr}}

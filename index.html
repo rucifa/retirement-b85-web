@@ -62,7 +62,7 @@
   <div class="grid-form"><label class="field"><span>此次試算採用的 CPI 指數</span><input id="decision_cpi" type="number" step="0.01" min="10" placeholder="正在比對資料庫…" required/><small>以當時已正式公布、基期一致的官方 CPI 指數為準，無法取得時請手動提供有效資料。</small></label>
   <label class="field"><span id="decision-cpi-date-caption">CPI 官方公布日期</span><input id="decision_cpi_release" type="date" required/><small>自動帶入來源公布日；若自行修改，公布日期不得晚於決策日期。</small></label></div>
  </details>
- <div id="inflation-preview" class="inflation-preview hidden" role="status" aria-live="polite"></div><p class="privacy-help">原設定的全年生活費（通膨換算後）會在試算結果中作為全年比較基準，不是本次建議生活費預算。2026 全年 CPI 尚未認證，手動假設不會被標示為官方資料。</p>
+ <p class="privacy-help">系統仍會依 CPI 調整生活費的購買力，但試算結果只顯示 B＋85 的當期生活費預算，不另外顯示容易混淆的全年通膨換算卡片。2026 全年 CPI 尚未認證，手動假設不會被標示為官方資料。</p>
  <details class="advanced inflation-help"><summary>為什麼需要 CPI？這不是直接輸入通膨率嗎？</summary><p>通膨率是兩個可比較時點的 CPI 變化。底層需保留 CPI 以換算 2026 年實質生活費、年末資產購買力及跨年紀錄；畫面會優先呈現通膨和新台幣生活費。第一次建立時，若沒有去年同期 CPI，會顯示「尚無同期資料」，不會捏造全年通膨率。資料需採相同基期，且僅可使用當時已公布版本；本網站另顯示官方快照與核對狀態，但不會把尚未公布的 2026 全年基準或未查證月份自動回填模型。</p></details>
  <div class="form-footer"><div class="tiny-info">試算結果會建立本機年度帳本。顯示的是模型給的生活費預算，不是保證能花的金額或「最大可提款額」。</div><button class="primary-btn" type="submit" id="approve-btn">試算今年可安排的生活費 <span>→</span></button></div>
  </form>
