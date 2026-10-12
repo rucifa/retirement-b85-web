@@ -48,6 +48,10 @@ class WithdrawalSourceTests(unittest.TestCase):
         self.assertEqual(row["status"],"UNAVAILABLE_REQUIRES_REVIEW")
         self.assertNotIn("total",row)
 
+    def test_browser_worker_lists_read_only_audit(self):
+        worker=(Path(__file__).resolve().parents[1]/"pyodide-worker.js").read_text("utf-8")
+        self.assertIn("withdrawal_sources.py",worker)
+
     def test_cpi_conversion_and_zero_car(self):
         row=attribution(sample(10,2.4,.6,0,0,0,0,9.4,2.4),120,100)
         self.assertEqual(row["status"],"RECONCILED")
