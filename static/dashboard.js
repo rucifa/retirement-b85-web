@@ -330,6 +330,8 @@ function drawScenario(y){
 
 async function loadOfficialSummary(){
  try{
+  const progress=window.B85_RUNTIME_PROGRESS;
+  if(progress)progress.setStage('cpi','loading',45,'正在驗證 GitHub 已公布的官方 CPI 快照');
   const response=await fetch('./data/cpi_verified.json',{cache:'no-store'});
   if(!response.ok)throw Error('HTTP '+response.status);
   const data=await response.json();
@@ -346,11 +348,14 @@ async function loadOfficialSummary(){
     x=>x.month<=maximumMonth&&x.month.slice(0,4)===newest.month.slice(0,4)):[];
   trend(yearData.length?yearData.map(x=>({month:x.month,
     official_yoy_pct:x.yoy_pct,origin:x.origin})):eligible);
+  if(progress)progress.setStage('cpi','ready',100,'已核對到 '+newest.month.replace('-',' / ')+' 的官方 CPI 公告資料。');
 
- }catch{
+ }catch(e){
   text('dash-cpi-month','來源暫不可用');
   text('dash-cpi-sub','不會採用未查證的 CPI 數字');
   text('dash-cpi-trend','無法驗證官方 CPI 快照，請查看官方公告或稍後再試。');
+  const progress=window.B85_RUNTIME_PROGRESS;
+  if(progress)progress.setStage('cpi','failed',0,'官方 CPI 快照暫時無法驗證：'+(e?.message||'請稍後再試'));
  }
 }
 let queued=false;

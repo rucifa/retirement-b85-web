@@ -53,9 +53,29 @@ function dbWrite(record){return new Promise((res,rej)=>{const t=database.transac
 function callWorker(op,data={}){return new Promise((resolve,reject)=>{if(!worker){reject(Error('計算引擎尚未啟動'));return;}const id=++seq;pending.set(id,{resolve,reject});worker.postMessage({id,op,data});});}
 function downloadJson(data){const a=document.createElement('a'),u=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json;charset=utf-8'}));a.href=u;a.download='B85_年度研究備份_'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),10000);}
 async function request(path,data={}){if(!engineReady)throw Error('瀏覽器計算環境尚未完成載入');const op=({'/api/state':'state','/api/approve':'approve','/api/close':'close','/api/demo-close':'demo-close','/api/export':'export','/api/reset':'reset','/api/import':'import','/api/capacity':'capacity'})[path];if(!op)throw Error('未允許的請求');return await callWorker(op,data);}
-function setLoadingStatus(message,error=false){const status=$('runtime-status');status.classList.toggle('ready',engineReady&&!error);status.classList.toggle('failed',error);$('runtime-title').textContent=error?'引擎載入失敗':engineReady?'瀏覽器計算環境已就緒':'正在準備退休年度工具';$('runtime-detail').textContent=message;}
+const runtimeStages={engine:{state:'loading',percent:0,text:'等待載入 Python 與政策模型'},storage:{state:'loading',percent:0,text:'等待讀取此瀏覽器內的年度紀錄'},cpi:{state:'loading',percent:0,text:'等待驗證已公布的官方 CPI 資料'}};
+function setRuntimeStage(name,stateName,percent,text){
+ const stage=runtimeStages[name];if(!stage)return;
+ stage.state=stateName;stage.percent=Math.max(0,Math.min(100,Number(percent)||0));
+ if(text)stage.text=text;
+ const card=$('runtime-stage-'+name),bar=$('runtime-stage-'+name+'-bar'),pct=$('runtime-stage-'+name+'-pct'),msg=$('runtime-stage-'+name+'-text');
+ if(card)card.dataset.state=stateName;
+ if(bar)bar.style.width=stage.percent+'%';
+ if(pct)pct.textContent=Math.round(stage.percent)+'%';
+ if(msg)msg.textContent=stage.text;
+ const all=Object.values(runtimeStages),total=Math.round(all.reduce((sum,x)=>sum+x.percent,0)/all.length);
+ const totalBar=$('runtime-total-bar');if(totalBar)totalBar.style.width=total+'%';
+ const status=$('runtime-status');
+ const usable=runtimeStages.engine.state==='ready'&&runtimeStages.storage.state==='ready';
+ if(status){status.classList.toggle('ready',usable);status.classList.toggle('failed',all.some(x=>x.state==='failed'));}
+ const readyCount=all.filter(x=>x.state==='ready').length;
+ $('runtime-title').textContent=all.some(x=>x.state==='failed')?'部分資料載入失敗':readyCount===all.length?'瀏覽器計算環境已就緒':usable?'退休計算環境已可使用':'正在準備退休年度工具';
+ $('runtime-detail').textContent=all.some(x=>x.state==='failed')?'可先繼續使用核心試算；失敗項目請稍後重試或查看提示。':readyCount===all.length?'三個模組皆已就緒，可開始試算與查看紀錄。':usable?'核心試算與本機紀錄已就緒，CPI 快照仍在讀取中。':'目前已完成 '+readyCount+'/3 個模組，請稍候。';
+}
+window.B85_RUNTIME_PROGRESS={setStage:setRuntimeStage};
+function setLoadingStatus(message,error=false){const stateName=error?'failed':engineReady?'ready':'loading';setRuntimeStage('engine',stateName,engineReady&&!error?100:(error?0:45),message);}
 async function load(){try{
-  database=await databaseOpen();const saved=await dbRead();
+  database=await databaseOpen();setRuntimeStage('storage','loading',45,'正在檢查此瀏覽器是否已有保存紀錄');const saved=await dbRead();setRuntimeStage('storage','ready',100,saved&&saved.includes('year')?'已讀取本機年度紀錄，可接續上一年度。':'目前尚無本機年度紀錄，可直接開始第一次試算。');
   worker=new Worker('./pyodide-worker.js',{name:'B85-policy-worker'});
   worker.onmessage=async event=>{const m=event.data;if(m.type==='progress'){setLoadingStatus(m.message);return;}if(m.type!=='result')return;const job=pending.get(m.id);if(!job)return;pending.delete(m.id);
    if(!m.ok){job.reject(Error(m.error||'模型計算失敗'));return;}
@@ -151,15 +171,7 @@ function render(){
   '個人化生活費研究 v1 · B＋85 衍生版':'B＋85 基準 · v3.4.0';
  const last=lastYear();
  $('opening-result').classList.toggle('hidden',!last);if(last)$('opening-result').innerHTML=capacityHtml(capacityEstimate)+budgetHtml(last);
- const baseline=$('dashboard-baseline');if(baseline)baseline.classList.toggle('hidden',!last);
  const sp=state?.plan?.spending_profile;
- const refs=sp||{normal_twd:650000,core_twd:600000,floor_twd:500000};
- for(const [field,key] of [['normal','normal_twd'],['core','core_twd'],['floor','floor_twd']]){
-  const target=$('dash-baseline-'+field),sub=$('dash-baseline-'+field+'-month');
-  if(target)target.textContent=twMoney(refs[key]);
-  if(sub)sub.textContent='2026 年實質・每月約 '+twMoney(refs[key]/12);
- }
- if(baseline)baseline.setAttribute('data-profile-mode',sp?'GENERALIZED_RESEARCH_SPENDING_V1':'FROZEN_BASELINE');
  const pending=!!(last && !last.closing);
  $('opening-form').classList.toggle('hidden',pending||!!(last&&last.age>=104));
  $('opening-tag').textContent=pending?'等待年末結算':last?.closing?'可開始下一年':'準備建立';

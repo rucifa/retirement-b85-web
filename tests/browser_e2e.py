@@ -21,6 +21,19 @@ async def main():
         try:
             await page.goto('http://127.0.0.1:8766/',wait_until='domcontentloaded')
             await page.locator('#runtime-status.ready').wait_for(timeout=180000)
+            assert await page.locator('.runtime-stage').count()==3
+            assert await page.locator('#runtime-stage-engine-pct').inner_text()=='100%'
+            assert await page.locator('#runtime-stage-storage-pct').inner_text()=='100%'
+            await page.locator('#runtime-stage-cpi[data-state="ready"]').wait_for(timeout=15000)
+            assert await page.locator('#runtime-stage-cpi-pct').inner_text()=='100%'
+            assert await page.locator('#runtime-total-bar').get_attribute('style')=='width: 100%;'
+            assert await page.locator('#dashboard-baseline').count()==0
+            form_bounds=await page.locator('#opening-form').bounding_box()
+            assert form_bounds is not None
+            for selector in ('#dashboard-cpi-card','#dashboard-rail .dash-policy-card','#dashboard-lower .dash-history-chart','#dashboard-lower .dash-history-summary','#dashboard-lower .dash-risk-notes'):
+                bounds=await page.locator(selector).bounding_box()
+                assert bounds and abs(bounds['x']-form_bounds['x'])<=3 and abs(bounds['width']-form_bounds['width'])<=4, (selector,bounds,form_bounds)
+            print('BROWSER_FULL_WIDTH_DASHBOARD_AND_THREE_STAGE_RUNTIME_PASS')
             today=await page.evaluate('window.B85_TAIWAN_TIME.today()')
             previous_month=await page.evaluate('window.B85_TAIWAN_TIME.prevMonth(window.B85_TAIWAN_TIME.today())')
             assert await page.locator('#decision_date').input_value()==today
@@ -31,12 +44,11 @@ async def main():
             assert await page.locator('#use-january-date').is_hidden()
             assert '首次退休可選任何日期' in (await page.locator('#decision-month-guidance').inner_text())
 
-            assert await page.locator('#dashboard-baseline').is_hidden()
             assert await page.locator('#inflation-preview').is_hidden()
             assert await page.locator('#dashboard-kpis .dash-kpi').count()==4
             assert await page.locator('#dashboard-kpis #dash-cpi-month, #dashboard-kpis #dash-years').count()==0
             assert await page.locator('#dashboard-cpi-card').count()==1
-            assert await page.locator('#dashboard-baseline article').count()==4
+            assert await page.locator('#dashboard-baseline').count()==0
             assert await page.locator('#dashboard-lower .dash-widget').count()==3
             layout=await page.locator('.sidebar').evaluate('(el)=>getComputedStyle(el).flexDirection')
             assert layout=='row'
@@ -98,7 +110,6 @@ async def main():
             await page.locator('#decision_date').fill('2036-10-12')
             assert previous_month in (await page.locator('#official-cpi-panel').inner_text())
             assert await page.locator('#first_year').input_value()=='2036'
-            assert await page.locator('#dashboard-baseline').is_hidden()
             await page.locator('#start_age').fill('54')
             await page.locator('.cpi-manual-input summary').click()
             await page.locator('#decision_cpi').fill('125')
@@ -119,8 +130,8 @@ async def main():
             # A single primary annual result; no second large recommendation widget.
             assert await page.locator('#opening-result .metric.featured').count()==1
             assert await page.locator('.dash-recommendation, #dash-recommend-body').count()==0
-            assert await page.locator('.dash-lower-side .dash-history-summary').count()==1
-            assert await page.locator('.dash-lower-side .dash-risk-notes').count()==1
+            assert await page.locator('.dash-history-summary').count()==1
+            assert await page.locator('.dash-risk-notes').count()==1
             assert await page.locator('#dash-budget').inner_text()!='尚未試算'
             import re
             converted=650000*125/float(await page.locator('#cpi_2026').input_value())
@@ -177,9 +188,8 @@ async def main():
             await page.locator('#dash-scenario-tab').click()
             print('BROWSER_GUARDRAIL_REAL_POLICY_AND_USER_EDITABLE_SCENARIOS_PASS')
             print('BROWSER_OCTOBER_FIRST_YEAR_ACTUAL_DAY_PRORATION_PASS')
-            assert await page.locator('#dashboard-baseline').is_visible()
-            assert await page.locator('#dashboard-baseline').get_attribute('open') is None
-            print('BROWSER_SPENDING_BASELINE_AND_INFLATION_REVEAL_ONLY_AFTER_APPROVAL_PASS')
+            assert await page.locator('#dashboard-baseline').count()==0
+            print('BROWSER_SPENDING_BASELINE_REMOVED_TO_AVOID_DUPLICATION_PASS')
             print('BROWSER_INFLATION_SPENDING_RESULT_PASS')
             await page.locator('#dash-budget').filter(has_text='NT$').wait_for(timeout=15000)
             assert '2036' in (await page.locator('#dash-budget-sub').inner_text())
@@ -216,6 +226,8 @@ async def main():
             await page.route('**/data/cpi_verified.json',lambda route:route.abort())
             await page.reload(wait_until='domcontentloaded')
             await page.locator('#official-cpi-panel[data-status="error"]').wait_for(timeout=15000)
+            await page.locator('#runtime-stage-cpi[data-state="failed"]').wait_for(timeout=15000)
+            assert await page.locator('#runtime-stage-cpi-pct').inner_text()=='0%'
             # CPI fetch fails before the worker restores IndexedDB. Wait for both.
             await page.locator('#runtime-status.ready').wait_for(timeout=180000)
             assert '1 年' in (await page.locator('#dash-years').inner_text())
@@ -228,6 +240,8 @@ async def main():
             await page.route('**/data/cpi_verified.json',bad_json)
             await page.reload(wait_until='domcontentloaded')
             await page.locator('#official-cpi-panel[data-status="error"]').wait_for(timeout=15000)
+            await page.locator('#runtime-stage-cpi[data-state="failed"]').wait_for(timeout=15000)
+            assert await page.locator('#runtime-stage-cpi-pct').inner_text()=='0%'
             # CPI fetch fails before the worker restores IndexedDB. Wait for both.
             await page.locator('#runtime-status.ready').wait_for(timeout=180000)
             assert '1 年' in (await page.locator('#dash-years').inner_text())
@@ -282,10 +296,6 @@ async def main():
                 await custom.locator('#approve-btn').click()
                 await custom.locator('#opening-tag').filter(has_text='等待年末結算').wait_for(timeout=180000)
                 assert '個人化生活費研究 v1' in (await custom.locator('#dash-engine-name').inner_text())
-                await custom.locator('#dashboard-baseline summary').click()
-                assert '920,000' in (await custom.locator('#dash-baseline-normal').inner_text())
-                assert '700,000' in (await custom.locator('#dash-baseline-core').inner_text())
-                assert '520,000' in (await custom.locator('#dash-baseline-floor').inner_text())
                 assert '920,000' in (await custom.locator('#dash-guardrail-breakdown').inner_text())
                 saved_profile=await custom.evaluate('() => state.plan.spending_profile')
                 assert saved_profile['normal_twd']==920000
@@ -313,8 +323,6 @@ async def main():
                 assert saved['normal_twd']==350000
                 assert saved['core_twd']==350000
                 assert saved['floor_twd']==350000
-                await essential.locator('#dashboard-baseline summary').click()
-                assert '350,000' in (await essential.locator('#dash-baseline-floor').inner_text())
                 assert '今年建議生活費' in (await essential.locator('#opening-result').inner_text())
                 await essential.locator('.capacity-research .capacity-grid article').first.wait_for(timeout=180000)
                 inverse_text=await essential.locator('.capacity-research').inner_text()
