@@ -19,7 +19,7 @@ import math
 import os
 import tempfile
 
-from policy.retirement_model_v340 import ModelConfig, FRICTIONS
+from policy.retirement_model_v340 import ModelConfig, FRICTIONS, normal_living_spend
 from policy.simple_annual_ledger import (
     AnnualOpening, YearApproval, YearClose, YearEndBalances, approve_year,
     close_from_balances, nominal_to_activation_real, USD_TWD_ASSUMED,
@@ -166,6 +166,10 @@ class AnnualWorkflow:
         decision_cpi=y['cpi_decision']
         activation_cpi=self._state['plan']['activation_cpi']
         pv=approval.policy_preview
+        cfg=policy_config(self._state['plan'])
+        action=('B85_RESTORED' if pv.b85_restored
+                else 'CUT_10_PERCENT' if pv.pos<=cfg.guardrail_low
+                else 'RAISE_10_PERCENT' if pv.pos>=cfg.guardrail_high else 'HOLD')
         result={
             'year':opening.year,'age':opening.age,'decision_date':opening.decision_date,
             'status':'CLOSED' if closing else 'APPROVED_RESEARCH',
@@ -177,6 +181,11 @@ class AnnualWorkflow:
             'b85_restored':pv.b85_restored,
             'sticky_before':round(opening.sticky_before,5),
             'sticky_after':round(pv.sticky_after,5),
+            'guardrail_action':action,
+            'guardrail_low_pct':cfg.guardrail_low*100,
+            'guardrail_high_pct':cfg.guardrail_high*100,
+            'normal_reference_twd':nominal_twd(normal_living_spend(opening.age,cfg),decision_cpi,activation_cpi),
+            'floor_reference_twd':nominal_twd(cfg.floor_spend*cfg.activation_cpi_factor_from_2026,decision_cpi,activation_cpi),
             'living_authorized_twd':nominal_twd(approval.living_budget_m,decision_cpi,activation_cpi),
             'car_authorized_twd':nominal_twd(approval.car_budget_m,decision_cpi,activation_cpi),
             'extra_authorized_twd':nominal_twd(approval.extra_budget_m,decision_cpi,activation_cpi),

@@ -165,9 +165,16 @@ $('import-file').addEventListener('change',async e=>{const file=e.target.files?.
  await request('/api/import',imported);await refresh();display('history');flash('備份 SHA256 與年度連續性已驗證，匯入完成。','success');
  }catch(err){flash('匯入失敗：'+err.message)}finally{e.target.value='';}});
 $('reset-btn').addEventListener('click',async()=>{
- const p=prompt('確定清除演練紀錄？系統會先下載一份 JSON 備份。請輸入「清除演練」：');if(p!=='清除演練')return;
- try{downloadJson(await request('/api/export',{}));await request('/api/reset',{confirm:p});await refresh();display('opening');flash('已下載備份並清除本瀏覽器年度演練。','success')}
- catch(e){flash('清除操作尚未成功：'+e.message)}
+ if(!engineReady){flash('計算引擎尚未就緒，暫時無法清除');return;}
+ if(!confirm('確定清除這個瀏覽器的全部退休演練紀錄？\\n\\n按「確定」後會先下載 JSON 備份，再刪除本機年度資料。\\n這項動作無法由網頁復原，需使用備份重新匯入。'))return;
+ const btn=$('reset-btn');btn.disabled=true;
+ try{
+  const backup=await request('/api/export',{});
+  downloadJson(backup);
+  await request('/api/reset',{confirm:'清除演練'});
+  await refresh();display('opening');flash('已先下載 JSON 備份，並清除本瀏覽器的演練紀錄。','success');
+ }catch(e){flash('清除未完成：'+e.message+'。請使用先前備份復原。')}
+ finally{btn.disabled=false;}
 });
 document.addEventListener('click',e=>{const b=e.target.closest('[data-go]');if(b&&!b.disabled){display(b.dataset.go);}});
 $('decision_date').addEventListener('change',()=>{$('first_year').value=$('decision_date').value.slice(0,4);updateDecisionMonthHelp();});
