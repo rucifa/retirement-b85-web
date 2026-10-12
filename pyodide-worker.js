@@ -42,7 +42,17 @@ async function handle(req){
     if(!ready)throw new Error('請先載入 B＋85 引擎');
     const input=JSON.stringify({op:req.op,data:req.data||{}});
     py.globals.set('call_json',input);
-    const response=JSON.parse(py.runPython('bridge.dispatch(call_json)'));
+    const raw=py.runPython(`import json
+try:
+    _out=bridge.dispatch(call_json)
+except bridge.InputError as err:
+    _out=json.dumps({"user_input_error":str(err)},ensure_ascii=False)
+_out`);
+    const response=JSON.parse(raw);
+    if(response.user_input_error){
+      self.postMessage({type:'result',id,ok:false,error:response.user_input_error});
+      return;
+    }
     self.postMessage({type:'result',id,ok:true,...response});
   }catch(error){
     self.postMessage({type:'result',id,ok:false,error:(error?.message||String(error)).slice(0,700)});

@@ -41,6 +41,7 @@ function budgetHtml(y){
  if(!y)return '';
  const total=twMoney(y.living_authorized_twd),car=twMoney(y.car_authorized_twd),pos=pct(y.pos_pct);
  const part=y.calendar_first_year;
+ const cpiBasis=y.decision_cpi_source==='SCENARIO_2026_BASELINE'?'本年 CPI 為演練假設（非當時官方公布）。':'';
  const period=part?`首年 ${y.period_start}～${y.period_end}・含首日 ${y.calendar_days}/${y.calendar_year_days} 天（${(y.calendar_fraction*100).toFixed(2)}%）`:`完整年度・${y.year} 年`;
  const annual=part?`按日換算前全年生活費 ${twMoney(y.full_year_living_reference_twd)}，首年核准 ${total}。車輛及額外必要支出不按天數縮減。`:'';
  return `<div class="result-caption">${y.year} 年・${y.age} 歲・${period}・B＋85 研究演練</div>
@@ -50,7 +51,7 @@ function budgetHtml(y){
  ${metric('換車專項預算',car)}
  </div><div class="progress-track"><div class="progress-bar" style="width:${Math.max(0,Math.min(100,y.pos_pct))}%"></div></div>
  <div class="inflation-preview result-inflation">${inflationCards(Number(y.decision_cpi),Number(state?.plan?.cpi_2026),state?.years?.length>1?Number(state.years[state.years.length-2].decision_cpi):null,y.year)}</div>
- <div class="status-line">● ${esc(annual)} ${y.b85_restored?'符合 B＋85 生活預算恢復條件':'按當年 Guardrail 狀態計算'}，年度 Sticky 乘數 ${esc(y.sticky_after)}。</div>
+ <div class="status-line">● ${esc(cpiBasis)} ${esc(annual)} ${y.b85_restored?'符合 B＋85 生活預算恢復條件':'按當年 Guardrail 狀態計算'}，年度 Sticky 乘數 ${esc(y.sticky_after)}。</div>
  <p class="details-summary">熊市現金橋接：${twMoney(y.bridge_from_cash_twd)}　／　已核准其他必要支出：${twMoney(y.extra_authorized_twd)}。<br>費用與稅負使用模型既有整體淨報酬情境，年末核對不會重扣。PoS 採完整年度模型作參考，未針對首年短期間重新校準；成功率不是保證。</p>
  ${!y.closing?'<div class="result-buttons"><button class="primary-btn" data-go="closing">下一步：年末結算 →</button></div>':'<div class="result-buttons"><button class="secondary-btn" data-go="history">查看已結算紀錄</button></div>'}`;
 }
@@ -142,7 +143,8 @@ const fieldVal=id=>$(id).value;
 function initPayload(){return {
  decision_date:fieldVal('decision_date'),planned_extra_twd:fieldVal('planned_extra_twd'),start_age:fieldVal('start_age'),
  investment_twd:fieldVal('investment_twd'),cash_twd:fieldVal('cash_twd'),stock_bond:fieldVal('stock_bond'),
- cpi_2026:fieldVal('cpi_2026')||'110',decision_cpi:fieldVal('decision_cpi'),decision_cpi_release:fieldVal('decision_cpi_release')};}
+ cpi_2026:fieldVal('cpi_2026')||'110',decision_cpi:fieldVal('decision_cpi'),decision_cpi_release:fieldVal('decision_cpi_release'),
+ decision_cpi_source:$('decision_cpi').dataset.autoSource||'MANUAL'};}
 function endPayload(){return {closing_date:fieldVal('closing_date'),closing_cpi:fieldVal('closing_cpi'),
  closing_cpi_release:fieldVal('closing_cpi_release'),living_paid_twd:fieldVal('living_paid_twd'),
  car_paid_twd:fieldVal('car_paid_twd'),extra_paid_twd:fieldVal('extra_paid_twd'),

@@ -203,3 +203,5 @@ body{color:var(--dash-ink);background:linear-gradient(150deg,#edf9fa 0%,#f6f8fb 
 #latest-cpi-readonly{display:flex;flex-direction:column;gap:8px}
 .dash-live-value{font-size:1.65rem;line-height:1.25;font-weight:750;color:#0d6e78;letter-spacing:-0.02em}
 #cpi-simple-inputs{margin-top:12px}
+
+.cpi-decision-asof-note{margin:10px 0 0;padding:9px 12px;background:#ecf8f7;border-radius:8px;color:#285f69;font-size:12px;line-height:1.55}

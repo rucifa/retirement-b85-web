@@ -56,7 +56,15 @@ def _validate_import(export: dict):
                     raise ValueError('非首年必須在一月重新核准全年')
             except (ValueError,TypeError,KeyError) as exc:
                 raise InputError('匯入的曆年制日期或資產守恆不一致：'+str(exc)) from exc
-            if date.fromisoformat(row['cpi_decision_release'])>date.fromisoformat(opening.decision_date):
+            origin=row.get('cpi_decision_source','LEGACY_UNTAGGED')
+            if origin=='SCENARIO_2026_BASELINE':
+                if i!=0 or first_year!=2026 or row['cpi_decision_release']!=opening.decision_date:
+                    raise InputError('備份的 CPI 假設與決策日期不符')
+                if abs(row['cpi_decision']-plan['cpi_2026'])>0.001:
+                    raise InputError('CPI 假設與 2026 基準不相符')
+            elif origin not in ('LEGACY_UNTAGGED','MANUAL','OFFICIAL_BULLETIN','MISSING_HISTORICAL_CPI'):
+                raise InputError('備份含未知的 CPI 來源')
+            if origin!='SCENARIO_2026_BASELINE' and date.fromisoformat(row['cpi_decision_release'])>date.fromisoformat(opening.decision_date):
                 raise InputError('備份包含決策日尚未公布的 CPI')
             if row.get('close') is None:
                 if i!=len(years)-1:raise InputError('不可還原跳過年度結算的備份')

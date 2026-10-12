@@ -77,32 +77,55 @@ function paint(){
   '<ul>'+details+'</ul><p>來源原始檔 SHA256：<code>'+safe(snapshot.primary_source_sha256)+'</code></p></details>';
 }
 function prefillInitialMonthlyCpi(){
- // Never overwrite submitted history or a user-adjusted CPI assumption.
- const manual=document.getElementById('decision_cpi');
- const release=document.getElementById('decision_cpi_release');
- const ref=document.getElementById('reference_cpi_field');
- if(!manual||!release||!decision||!snapshot||!window.B85_TAIWAN_TIME)return;
- if(manual.value||release.value||manual.dataset.userEdited==='true'||release.dataset.userEdited==='true')return;
- try{
-  if(typeof state!=='undefined'&&state&&Array.isArray(state.years)&&state.years.length)return;
- }catch{return}
- const day=decision.value;
- if(!validDate(day))return;
- const now=window.B85_TAIWAN_TIME.today(),lastMonth=window.B85_TAIWAN_TIME.prevMonth(day);
- const published=snapshot.records.filter(r=>
-  r.month<=lastMonth&&r.publication_date<=day&&r.publication_date<=now
- ).at(-1);
- if(!published||days(day,published.publication_date)>120||days(day,published.publication_date)<0)return;
- manual.value=published.index.toFixed(2);
- release.value=published.publication_date;
- manual.dataset.officialMonth=published.month;
- const note=manual.closest('label')?.querySelector('small');
- if(note)note.textContent='已帶入 '+published.month+' 的官方新聞稿及附表 CPI（公布 '+published.publication_date+'；來源由 GitHub 核對）。此數值不是 2026 全年 CPI；可改為手動假設。';
- manual.dispatchEvent(new Event('input',{bubbles:true}));
+ const input=document.getElementById('decision_cpi'),release=document.getElementById('decision_cpi_release');
+ const base=document.getElementById('cpi_2026'),notice=document.getElementById('cpi-decision-asof-note');
+ const caption=document.getElementById('decision-cpi-date-caption');
+ if(!input||!release||!base||!decision||!window.B85_TAIWAN_TIME)return;
+ try{if(typeof state!=='undefined'&&state?.years?.length)return}catch{return}
+ const day=decision.value;if(!validDate(day))return;
+ if(input.dataset.userEdited==='true'||release.dataset.userEdited==='true'){
+  input.dataset.autoSource='MANUAL';
+  if(notice)notice.textContent='目前為自行輸入的 CPI；請確認公布日期不晚於決策日。';
+  if(caption)caption.textContent='CPI 官方公布日期（自行核對）';
+  return;
+ }
+ if(input.value&&release.value&&!input.dataset.autoSource){
+  if(notice)notice.textContent='已有自行設定的 CPI，請核對是否適用於 '+day+'。';
+  return;
+ }
+ const today=window.B85_TAIWAN_TIME.today(),lastMonth=window.B85_TAIWAN_TIME.prevMonth(day);
+ const eligible=snapshot?.records?.filter(r=>r.month<=lastMonth&&r.publication_date<=day&&r.publication_date<=today).at(-1);
+ const recent=eligible&&days(day,eligible.publication_date)>=0&&days(day,eligible.publication_date)<=120;
+ const help=input.closest('label')?.querySelector('small');
+ if(recent){
+  input.value=Number(eligible.index).toFixed(2);release.value=eligible.publication_date;
+  input.dataset.autoSource='OFFICIAL_BULLETIN';
+  if(notice)notice.textContent='已採用 '+day+' 當時可用的 '+eligible.month+' 官方 CPI 指數；旁邊的快照仍顯示今日最新資料。';
+  if(caption)caption.textContent='CPI 官方公布日期';
+  if(help)help.textContent='來自官方新聞稿及附表，公布 '+eligible.publication_date+'。';
+ }else if(day.startsWith('2026-')){
+  const assumed=base.value.trim()||'110';
+  input.value=assumed;release.value=day;
+  input.dataset.autoSource='SCENARIO_2026_BASELINE';
+  if(notice)notice.textContent='此日期沒有可核對的歷史 CPI；以 2026 CPI 基準 '+assumed+' 作演練假設（非當天官方公布）。';
+  if(caption)caption.textContent='演練假設生效日（非官方公布日）';
+  if(help)help.textContent='使用自行設定的 2026 CPI 基準；非官方 CPI 資料。';
+ }else{
+  input.value='';release.value='';input.dataset.autoSource='MISSING_HISTORICAL_CPI';
+  if(notice)notice.textContent='找不到 '+day+' 當時可用的 CPI；請在進階欄位提供 CPI 與公布日期。系統不會捏造未來指數。';
+  if(caption)caption.textContent='CPI 官方公布日期';
+  if(help)help.textContent='目前缺少當日可用的 CPI，請手動補充。';
+ }
+ input.dispatchEvent(new Event('input',{bubbles:true}));
 }
 const manualCpi=document.getElementById('decision_cpi'),manualRelease=document.getElementById('decision_cpi_release');
-if(manualCpi)manualCpi.addEventListener('input',e=>{if(e.isTrusted)manualCpi.dataset.userEdited='true';});
-if(manualRelease)manualRelease.addEventListener('input',e=>{if(e.isTrusted)manualRelease.dataset.userEdited='true';});
+if(manualCpi)manualCpi.addEventListener('input',e=>{if(e.isTrusted){manualCpi.dataset.userEdited='true';manualCpi.dataset.autoSource='MANUAL';}});
+if(manualRelease)manualRelease.addEventListener('input',e=>{if(e.isTrusted){manualRelease.dataset.userEdited='true';if(manualCpi)manualCpi.dataset.autoSource='MANUAL';}});
+decision.addEventListener('input',prefillInitialMonthlyCpi);
+decision.addEventListener('change',prefillInitialMonthlyCpi);
+document.getElementById('cpi_2026')?.addEventListener('input',()=>{
+ if(manualCpi?.dataset.autoSource==='SCENARIO_2026_BASELINE')prefillInitialMonthlyCpi();
+});
 async function load(){
  try{
   const r=await fetch('./data/cpi_verified.json',{cache:'no-store'});

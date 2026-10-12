@@ -170,6 +170,7 @@ class AnnualWorkflow:
             'year':opening.year,'age':opening.age,'decision_date':opening.decision_date,
             'status':'CLOSED' if closing else 'APPROVED_RESEARCH',
             'decision_cpi':decision_cpi,'decision_cpi_release':y['cpi_decision_release'],
+            'decision_cpi_source':y.get('cpi_decision_source','LEGACY_UNTAGGED'),
             'approval_id':approval.approval_id,
             'pos_pct':round(pv.pos*100,2),
             'normal_pos_pct':round(pv.normal_pos*100,2) if pv.normal_pos is not None else None,
@@ -238,7 +239,22 @@ class AnnualWorkflow:
             decision=valid_date(dt,'年初決策')
             if prior is not None and decision.month!=1:
                 raise InputError('曆年制在第一年後必須於每年一月核准完整年度')
-            current_cpi,release=self._validate_asof(data,dt,'decision')
+            origin=data.get('decision_cpi_source','MANUAL')
+            if origin=='SCENARIO_2026_BASELINE':
+                if prior is not None or decision.year!=2026:
+                    raise InputError('2026 基準假設只適用於 2026 年首次退休的演練')
+                current_cpi=amt(data,'decision_cpi',positive=True)
+                base_assumed=amt(data,'cpi_2026',positive=True)
+                if not math.isclose(current_cpi,base_assumed,rel_tol=0,abs_tol=0.001):
+                    raise InputError('決策 CPI 須與設定的 2026 基準假設一致')
+                if data.get('decision_cpi_release')!=dt:
+                    raise InputError('假設生效日應等於決策日，不能視為官方 CPI 公布日')
+                if not 10<current_cpi<500:raise InputError('CPI 假設指數不合理')
+                release=dt  # Effective as-of for a scenario, not official CPI.
+            else:
+                if origin not in ('MANUAL','OFFICIAL_BULLETIN','MISSING_HISTORICAL_CPI'):
+                    raise InputError('不支援的 CPI 資料來源標籤')
+                current_cpi,release=self._validate_asof(data,dt,'decision')
             if prior is None:
                 start_age=integral(data,'start_age',45,90)
                 y=decision.year
@@ -290,7 +306,7 @@ class AnnualWorkflow:
             except (ValueError,ArithmeticError,OverflowError) as e:raise InputError('B＋85 年度核准遭拒：'+str(e)) from e
             row={
                 'approval':asdict(approval),
-                'cpi_decision':current_cpi,'cpi_decision_release':release,
+                'cpi_decision':current_cpi,'cpi_decision_release':release,'cpi_decision_source':origin,
                 'closing_cpi':None,'closing_cpi_release':None,
                 'closing_date':None,'close':None,'statement':None,
             }
