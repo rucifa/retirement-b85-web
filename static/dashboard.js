@@ -133,12 +133,17 @@ async function loadOfficialSummary(){
   if(!response.ok)throw Error('HTTP '+response.status);
   const data=await response.json();
   if(data.schema_version!==1||!Array.isArray(data.records))throw Error('來源格式未通過檢查');
-  const checked=data.records.filter(r=>r.verification==='CROSS_VERIFIED');
+  const taiwan=window.B85_TAIWAN_TIME;
+  if(!taiwan)throw Error('台灣時區模組未就緒');
+  const today=taiwan.today(),maximumMonth=taiwan.prevMonth(today);
+  const eligible=data.records.filter(r=>r.month<=maximumMonth&&r.publication_date<=today);
+  const checked=eligible.filter(r=>r.verification==='CROSS_VERIFIED');
   if(!checked.length)throw Error('沒有完成雙來源核對的月份');
   const newest=checked.at(-1);
+  const monthBefore=eligible.find(r=>r.month===maximumMonth);
   text('dash-cpi-month',newest.month.replace('-',' / '));
-  text('dash-cpi-sub','官方同月年增率 '+(newest.official_yoy_pct>0?'+':'')+Number(newest.official_yoy_pct).toFixed(2)+'%');
-  trend(data.records);
+  text('dash-cpi-sub','官方年增率 '+(newest.official_yoy_pct>0?'+':'')+Number(newest.official_yoy_pct).toFixed(2)+'%；上月 '+(monthBefore?(monthBefore.verification==='CROSS_VERIFIED'?'已查證':'待核對'):'未見公告'));
+  trend(eligible);
  }catch{
   text('dash-cpi-month','來源暫不可用');
   text('dash-cpi-sub','不會採用未查證的 CPI 數字');
