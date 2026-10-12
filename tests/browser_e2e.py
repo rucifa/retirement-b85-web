@@ -30,10 +30,43 @@ async def main():
             assert await page.locator('#dashboard-baseline').count()==0
             form_bounds=await page.locator('#opening-form').bounding_box()
             assert form_bounds is not None
-            for selector in ('#dashboard-cpi-card','#dashboard-rail .dash-policy-card','#dashboard-lower .dash-history-chart','#dashboard-lower .dash-history-summary','#dashboard-lower .dash-risk-notes'):
+            async def box(selector):
                 bounds=await page.locator(selector).bounding_box()
-                assert bounds and abs(bounds['x']-form_bounds['x'])<=3 and abs(bounds['width']-form_bounds['width'])<=4, (selector,bounds,form_bounds)
-            print('BROWSER_FULL_WIDTH_DASHBOARD_AND_THREE_STAGE_RUNTIME_PASS')
+                assert bounds is not None, selector
+                return bounds
+            cpi=await box('#dashboard-cpi-card')
+            policy=await box('#dashboard-rail .dash-policy-card')
+            assets=await box('#dashboard-lower .dash-history-chart')
+            years=await box('#dashboard-lower .dash-history-summary')
+            notes=await box('#dashboard-lower .dash-risk-notes')
+            # Two-column desktop: no giant full-width CPI chart or misplaced blank column.
+            assert abs(cpi['x']-form_bounds['x'])<4
+            assert abs(cpi['y']-policy['y'])<4
+            assert policy['x']>=cpi['x']+cpi['width']-4
+            assert abs(cpi['width']+policy['width']+(policy['x']-cpi['x']-cpi['width'])-form_bounds['width'])<5
+            assert abs(assets['x']-form_bounds['x'])<4
+            assert abs(assets['y']-years['y'])<4
+            assert years['x']>=assets['x']+assets['width']-4
+            assert abs(notes['x']-years['x'])<4
+            assert notes['y']>=years['y']+years['height']-3
+            await page.locator('#dash-cpi-trend svg').wait_for(timeout=15000)
+            plot=await box('#dash-cpi-trend svg')
+            assert plot['height']<270 and plot['width']<=cpi['width']-15, (plot,cpi)
+            # Below 1120px the modules switch to one column, never horizontal overflow.
+            await page.set_viewport_size({'width':1000,'height':900})
+            await page.wait_for_timeout(200)
+            compact_cpi=await box('#dashboard-cpi-card')
+            compact_policy=await box('#dashboard-rail .dash-policy-card')
+            compact_assets=await box('#dashboard-lower .dash-history-chart')
+            compact_years=await box('#dashboard-lower .dash-history-summary')
+            compact_notes=await box('#dashboard-lower .dash-risk-notes')
+            assert abs(compact_cpi['x']-compact_policy['x'])<3
+            assert compact_policy['y']>=compact_cpi['y']+compact_cpi['height']-3
+            assert abs(compact_assets['x']-compact_years['x'])<3
+            assert compact_years['y']>=compact_assets['y']+compact_assets['height']-3
+            assert compact_notes['y']>=compact_years['y']+compact_years['height']-3
+            await page.set_viewport_size({'width':1280,'height':720})
+            print('BROWSER_RESPONSIVE_BALANCED_DASHBOARD_AND_THREE_STAGE_RUNTIME_PASS')
             today=await page.evaluate('window.B85_TAIWAN_TIME.today()')
             previous_month=await page.evaluate('window.B85_TAIWAN_TIME.prevMonth(window.B85_TAIWAN_TIME.today())')
             assert await page.locator('#decision_date').input_value()==today

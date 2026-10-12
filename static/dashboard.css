@@ -346,3 +346,38 @@ body{color:var(--dash-ink);background:linear-gradient(150deg,#edf9fa 0%,#f6f8fb 
 #dashboard-cpi-card,#dashboard-lower .dash-widget{padding:18px}
 @media(max-width:980px){.runtime-progress-grid{grid-template-columns:1fr}}
 @media(max-width:720px){.notice.runtime-progress{padding:14px}}
+
+/* Keep charts legible without using the full desktop viewport for one graph.
+   Desktop uses two complementary grids; mobile keeps reading order intact. */
+#dashboard-rail{
+ display:grid;
+ grid-template-columns:minmax(0,1.48fr) minmax(345px,1fr);
+ gap:18px;
+ align-items:stretch;
+}
+#dashboard-rail>.dash-cpi-card{grid-column:1}
+#dashboard-rail>.dash-policy-card{
+ grid-column:2;
+ display:flex;
+ flex-direction:column;
+ justify-content:space-between;
+ min-width:0;
+}
+#dashboard-cpi-card #dash-cpi-trend svg{max-width:720px;margin-inline:auto}
+#dashboard-lower{
+ display:grid;
+ grid-template-columns:minmax(0,1.48fr) minmax(345px,1fr);
+ grid-template-areas:"assets records" "assets notes";
+ gap:16px 18px;
+ align-items:stretch;
+}
+#dashboard-lower>.dash-history-chart{grid-area:assets}
+#dashboard-lower>.dash-history-summary{grid-area:records}
+#dashboard-lower>.dash-risk-notes{grid-area:notes}
+@media(max-width:1120px){
+ #dashboard-rail,#dashboard-lower{grid-template-columns:minmax(0,1fr);gap:15px}
+ #dashboard-rail>.dash-cpi-card,#dashboard-rail>.dash-policy-card{grid-column:auto}
+ #dashboard-lower{grid-template-areas:"assets" "records" "notes"}
+ #dashboard-rail>.dash-policy-card{display:block}
+ #dashboard-cpi-card #dash-cpi-trend svg{max-width:700px}
+}
