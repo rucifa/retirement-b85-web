@@ -30,5 +30,5 @@
   "capacity_research.py": "0fe505c8b5276c34ba9cea5b972b7f1c7409d45a00d8681bbb1bd02be4999f85",
   "tests/test_inverse_capacity.py": "733d3ddb6ad460b07dc1c709ea7c2fa70a97941f2c58ffcb7713685385853d6f",
   ".github/workflows/verify-b85-pages.yml": "7ff2985b9ea82e102e7ed4e72f7ee9d5c702a22a20f98195252398c9e1e69ae9",
-  ".github/workflows/cpi-public-scheduled.yml": "05eebecb1d3288c0a567540a50683035d3073238ec3539a707eba6c20edb1085"
+  ".github/workflows/cpi-public-scheduled.yml": "9e3873af62ba6e619f547ab6680f9e4bf6aa3ef7c241aae30cf41105e47ded9b"
 }
