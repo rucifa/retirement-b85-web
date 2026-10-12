@@ -106,7 +106,7 @@ function approvalSourceHtml(y){
  if(p.status!=='RECONCILED')
   return '<section class="source-audit" role="note"><h3>年度核准資金來源</h3><p>'+esc(p.warning)+'</p></section>';
  const row=(name,x)=>'<tr><th scope="row">'+esc(name)+'</th><td>'+esc(twMoney(x.invest_twd))+'</td><td>'+esc(twMoney(x.cash_twd))+'</td><td>'+esc(twMoney(x.total_twd))+'</td></tr>';
- return '<section class="source-audit" aria-label="年度核准提款來源與資金守恆">'+
+ return '<section class="cash-bridge-explain source-audit" aria-label="年度核准提款來源與資金守恆">'+
  '<h3>年度核准資金來源（尚未實際提款）</h3>'+
  '<p>以下是模型按原政策「預留」的支付來源，<strong>不是已出售 ETF、已轉帳或已支付車款</strong>；不含尚未發生的 Emergency。</p>'+
  '<div class="mc-table-wrap"><table><thead><tr><th>核准項目</th><th>投資資產池</th><th>安全現金</th><th>預留合計</th></tr></thead><tbody>'+
