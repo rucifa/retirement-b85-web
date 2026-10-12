@@ -95,7 +95,7 @@ async def main():
             layout=await page.locator('.sidebar').evaluate('(el)=>getComputedStyle(el).flexDirection')
             assert layout=='row'
             assert '尚未試算' in (await page.locator('#dash-budget').inner_text())
-            print('BROWSER_TAIWAN_DEFAULT_DATE_AND_AGE_65_PASS')
+            print('BROWSER_TAIWAN_DEFAULT_DATE_AND_EXPLICIT_RETIREMENT_AGE_PASS')
             print('BROWSER_DASHBOARD_NAV_AND_LAYOUT_PASS')
             print('BROWSER_PYODIDE_LOADED')
             await page.locator('#official-cpi-panel').filter(has_text='查詢基準：台灣').wait_for(timeout=120000)
@@ -526,6 +526,9 @@ async def main():
                 await essential.goto('http://127.0.0.1:8766/',wait_until='domcontentloaded')
                 await essential.locator('#runtime-status.ready').wait_for(timeout=180000)
                 await essential.locator('#decision_date').fill('2026-01-01')
+                await essential.locator('#start_age').fill('54')
+                await essential.locator('#investment_twd').fill('27000000')
+                await essential.locator('#cash_twd').fill('2400000')
                 await essential.locator('#cpi-decision-asof-note').filter(has_text='演練假設').wait_for(timeout=15000)
                 await essential.locator('#floor_spend_2026_twd').fill('350000')
                 assert await essential.locator('#normal_spend_2026_twd').input_value()==''
