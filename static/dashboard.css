@@ -177,3 +177,12 @@ body{color:var(--dash-ink);background:linear-gradient(150deg,#edf9fa 0%,#f6f8fb 
  .form-footer{align-items:stretch}
 }
 @media(prefers-reduced-motion:reduce){.nav-link,.field input,.field select{transition:none}}
+
+/* Keep horizontal navigation usable on phones despite legacy mobile sidebar rules. */
+@media(max-width:700px){
+ .sidebar .brand{width:auto!important;margin:0 12px 0 0}
+ .sidebar .nav-link{flex:0 0 auto;min-width:0}
+ .sidebar{flex-wrap:nowrap;position:sticky}
+}
+#dashboard-cpi-card{scroll-margin-top:95px}
+@media(max-width:630px){#dashboard-cpi-card{scroll-margin-top:75px}}
