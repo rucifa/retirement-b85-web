@@ -11,7 +11,7 @@
   "static/style.css": "36f229f3a94ece742274f4ca1bc7c95ff3c06f40346fb25b8da09d172b8561f8",
   "tests/test_pages_bridge.py": "b365c0a78815047f3fd9b3b5b560cc48802cdd9c0d48217a4ee31aa4d60e79e1",
   "workflow.py": "130809eaf5863ed960a56bfc0596b18abb811cf9b5794b21682b526e6de58ffe",
-  "tests/browser_e2e.py": "699a8b7da828f1463c6d56d05f52f8bd940ccb4abe5c8775a9bad91c138cb817",
+  "tests/browser_e2e.py": "cec883f745933fb305ac4be10fbbc9da7c9adec78bd4ee3ddcedcec992a40c61",
   "data/cpi_verified.json": "6271525be1c288d780463a29d2a9379331de2d751f284491f021e5f68cdfd2c1",
   "static/cpi-official.js": "9d4a2489b5a202e28b4a5cdbb0436702fca804b93f755920de5928899ef54183",
   "scripts/public_cpi/cpi_sources.py": "6e893e0bd5bb6330b14217ad26cce44ac590356d3231effdff1a1c63d26c7cf8",
