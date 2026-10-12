@@ -144,7 +144,7 @@ function prefillInitialMonthlyCpi(){
   input.value=assumed;release.value=day;
   input.dataset.autoSource='SCENARIO_2026_BASELINE';
   if(notice)notice.textContent='此日期缺少可核對的當時 CPI：使用 2026 年暫定基準 '+assumed+
-     ' 作研究假設（非當天公布的官方指數）。歷史日期不會倒填後來才公布的月 CPI。';
+     ' 作演練假設（非當天公布的官方指數）。歷史日期不會倒填後來才公布的月 CPI。';
   if(caption)caption.textContent='演練假設生效日（非官方公布日）';
   if(help)help.textContent='使用自行設定的 2026 CPI 基準；非官方 CPI 資料。';
  }else{
