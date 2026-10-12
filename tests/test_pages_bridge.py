@@ -74,4 +74,34 @@ class PagesBridgeTests(unittest.TestCase):
         self.assertNotIn('api.github.com',worker);self.assertNotIn('cloudinary',js)
         self.assertNotIn('token=',worker)
 
+    def test_rehashed_cross_year_asset_change_rejected(self):
+        self.approve();self.invoke('close',self.invoke('demo-close')['data'])
+        self.invoke('approve',{'decision_date':'2037-01-15','decision_cpi':126,'decision_cpi_release':'2037-01-10','planned_extra_twd':0})
+        exported=self.invoke('export')['data'];before=bridge.STATE_PATH.read_bytes()
+        o=exported['payload']['years'][1]['approval']['opening'];o['investment_m']+=1
+        # Preserve this year's funding sum to expose CROSS-year continuity.
+        exported['payload']['years'][1]['approval']['policy_preview']['investment_before_return_m']+=1
+        exported['sha256']=workflow.digest(exported['payload'])
+        with self.assertRaisesRegex(workflow.InputError,'連續性'):self.invoke('import',exported)
+        self.assertEqual(bridge.STATE_PATH.read_bytes(),before)
+
+    def test_rehashed_closing_receipt_tampering_rejected(self):
+        self.approve();self.invoke('close',self.invoke('demo-close')['data'])
+        exported=self.invoke('export')['data'];before=bridge.STATE_PATH.read_bytes()
+        exported['payload']['years'][0]['close']['sticky_next']=.123
+        exported['sha256']=workflow.digest(exported['payload'])
+        with self.assertRaisesRegex(workflow.InputError,'結算'):self.invoke('import',exported)
+        self.assertEqual(bridge.STATE_PATH.read_bytes(),before)
+
+    def test_legacy_extra_warning_preserved_new_contract_import_readonly(self):
+        self.invoke('approve',dict(OPEN,planned_extra_twd=1500000))
+        exported=self.invoke('export')['data']
+        self.assertTrue(self.invoke('state')['data']['years'][0]['extra_included_in_pos'])
+        exported['payload']['years'][0].pop('expense_pos_contract')
+        exported['sha256']=workflow.digest(exported['payload'])
+        before=copy.deepcopy(exported['payload'])
+        restored=self.invoke('import',exported)
+        self.assertFalse(restored['data']['years'][0]['extra_included_in_pos'])
+        self.assertEqual(restored['record'],before)
+
 if __name__=='__main__':unittest.main()

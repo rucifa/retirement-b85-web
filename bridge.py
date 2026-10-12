@@ -14,6 +14,7 @@ import spending_profile as personal
 
 STATE_PATH=Path('/home/pyodide/private/annual_records.json')
 ENGINE: AnnualWorkflow | None = None
+PROJECTION_PROGRESS = None
 
 
 def _validate_import(export: dict):
@@ -84,6 +85,11 @@ def _validate_import(export: dict):
                     raise InputError('年度結算缺少必要憑證')
                 if date.fromisoformat(row['closing_cpi_release'])>date.fromisoformat(row['closing_date']):
                     raise InputError('年度結算 CPI 來源日期異常')
+    try:
+        from ledger_integrity import validate_chain
+        validate_chain(record)
+    except (ValueError,TypeError,KeyError,ArithmeticError) as exc:
+        raise InputError('年度紀錄資金守恆或連續性驗證失敗：'+str(exc)) from exc
     return copy.deepcopy(record)
 
 
@@ -95,6 +101,7 @@ def initialize(raw: str | None):
         try:
             saved=json.loads(raw)
             if not isinstance(saved,dict):raise ValueError('bad record')
+            _validate_import({'file_kind':'local_yearly_research_export','payload':saved,'sha256':digest(saved)})
         except ValueError as e:raise InputError('瀏覽器已儲存的年度資料無法解析；請匯入先前 JSON 備份') from e
         STATE_PATH.write_text(json.dumps(saved,ensure_ascii=False),encoding='utf-8')
     elif STATE_PATH.exists():STATE_PATH.unlink()
@@ -110,6 +117,14 @@ def dispatch(source: str):
     op=p.get('op');data=p.get('data',{})
     if not isinstance(data,dict):raise InputError('請求資料必須是物件')
     if op=='state':result=ENGINE.overview()
+    elif op=='projection':
+        from projection_research import project_saved
+        try:
+            result=project_saved(ENGINE._state, paths=data.get('paths',2048),
+                inner_paths=data.get('inner_paths',512),seed=data.get('seed',20261112),
+                inflation_pct=data.get('inflation_pct',2.),progress=PROJECTION_PROGRESS)
+        except (ValueError,ArithmeticError,OverflowError) as e:
+            raise InputError('蒙地卡羅研究無法完成：'+str(e)) from e
     elif op=='capacity':
         from capacity_research import evaluate_saved_first_year
         try:

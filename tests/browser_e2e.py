@@ -375,8 +375,7 @@ async def main():
                 print('BROWSER_PERSONALIZED_SPENDING_MODEL_AND_DYNAMIC_BASELINE_PASS')
             finally:
                 await context_custom.close()
-            # Extra known spending does not change current original inner PoS,
-            # but MUST be included in first-year simplified cash-flow illustration.
+            # Known spending is included in PoS and first-year cash flow exactly once.
             context_extra=await browser.new_context()
             extra_page=await context_extra.new_page()
             try:
@@ -392,8 +391,9 @@ async def main():
                 await extra_page.locator('#opening-tag').filter(has_text='等待年末結算').wait_for(timeout=180000)
                 annual=await extra_page.evaluate('() => state.years.at(-1)')
                 assert annual['extra_authorized_twd']>=1499999
-                assert '原始 PoS 的內層試算' in (await extra_page.locator('#opening-result').inner_text())
-                assert '另列必要支出' in (await extra_page.locator('#dash-pos-sub').inner_text())
+                assert '原始 PoS 的內層試算' not in (await extra_page.locator('#opening-result').inner_text())
+                assert annual['extra_included_in_pos']
+                assert '已納入本年必要支出' in (await extra_page.locator('#dash-pos-sub').inner_text())
                 assert await extra_page.locator('#dash-actual-tab').get_attribute('aria-pressed')=='true'
                 first_scenario=await extra_page.evaluate('''() => {
                   const y=state.years.at(-1);
@@ -407,7 +407,55 @@ async def main():
                 if annual['pos_pct']>75:
                     assert annual['bridge_from_cash_twd']==0
                     assert '高於橋接門檻 75%' in (await extra_page.locator('#opening-result').inner_text())
-                print('BROWSER_ADDED_EXPENSE_POS_WARNING_AND_SCENARIO_FIRST_YEAR_DEDUCTION_PASS')
+                print('BROWSER_KNOWN_EXPENSE_POS_AND_SCENARIO_FIRST_YEAR_DEDUCTION_PASS')
+                from policy import personalized_research_engine as model
+                from dataclasses import replace
+                from projection_research import project_saved
+                import workflow
+                raw_before=await extra_page.evaluate("() => request('/api/export')")
+                saved=raw_before['payload'];opening=saved['years'][-1]['approval']['opening']
+                cfg=workflow.policy_config(saved['plan'])
+                expected_pos=model.single_state_pos(opening['investment_m']+opening['safety_cash_m'],
+                    opening['age'],opening['sticky_before'],opening['emergency_pending'],
+                    replace(cfg,extra_mandatory_expense_by_age={opening['age']:opening['planned_extra_m']}),
+                    n_inner=4096,seed=20261011)
+                assert abs(annual['pos_pct']-100*expected_pos)<.006
+                await extra_page.locator('#dash-mc-tab').click()
+                await extra_page.locator('#mc-run').click()
+                await extra_page.locator('#mc-status[data-state="complete"]').wait_for(timeout=240000)
+                result=await extra_page.evaluate('window.B85_MC_RESEARCH.getResult()')
+                independent=project_saved(saved,paths=2048,inner_paths=512)
+                assert result['end_age']==104 and result['all_paths_included']
+                assert result['first_approval_locked'] and result['percentiles_are_not_pos']
+                assert result['years'][0]['extra_paid_median_m']==1.5
+                assert result['years'][1]['extra_paid_median_m']==0
+                for observed,expected in zip(result['years'],independent['years']):
+                    assert observed['year']==expected['year'] and observed['age']==expected['age']
+                    for asset in ('total','investment','cash'):
+                        for a,b in zip(observed[asset+'_real_2026_twd'],expected[asset+'_real_2026_twd']):
+                            assert abs(a-b)<.1,(asset,observed['year'],a,b)
+                assert result['seconds']<60, result['seconds']
+                assert result['diagnostics']['max_reconciliation_error_m']<1e-8
+                for asset in ('total','investment','cash'):
+                    await extra_page.locator('#mc-asset').select_option(asset)
+                    for basis in ('real_2026','nominal'):
+                        await extra_page.locator('#mc-basis').select_option(basis)
+                        assert await extra_page.locator('#mc-chart svg path[data-percentile]').count()==3
+                        assert await extra_page.locator('#mc-table tbody tr').count()==len(result['years'])
+                await extra_page.locator('#mc-inflation').fill('3')
+                assert '3%' in (await extra_page.locator('.mc-chart-label').inner_text())
+                async with extra_page.expect_download() as mc_dl:
+                    await extra_page.locator('#mc-export').click()
+                mc_export=json.loads(Path(await (await mc_dl.value).path()).read_text('utf-8'))
+                assert mc_export['contract']=='B85_PATHWISE_ASSET_PROJECTION_V1'
+                assert mc_export['display_selection']['inflation_pct']==3
+                assert await extra_page.evaluate("() => request('/api/export')")==raw_before
+                await extra_page.locator('#mc-run').click()
+                await extra_page.locator('#mc-cancel').click()
+                assert not await extra_page.evaluate('window.B85_MC_RESEARCH.isRunning()')
+                assert await extra_page.evaluate("() => request('/api/export')")==raw_before
+                print('BROWSER_REAL_MC_PYTHON_PARITY_SIX_VIEWS_EXPORT_CANCEL_AND_READONLY_PASS')
+                print('BROWSER_MC_PERFORMANCE_SECONDS',result['seconds'])
             finally:
                 await context_extra.close()
             # Someone who only knows their minimum essential expenses must

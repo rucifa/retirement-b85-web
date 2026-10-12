@@ -1,6 +1,8 @@
 name: B85 Pages browser policy exact-parity and UI E2E
 on:
   push:
+    branches: [main, 'fix/b85-mc-*']
+  pull_request:
     branches: [main]
   workflow_dispatch:
 permissions:
@@ -18,6 +20,7 @@ jobs:
         run: |
           python -m py_compile tests/browser_e2e.py tests/test_pages_bridge.py tests/test_calendar_first_year.py tests/test_personalized_spending.py calendar_first_year.py spending_profile.py policy/personalized_research_engine.py policy/personalized_research_annual.py policy/personalized_research_ledger.py capacity_research.py tests/test_inverse_capacity.py
           node --check static/dashboard.js
+          node --check static/mc-projection.js
           node --check static/cpi-official.js
           echo 'B85_E2E_SYNTAX_CHECK_PASS'
       - name: Install model and browser QA dependencies (CI only)
@@ -38,10 +41,7 @@ jobs:
           PY
           node --check static/app.js
           node --check pyodide-worker.js
-          python -m unittest discover -s tests -p 'test_pages_bridge.py' -v
-          python -m unittest discover -s tests -p 'test_calendar_first_year.py' -v
-          python -m unittest discover -s tests -p 'test_personalized_spending.py' -v
-          python -m unittest discover -s tests -p 'test_inverse_capacity.py' -v
+          python -m unittest discover -s tests -v
       - name: Serve static Pages bundle locally on GitHub runner
         run: |
           nohup python -m http.server 8766 --bind 127.0.0.1 >/tmp/pages-server.log 2>&1 &

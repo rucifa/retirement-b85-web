@@ -100,9 +100,13 @@ class PersonalizedSpendingTests(unittest.TestCase):
        return decide_year(x,cfg,n_inner=256,seed=20261011)
     baseline=run(27,2.4,0)
     with_extra=run(27,2.4,1.5)
-    # UI must warn: the currently reported PoS does NOT incorporate the
-    # separately entered one-off expense, despite paying it from investments.
-    self.assertEqual(baseline.pos,with_extra.pos)
+    # The corrected adapter includes the one-off in the existing required-
+    # asset distribution and still pays it exactly once.
+    self.assertLessEqual(with_extra.pos,baseline.pos)
+    from dataclasses import replace
+    expected=engine.single_state_pos(29.4,65,1,True,
+      replace(cfg,extra_mandatory_expense_by_age={65:1.5}),n_inner=256,seed=20261011)
+    self.assertEqual(with_extra.pos,expected)
     self.assertAlmostEqual(with_extra.extra_mandatory_paid_m,1.5,places=6)
     self.assertGreater(with_extra.pos,.75)
     self.assertAlmostEqual(with_extra.bridge_from_cash_m,0,places=9)

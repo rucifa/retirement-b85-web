@@ -27,6 +27,7 @@ from policy.simple_annual_ledger import (
 from policy.annual_execution_v340 import AnnualResult
 from calendar_first_year import MODE as CALENDAR_MODE, prorate_first_year
 import spending_profile as personal
+from expense_contract import CONTRACT as EXPENSE_CONTRACT
 from policy import personalized_research_engine as research_model
 from policy.personalized_research_ledger import approve_year as research_approve_year
 
@@ -217,6 +218,8 @@ class AnnualWorkflow:
             'investment_open_twd':nominal_twd(opening.investment_m,decision_cpi,activation_cpi),
             'cash_open_twd':nominal_twd(opening.safety_cash_m,decision_cpi,activation_cpi),
             'emergency_pending':opening.emergency_pending,
+            'extra_included_in_pos':y.get('expense_pos_contract') == EXPENSE_CONTRACT,
+            'expense_pos_contract':y.get('expense_pos_contract'),
             'assumed_drag_description':'已在 B+85 市場模型的 net_central_2026ref 情境中計入一次，年末不重扣。',
         }
         meta=y.get('calendar_first_year')
@@ -346,6 +349,7 @@ class AnnualWorkflow:
                     approval,first_calendar=prorate_first_year(approval)
             except (ValueError,ArithmeticError,OverflowError) as e:raise InputError('B＋85 年度核准遭拒：'+str(e)) from e
             row={
+                'expense_pos_contract':EXPENSE_CONTRACT,
                 'approval':asdict(approval),
                 'cpi_decision':current_cpi,'cpi_decision_release':release,'cpi_decision_source':origin,
                 'closing_cpi':None,'closing_cpi_release':None,

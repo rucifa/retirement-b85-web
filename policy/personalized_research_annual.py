@@ -149,6 +149,8 @@ def _pay(invest:float,cash:float,cost:float,priority:str):
 def decide_year(data:AnnualInput, cfg:engine.ModelConfig, *,
                 n_inner:int=8192,seed:int=20261011,prior:AnnualResult|None=None) -> AnnualResult:
     validate_input(data,prior)
+    from expense_contract import bind_current_expense
+    cfg = bind_current_expense(cfg, data.age, data.extra_mandatory_m)
     if data.retirement_start_age != cfg.start_age:
         raise ValueError("model and annual retirement starting age differ")
     if cfg.use_charity:raise ValueError("Charity excluded from B+85 upgrade scope")
