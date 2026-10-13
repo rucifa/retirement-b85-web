@@ -148,6 +148,13 @@ def evaluate_saved_first_year(state: dict, *, paths: int = 4096,
         raise ValueError('invalid first-year age')
     f_twd = int(p['floor_twd']); f_m = f_twd/1_000_000
     cfg = workflow.policy_config(plan)
+    if first.get('large_expense_snapshot'):
+        import large_expenses
+        snap=first['large_expense_snapshot']
+        cfg,_=large_expenses.bind(cfg,snap['schedule'],plan,snap['known_cpi'],initial['year'])
+        schedule=dict(cfg.extra_mandatory_expense_by_age)
+        schedule.pop(initial['age'],None)
+        cfg=replace(cfg,extra_mandatory_expense_by_age=schedule)
     invest = float(initial['investment_m']); cash = float(initial['safety_cash_m'])
     sorted_caps = _capital_capacity(cfg, invest, cash, paths=paths, seed=SEARCH_SEED,
                                     planned_extra_m=float(initial.get('planned_extra_m',0.)))

@@ -1,4 +1,4 @@
-<!doctype html><html lang="zh-Hant"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>B＋85｜免安裝退休年度規劃工具</title><link rel="stylesheet" href="./static/style.css"/><link rel="stylesheet" href="./static/dashboard.css"/></head>
+<!doctype html><html lang="zh-Hant"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>B＋85｜免安裝退休年度規劃工具</title><link rel="stylesheet" href="./static/style.css"/><link rel="stylesheet" href="./static/dashboard.css"/><link rel="stylesheet" href="./static/phase2.css"/></head>
 <body><div class="app-shell">
 <aside class="sidebar">
  <div class="brand"><div class="brand-icon">85</div><div><strong>安心退休計畫</strong><small id="dash-engine-name">B＋85 基準 · v3.4.0</small></div></div>
@@ -34,7 +34,7 @@
  <div id="opening-result" class="results hidden"></div>
  <form id="opening-form" class="form-card">
  <h3>年度基本資料</h3><div class="grid-form"><label class="field"><span>決策日期 <em>必填</em></span><input id="decision_date" type="date" required/><small>首次進入使用瀏覽器時鐘換算為台灣今天（非伺服器授時）；已儲存的年度接續日期不會覆寫。可自行選擇試算日期。</small><small id="decision-month-guidance" class="decision-month-guidance" role="status">首年可自選日期，生活費按剩餘曆年天數計算。</small><button type="button" id="use-january-date" class="dash-text-link" hidden>舊版一月試算快捷鍵</button></label>
- <label class="field"><span>預計額外必要支出（新台幣）<small>選填</small></span><input id="planned_extra_twd" type="number" min="0" step="0.01" placeholder="例如：1500000（沒有可留空）"/><small>例如另外安排的醫療、購車等已確定費用。已由政策安排的定期換車請勿重複輸入。此金額會納入本年度 PoS 與必要支出預算，實際付款只扣一次；留空視為無額外支出（0 元）。</small></label></div>
+ <label class="field"><span>預計額外必要支出（新台幣）<small>選填</small></span><input id="planned_extra_twd" type="number" min="0" step="0.01" placeholder="例如：1500000（沒有可留空）"/><small>只填下方排程以外、本年另外確定的必要費用。已排程項目與政策定期換車請勿再次輸入。此金額會納入本年度 PoS 與必要支出預算，實際付款只扣一次；留空視為無額外支出（0 元）。</small></label></div>
  <div id="first-year-fields"><div class="inner-divider"></div><h3>首次建立：退休起始條件</h3><div class="grid-form"><label class="field"><span>退休開始年</span><input id="first_year" type="number" readonly/><small>與上方決策日期年份相同。</small></label>
  <label class="field"><span>退休開始年齡</span><input id="start_age" type="number" min="45" max="90" placeholder="例如：54" required/><small>請自行填入預計退休年齡。65 歲是勞保老年年金請領年齡的參考，不是系統替你設定的退休年齡。</small></label>
  <label class="field"><span>投資資產總市值（新台幣）</span><input id="investment_twd" type="number" min="0" step="0.01" placeholder="例如：27000000" required/><small>股票＋債券，與安全現金分開。</small></label>
@@ -127,7 +127,45 @@
    <section class="dash-widget dash-risk-notes" aria-labelledby="dash-risk-title"><div class="dash-widget-head"><h3 id="dash-risk-title"><span class="dash-widget-icon" aria-hidden="true">!</span> 使用前的重要提醒</h3></div>
      <p>官方 CPI 查證快照與手動演練數值彼此獨立；正式全年基準尚未完成時，不會當成已確認的通膨換算。</p>
      <p>本網站不連接金融帳戶，所有年度紀錄只存在此瀏覽器，請定期匯出 JSON 備份。</p></section>
- </div></section>
+ </div>
+ <section id="phase2-schedule-panel" class="form-card phase2-card" aria-labelledby="expense-title">
+  <div class="hrow"><h3 id="expense-title">未來大額支出排程</h3><span class="tag subdued">先設定，再核准年度</span></div>
+  <p>可先新增購車、購屋、醫療及其他必要支出，再試算年度預算。排程會納入資產需求與蒙地卡羅，不是只有畫面備註。已核准年度保留原快照，只能編輯未來年度。</p>
+  <p id="expense-default-cars" role="status">設定退休起點後，會檢查60、70、80、90歲的政策定期換車；不能重複新增同年購車。</p>
+  <form id="expense-schedule-form" class="grid-form">
+   <label class="field"><span>支出年度</span><input id="expense-year" type="number" min="2026" max="2200" step="1" placeholder="例如：2040" required/></label>
+   <label class="field"><span>類別</span><select id="expense-category" required><option value="">請選擇類別</option><option value="car">購車</option><option value="housing">購屋</option><option value="medical">醫療</option><option value="other">其他</option></select></label>
+   <label class="field"><span>支出金額（新台幣元）</span><input id="expense-amount" type="number" min="0.01" max="1000000000000" step="0.01" placeholder="例如：1500000" required/></label>
+   <label class="field"><span>金額物價基準</span><select id="expense-basis"><option value="real_2026">2026年固定購買力</option><option value="nominal_year">指定年度名目金額</option></select></label>
+   <label class="field hidden" id="expense-price-year-field"><span>名目金額的基準年度</span><input id="expense-price-year" type="number" min="2026" max="2200" step="1" placeholder="例如：2040"/><small>未取得該年度決策CPI時，依下列通膨情境換算，不冒充未來官方資料。</small></label>
+   <label class="field"><span>項目說明（選填）</span><input id="expense-title-input" type="text" maxlength="100" placeholder="例如：牙科治療／購屋自備款"/></label>
+   <div class="phase2-actions"><button type="submit" class="secondary-btn" id="expense-save">新增排程</button><button type="button" class="secondary-btn hidden" id="expense-cancel-edit">取消修改</button></div>
+  </form>
+  <div class="phase2-inflation"><label class="field"><span>支出換算年通膨情境（%）</span><input id="expense-inflation" type="number" min="-5" max="15" step="0.1" placeholder="例如：2"/></label><button id="expense-inflation-save" type="button" class="secondary-btn">儲存換算情境</button><p id="expense-inflation-saved"></p></div>
+  <div id="expense-schedule-list" class="mc-table-wrap" aria-live="polite">尚無手動排程。</div>
+  <p class="privacy-help">購屋初版只視為資金流出，不列不動產可提款價值；房貸、租金、房屋與交易稅費、維護成本均尚未建模，請自行把確定需支付的項目另列。手動購車不會自動取消原政策換車。</p>
+  <div class="phase2-actions"><button id="expense-compare-run" type="button" class="secondary-btn">比較新增支出前後（70／30、65／35）</button><button id="expense-compare-cancel" type="button" class="secondary-btn hidden">取消研究</button><button id="expense-compare-export" type="button" class="secondary-btn hidden">下載比較結果</button></div>
+  <p id="expense-compare-status" role="status">完成一次年度核准後可執行；精度沿用上方蒙地卡羅選項，研究不回寫帳本。</p>
+  <div id="expense-comparison-result" class="mc-table-wrap"></div>
+ </section>
+ <section id="phase2-execution-panel" class="form-card phase2-card" aria-labelledby="execution-title">
+  <h3 id="execution-title">提款執行規劃：ETF出售候選</h3>
+  <p>先查看「年度核准資金來源」。投資池需要的流動資金包含生活費／大額支出及現金補回；補回是轉帳，不能再次算成花費。以下人工持倉只產生出售候選，<strong>不代表已賣出、已轉帳或已付款</strong>。</p>
+  <div id="execution-funding-summary" role="status">尚無待結算年度。</div><div id="expense-current-sources" class="mc-table-wrap"></div>
+  <form id="execution-planning-form" class="hidden">
+   <div class="grid-form">
+    <label class="field"><span>規劃日期</span><input id="execution-asof" type="date" required/></label>
+    <label class="field"><span>美元換匯估算（TWD／USD）</span><input id="execution-fx" type="number" min="1" max="200" step="0.0001" placeholder="例如：32.50"/><small>有美元持倉時必填；不自動使用模型匯率30。</small></label>
+    <label class="field"><span>投資池內已可提款現金（元，選填）</span><input id="execution-broker-cash" type="number" min="0" step="0.01" placeholder="例如：100000"/><small>不是安全現金帳戶；留空不抵扣出售需要的金額。</small></label>
+    <label class="field"><span>本次出售交易費／稅費總估計（元，選填）</span><input id="execution-fee" type="number" min="0" step="0.01" placeholder="例如：500"/><small>未填代表尚未估計，不代表免手續費；此數字不再扣一次退休模型摩擦。</small></label>
+   </div>
+   <div id="execution-holdings"></div>
+   <div class="phase2-actions"><button id="execution-add-holding" type="button" class="secondary-btn">新增持倉</button><button id="execution-calculate" type="submit" class="primary-btn">計算出售候選</button></div>
+  </form>
+  <div id="execution-planning-result" class="mc-table-wrap"></div>
+  <p class="privacy-help">出售候選以人工報價、交易單位及目標股債比例計算；券商可賣股數、證券分類、費稅、換匯、交割及銀行付款時程仍待核對。初版支援TWD／USD，不會連接金融帳戶或保存交易已完成狀態。</p>
+ </section>
+ </section>
  <section id="panel-closing" class="panel hidden"><div class="section-head"><div><div class="eyebrow green">STEP 02</div><h2>年末・確認實際花了多少</h2><p>不用填報酬率。只要記錄實際支出及年底投資／現金餘額。</p></div><span id="closing-tag" class="tag">尚未核准</span></div>
  <div id="closing-readiness" class="empty-state"><span class="empty-icon">▧</span><h3>請先完成年初核准</h3><p>年初預算計算完成後，年末結算表單就會開放。</p><button class="secondary-btn" data-go="opening">回到年初核准</button></div>
  <div id="closing-form-wrap" class="hidden"><div id="closing-budget" class="summary-strip"></div>
@@ -145,4 +183,4 @@
  <div id="closing-result" class="results hidden"></div></section>
  <section id="panel-history" class="panel hidden"><div class="section-head"><div><div class="eyebrow green">STEP 03</div><h2>歷年紀錄・從哪一年接續</h2><p>年初核准與年末實際紀錄分開保存，避免重複支出。</p></div><div class="history-actions"><button id="export-btn" class="secondary-btn">匯出 JSON 備份</button> <button id="import-btn" class="secondary-btn">匯入 JSON 備份</button><input id="import-file" type="file" accept="application/json,.json" class="hidden" aria-label="匯入已保存的年度備份 JSON"/></div></div><div id="history-list" class="history-list"></div><div class="history-footer"><p>重設之前請先匯出備份。重設之前會自動下載一份 JSON 備份。</p><button id="reset-btn" type="button" class="danger-link">清除演練並重新開始</button></div></section>
  <div class="footnote">退休模型 B＋85 v3.4.0｜瀏覽器本機運算，資料僅儲存於此瀏覽器的網站空間｜研究演練｜非投資建議、稅務判定或真實提款授權。</div>
-</main></div></div><script src="./static/taiwan-time.js" defer></script><script src="./static/app.js" defer></script><script src="./static/cpi-official.js" defer></script><script src="./static/dashboard.js" defer></script><script src="./static/mc-projection.js" defer></script></body></html>
+</main></div></div><script src="./static/taiwan-time.js" defer></script><script src="./static/app.js" defer></script><script src="./static/cpi-official.js" defer></script><script src="./static/dashboard.js" defer></script><script src="./static/mc-projection.js" defer></script><script src="./static/phase2.js" defer></script></body></html>

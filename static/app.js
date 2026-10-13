@@ -28,6 +28,7 @@ function capacityHtml(result){
   '<div class="capacity-heading"><h3>資產可支持的起始生活費（研究候選）</h3><span>2026 年實質金額 · 非核准提款</span></div>'+
   '<div class="capacity-grid">'+tile(result.results.p95,'95%')+tile(result.results.p99,'99%')+'</div>'+
   '<p>最低必要生活費 '+twMoney(result.floor_2026_real_twd)+' 固定不變。雙金額只是「初始、固定 Sticky 的必要資產 PoS」容量，<strong>不是經完整動態驗證的最高安全提領額</strong>，不能直接領走。實際年度預算請以上方 B＋85 試算結果為準。</p>'+
+  '<p>此區以首年核准當時的支出快照為準，不回溯混入事後新增排程；查看目前排程的影響，請使用下方大額支出成對研究與最新蒙地卡羅。</p>'+
   '<button id="capacity-audit-btn" class="secondary-btn" type="button">追加獨立動態 MC 研究驗證（初步樣本）</button></section>';
 }
 function capacityAdvancedHtml(result){
@@ -59,7 +60,7 @@ function dbRead(){return new Promise((res,rej)=>{const t=database.transaction(db
 function dbWrite(record){return new Promise((res,rej)=>{const t=database.transaction(dbStore,'readwrite');t.objectStore(dbStore).put(JSON.stringify(record),dbKey);t.oncomplete=()=>res();t.onerror=()=>rej(t.error);t.onabort=()=>rej(t.error||Error('瀏覽器資料儲存被拒絕'));});}
 function callWorker(op,data={}){return new Promise((resolve,reject)=>{if(!worker){reject(Error('計算引擎尚未啟動'));return;}const id=++seq;pending.set(id,{resolve,reject});worker.postMessage({id,op,data});});}
 function downloadJson(data){const a=document.createElement('a'),u=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json;charset=utf-8'}));a.href=u;a.download='B85_年度研究備份_'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),10000);}
-async function request(path,data={}){if(!engineReady)throw Error('瀏覽器計算環境尚未完成載入');const op=({'/api/state':'state','/api/approve':'approve','/api/close':'close','/api/demo-close':'demo-close','/api/export':'export','/api/reset':'reset','/api/import':'import','/api/capacity':'capacity'})[path];if(!op)throw Error('未允許的請求');return await callWorker(op,data);}
+async function request(path,data={}){if(!engineReady)throw Error('瀏覽器計算環境尚未完成載入');const op=({'/api/state':'state','/api/approve':'approve','/api/close':'close','/api/demo-close':'demo-close','/api/export':'export','/api/reset':'reset','/api/import':'import','/api/capacity':'capacity','/api/expense-schedule':'expense-schedule','/api/execution-plan':'execution-plan'})[path];if(!op)throw Error('未允許的請求');return await callWorker(op,data);}
 const runtimeStages={engine:{state:'loading',percent:0,text:'等待載入 Python 與政策模型'},storage:{state:'loading',percent:0,text:'等待讀取此瀏覽器內的年度紀錄'},cpi:{state:'loading',percent:0,text:'等待驗證已公布的官方 CPI 資料'}};
 function setRuntimeStage(name,stateName,percent,text){
  const stage=runtimeStages[name];if(!stage)return;
@@ -211,6 +212,8 @@ function closeHtml(y){if(!y?.closing)return '';
 }
 function fillNext(){
  const last=lastYear();
+ for(const input of $('first-year-fields').querySelectorAll('input,select'))input.disabled=!!last;
+ $('cpi_2026').disabled=!!last;
  if(!last){$('first-year-fields').classList.remove('hidden');$('reference_cpi_field').classList.remove('hidden');return;}
  $('first-year-fields').classList.add('hidden');$('reference_cpi_field').classList.add('hidden');
  if(last.closing&&$('decision_date').value.slice(0,4)!==String(last.year+1)){
@@ -263,6 +266,7 @@ function render(){
  fillNext();
  renderInflationPreview();
  renderHistory();
+ window.B85_PHASE2?.render();
 }
 function renderHistory(){
  const list=$('history-list');if(!state?.years?.length){list.innerHTML='<div class="empty-state"><span class="empty-icon">▤</span><h3>還沒有年度紀錄</h3><p>先從年初核准建立第一個年度。</p></div>';return}
@@ -305,7 +309,7 @@ $('demo-close-btn').addEventListener('click',async()=>{try{const x=await request
 $('export-btn').addEventListener('click',async()=>{try{downloadJson(await request('/api/export',{}));flash('JSON 備份已下載，請保存到你自己的安全資料夾。','success')}catch(e){flash(e.message)}});
 $('import-btn').addEventListener('click',()=>{if(!engineReady){flash('計算引擎尚未就緒');return;}$('import-file').click();});
 $('import-file').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;
- try{if(file.size>5_000_000)throw Error('備份檔案過大');const imported=JSON.parse(await file.text());
+ try{if(file.size>20_000_000)throw Error('備份檔案超過20MB上限');const imported=JSON.parse(await file.text());
  if(!confirm('匯入備份將覆蓋此瀏覽器目前的年度紀錄。建議先匯出現有資料。確定匯入？'))return;
  await request('/api/import',imported);$('closing-form').dataset.recordYear='';capacityEstimate=null;capacityApprovalId=null;await refresh();display('history');flash('備份 SHA256 與年度連續性已驗證，匯入完成。','success');
  }catch(err){flash('匯入失敗：'+err.message)}finally{e.target.value='';}});

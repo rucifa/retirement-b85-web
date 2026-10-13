@@ -1,7 +1,7 @@
 name: B85 Pages browser policy exact-parity and UI E2E
 on:
   push:
-    branches: [main, 'fix/b85-mc-*']
+    branches: [main, 'fix/b85-mc-*', 'phase2/*']
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -22,6 +22,8 @@ jobs:
           node --check static/dashboard.js
           node --check static/mc-projection.js
           node --check static/cpi-official.js
+          node --check static/phase2.js
+          python -m py_compile large_expenses.py execution_planning.py expense_comparison.py tests/browser_phase2.py
           echo 'B85_E2E_SYNTAX_CHECK_PASS'
       - name: Install model and browser QA dependencies (CI only)
         run: |
@@ -48,12 +50,16 @@ jobs:
           sleep 2
       - name: Use actual Pyodide in headless Chromium (not a mock)
         run: python tests/browser_e2e.py
+      - name: Phase 2 排程、提款規劃與跨年備份真瀏覽器驗收
+        run: python tests/browser_phase2.py
       - name: Preserve diagnostic screenshot if browser fails
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: b85-pages-browser-failure-${{ github.run_id }}
-          path: /tmp/b85_pages_browser_failure.png
+          path: |
+            /tmp/b85_pages_browser_failure.png
+            phase2-browser-failure.png
           if-no-files-found: ignore
           retention-days: 7
 # No repository CPI / ACTIVE modifications; browser-only research execution.
