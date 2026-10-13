@@ -276,6 +276,22 @@ async def main():
             await page.locator('#dash-return-low').fill('-3')
             assert await page.locator('#dash-scenario-chart svg path').count()==3
             assert '不是 B＋85 蒙地卡羅 P10／P50／P90' in (await page.locator('#dash-scenario-pane .dash-scenario-disclaimer').inner_text())
+            fixed_points=page.locator('#dash-scenario-chart .chart-point-hit')
+            assert await fixed_points.count()>=12
+            await fixed_points.last.hover()
+            fixed_tip=page.locator('#dash-scenario-chart .chart-point-tooltip')
+            await fixed_tip.wait_for(state='visible')
+            assert '假設 C' in await fixed_tip.inner_text()
+            assert 'NT$' in await fixed_tip.inner_text()
+            assert '固定購買力' in await fixed_tip.inner_text()
+            await fixed_points.first.focus()
+            assert '假設 A' in await fixed_tip.inner_text()
+            assert '54 歲' in await fixed_tip.inner_text()
+            await fixed_points.first.press('Enter')
+            assert await fixed_tip.is_visible()
+            await fixed_points.first.press('Escape')
+            assert await fixed_tip.is_hidden()
+            print('BROWSER_FIXED_SCENARIO_HOVER_FOCUS_KEYBOARD_DETAILS_PASS')
             await page.locator('#dash-actual-tab').click()
             assert await page.locator('#dash-asset-chart').is_visible()
             await page.locator('#dash-scenario-tab').click()
@@ -309,6 +325,20 @@ async def main():
             print('BROWSER_CPI_NEXT_YEAR_NO_FABRICATED_RELEASE_DATE_PASS')
             await page.locator('#dash-asset-chart svg').wait_for(timeout=15000)
             assert '1 年' in (await page.locator('#dash-years').inner_text())
+            settled_point=page.locator('#dash-asset-chart .chart-point-hit').first
+            assert await settled_point.count()==1
+            await settled_point.hover()
+            settled_tip=page.locator('#dash-asset-chart .chart-point-tooltip')
+            await settled_tip.wait_for(state='visible')
+            settled_text=await settled_tip.inner_text()
+            assert '2036 年' in settled_text and '54 歲' in settled_text
+            assert '投資資產 NT$' in settled_text and '安全現金 NT$' in settled_text
+            assert '當年度年底名目金額' in settled_text
+            await settled_point.click()
+            assert await settled_tip.is_visible()
+            await page.mouse.click(5,5)
+            assert await settled_tip.is_hidden()
+            print('BROWSER_SETTLED_ASSET_POINT_HOVER_TAP_AND_BREAKDOWN_PASS')
             print('BROWSER_DASHBOARD_REAL_CLOSED_YEAR_CHART_PASS')
             print('BROWSER_LOCAL_INDEXEDDB_RESTART_PASS')
             await page.locator('[data-go="history"]').first.click()
@@ -490,6 +520,26 @@ async def main():
                             assert abs(a-b)<.1,(asset,observed['year'],a,b)
                 assert result['seconds']<60, result['seconds']
                 assert result['diagnostics']['max_reconciliation_error_m']<1e-8
+                mc_points=extra_page.locator('#mc-chart .chart-point-hit')
+                assert await mc_points.count()==3*len(result['years'])
+                await mc_points.last.focus()
+                mc_tip=extra_page.locator('#mc-chart .chart-point-tooltip')
+                await mc_tip.wait_for(state='visible')
+                assert 'P90' in await mc_tip.inner_text()
+                assert '並非 PoS' in await mc_tip.inner_text()
+                await mc_points.first.focus()
+                assert 'P10' in await mc_tip.inner_text()
+                assert '2026 年固定購買力' in await mc_tip.inner_text()
+                await mc_points.first.press('Enter')
+                assert await mc_tip.is_visible()
+                await mc_points.first.press('Escape')
+                assert await mc_tip.is_hidden()
+                await extra_page.locator('#mc-basis').select_option('nominal')
+                await extra_page.locator('#mc-chart .chart-point-hit').last.focus()
+                assert '名目金額' in await mc_tip.inner_text()
+                await extra_page.locator('#mc-basis').select_option('real_2026')
+                assert await mc_tip.is_hidden()
+                print('BROWSER_MC_POINT_TOOLTIP_PERCENTILE_BASIS_AND_KEYBOARD_PASS')
                 for asset in ('total','investment','cash'):
                     await extra_page.locator('#mc-asset').select_option(asset)
                     for basis in ('real_2026','nominal'):

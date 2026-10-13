@@ -397,3 +397,32 @@ body{color:var(--dash-ink);background:linear-gradient(150deg,#edf9fa 0%,#f6f8fb 
  #dashboard-rail>.dash-policy-card{display:block}
  #dashboard-cpi-card #dash-cpi-trend svg{max-width:700px}
 }
+
+/* Inspection is presentation-only. Hover, touch tap and keyboard focus share
+   one escaped, accessible point description across the three asset charts. */
+#dash-asset-chart,#dash-scenario-chart,#mc-chart{position:relative}
+.chart-point-hit{cursor:pointer;pointer-events:all;outline:none}
+.chart-point-hit:hover,.chart-point-hit:focus-visible,.chart-point-hit.is-active{
+ stroke:#245d71;stroke-width:2.2;
+}
+.chart-point-hit:focus-visible{stroke:#113f54;stroke-width:3}
+.chart-point-tooltip{
+ position:absolute;z-index:10;pointer-events:none;
+ width:max-content;min-width:172px;max-width:min(290px,calc(100% - 16px));
+ padding:11px 13px;border-radius:11px;border:1px solid #bed8dc;
+ background:#fff;color:#214354;box-shadow:0 8px 26px #1838442b;
+ text-align:left;font-size:12px;line-height:1.6;
+ overflow-wrap:anywhere;
+}
+.chart-point-tooltip[hidden]{display:none!important}
+.chart-point-tooltip>*{display:block}
+.chart-point-title{color:#173d4f;font-weight:800;font-size:13px}
+.chart-point-series{color:#407084;font-weight:700}
+.chart-point-value{font-size:17px;font-weight:850;color:#0b796e;font-variant-numeric:tabular-nums;margin:2px 0}
+.chart-point-basis{font-size:11px;color:#526e7d}
+.chart-point-detail{font-size:11px;color:#405968;margin-top:5px;padding-top:6px;border-top:1px solid #e5eef0}
+.chart-point-note{font-size:10px;color:#748a92;margin-top:5px}
+@media(max-width:480px){
+ .chart-point-tooltip{min-width:130px;padding:8px 10px;max-width:calc(100% - 16px)}
+ .chart-point-value{font-size:15px}
+}

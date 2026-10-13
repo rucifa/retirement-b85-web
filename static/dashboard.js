@@ -88,7 +88,8 @@ function updateKpis(){
 function drawHistory(years){
  const box=$('dash-asset-chart');if(!box)return;
  const closed=(years||[]).filter(y=>y&&y.closing&&fine(y.closing.investment_end_twd)&&fine(y.closing.cash_end_twd))
-   .map(y=>({year:Number(y.year),value:(Number(y.closing.investment_end_twd)+Number(y.closing.cash_end_twd))/10000}));
+   .map(y=>({year:Number(y.year),age:Number(y.age),investment:Number(y.closing.investment_end_twd),
+     cash:Number(y.closing.cash_end_twd),value:(Number(y.closing.investment_end_twd)+Number(y.closing.cash_end_twd))/10000}));
  if(!closed.length){
   box.textContent='目前尚無已結算年度；完成年末結算後，這裡會顯示實際資產走勢。未來蒙地卡羅情境尚未整合，不顯示虛構預測曲線。';
   box.setAttribute('aria-label','尚無可繪製的已結算年度資產資料');
@@ -102,7 +103,7 @@ function drawHistory(years){
   y:t+plotH-(d.value-bottom)/(top-bottom)*plotH,
   ...d
  }));
- let svg='<svg viewBox="0 0 '+w+' '+h+'" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="歷年已結算投資與現金合計市值趨勢">';
+ let svg='<svg viewBox="0 0 '+w+' '+h+'" xmlns="http://www.w3.org/2000/svg" role="group" aria-label="歷年已結算投資與現金合計市值趨勢，點位可選取查看金額">';
  for(let i=0;i<=4;i++){
   const yy=t+i*plotH/4;
   const amt=(top*(4-i)/4);
@@ -112,11 +113,17 @@ function drawHistory(years){
  const path=xy.map((p,i)=>(i?'L':'M')+p.x.toFixed(2)+' '+p.y.toFixed(2)).join(' ');
  if(xy.length>1)svg+='<path d="'+path+'" fill="none" stroke="#129a8c" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>';
  for(const p of xy){
-  svg+='<circle cx="'+p.x+'" cy="'+p.y+'" r="4.5" fill="#0b8d84" stroke="#fff" stroke-width="2"><title>'+safe(p.year)+'：'+safe(fmt(p.value))+' 萬元</title></circle>'+
-  '<text x="'+p.x+'" y="'+(h-12)+'" text-anchor="middle" font-size="11" fill="#617e90">'+safe(p.year)+'</text>';
+  svg+=window.B85_CHART_POINTS.marker({x:p.x,y:p.y,color:'#0b8d84',
+    title:p.year+' 年・'+p.age+' 歲',series:'已結算年度資產合計',
+    value:p.investment+p.cash,basis:'當年度年底名目金額',
+    detail:'投資資產 '+window.B85_CHART_POINTS.money(p.investment)+'；安全現金 '+window.B85_CHART_POINTS.money(p.cash),
+    note:'依年度結算紀錄顯示，非券商獨立驗證'})+
+    '<text x="'+p.x+'" y="'+(h-12)+'" text-anchor="middle" font-size="11" fill="#617e90">'+safe(p.year)+'</text>';
  }
  svg+='<text x="'+(l-9)+'" y="12" text-anchor="end" font-size="10" fill="#638596">萬元</text></svg>';
  box.innerHTML=svg;
+ window.B85_CHART_POINTS.bind(box);
+ window.B85_CHART_POINTS.clear(box);
  box.setAttribute('aria-label','已結算年度資產合計：'+closed.map(x=>x.year+'年 '+fmt(x.value)+' 萬元').join('，'));
 }
 function trend(records){
@@ -255,6 +262,8 @@ for(const [id,mode] of [['dash-actual-tab','actual'],['dash-scenario-tab','scena
  $(id)?.addEventListener('click',()=>{
   assetModeChanged=true;assetMode=mode;
   updateChartMode(lastAnnual(),stateRead()?.years||[]);
+  for(const chart of ['dash-asset-chart','dash-scenario-chart','mc-chart'])
+   window.B85_CHART_POINTS.clear($(chart));
   if(mode==='scenarios')drawScenario(lastAnnual());
  });
 }
@@ -308,7 +317,7 @@ function drawScenario(y){
  const yy=value=>top+(1-value/maximum)*plotH;
  const P=(line)=>line.map((p,i)=>(i?'L':'M')+xx(i).toFixed(2)+' '+yy(p.assets).toFixed(2)).join(' ');
  // Deliberately no shaded band: these are three chosen inputs, not probability intervals.
- let svg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+width+' '+height+'" role="img" aria-label="固定報酬率假設 A、B、C 的簡易資產情境示意，非機率分布或 B＋85 蒙地卡羅預測">';
+ let svg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+width+' '+height+'" role="group" aria-label="固定報酬率假設 A、B、C 的簡易資產情境示意，點位可選取，非蒙地卡羅預測">';
  for(let i=0;i<=4;i++){
   const v=maximum*(1-i/4),yPx=top+plotH*i/4;
   svg+='<line x1="'+left+'" x2="'+(width-right)+'" y1="'+yPx+'" y2="'+yPx+'" stroke="#e2ecf0"/>'+
@@ -321,8 +330,12 @@ function drawScenario(y){
   svg+='<path d="'+P(line)+'" stroke="'+colors[k]+'" fill="none" stroke-width="'+(k===1?3:2)+'" stroke-linejoin="round" '+(k===1?'':'stroke-dasharray="5 4"')+'/>';
   const at=Math.max(1,Math.floor(count/6));
   for(let i=0;i<count;i+=at){
-   const p=line[i],v=fmt(p.assets);
-   svg+='<circle cx="'+xx(i).toFixed(2)+'" cy="'+yy(p.assets).toFixed(2)+'" r="4" fill="'+colors[k]+'" stroke="#fff" stroke-width="1.5"><title>'+safe(String(p.year))+' 年 '+names[k][1]+'（'+(rates[k]>0?'+':'')+rates[k]+'%） '+safe(v)+' 萬元（固定報酬情境，非預測）</title></circle>';
+   const p=line[i],age=Number(y.age)+(p.year-Number(y.year));
+   svg+=window.B85_CHART_POINTS.marker({x:xx(i),y:yy(p.assets),color:colors[k],
+     title:p.year+' 年・'+age+' 歲',series:names[k][1]+'（'+(rates[k]>0?'+':'')+rates[k]+'% 固定年實質報酬）',
+     value:p.assets*10000,basis:'2026 年固定購買力',
+     detail:i===0?'起始年度期初資產':'前一年度支出與固定報酬後資產',
+     note:'任意固定報酬示意，未模擬未來 Guardrail／現金橋接，非機率預測'});
   }
  }
  for(let i=0;i<count;i+=Math.max(1,Math.ceil((count-1)/5))){
@@ -331,6 +344,8 @@ function drawScenario(y){
  }
  svg+='<text x="'+(left-7)+'" y="10" font-size="10" text-anchor="end" fill="#698c99">萬元</text></svg>';
  box.innerHTML=svg;
+ window.B85_CHART_POINTS.bind(box);
+ window.B85_CHART_POINTS.clear(box);
 }
 
 async function loadOfficialSummary(){
