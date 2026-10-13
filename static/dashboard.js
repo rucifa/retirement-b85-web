@@ -262,6 +262,8 @@ for(const [id,mode] of [['dash-actual-tab','actual'],['dash-scenario-tab','scena
  $(id)?.addEventListener('click',()=>{
   assetModeChanged=true;assetMode=mode;
   updateChartMode(lastAnnual(),stateRead()?.years||[]);
+  for(const chart of ['dash-asset-chart','dash-scenario-chart','mc-chart'])
+   window.B85_CHART_POINTS.clear($(chart));
   if(mode==='scenarios')drawScenario(lastAnnual());
  });
 }
