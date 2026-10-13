@@ -309,6 +309,16 @@ class AnnualWorkflow:
                 raise InputError('上一年度尚未結算；不可直接開始下一年度')
             if prior and self._state['years'][-1]['approval']['opening']['age']>=104:
                 raise InputError('已到達 104 歲模型終點')
+            # New website contract: schedule is the only new financial input.
+            # The old unmarked API shape is still accepted for importing and
+            # reproducing legacy research/annual approval contracts. All past
+            # approvals and their ad_hoc_twd snapshots are immutable.
+            source_contract=data.get('expense_entry_source')
+            if source_contract is not None:
+                if source_contract!='SCHEDULE_ONLY_V1':
+                    raise InputError('未知的必要支出單一入口版本')
+                if amt(data,'planned_extra_twd')!=0:
+                    raise InputError('新版年度核准只允許透過下方排程新增支出，不能重複提供額外金額')
             dt=data.get('decision_date','')
             decision=valid_date(dt,'年初決策')
             if prior is not None and decision.month!=1:
