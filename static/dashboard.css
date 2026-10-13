@@ -247,7 +247,6 @@ body{color:var(--dash-ink);background:linear-gradient(150deg,#edf9fa 0%,#f6f8fb 
 .dash-chart-tabs{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 12px}
 .dash-chart-tab{border-radius:9px;border:1px solid #dce8ec;padding:8px 12px;font-size:11px;background:#f8fbfc;color:#547580;cursor:pointer}
 .dash-chart-tab.selected{background:#e0f5f0;color:#087668;border-color:#81cfc3;font-weight:780}
-.dash-scenario-pane{padding:0;min-width:0}
 .dash-mc-controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:12px 0}
 .dash-mc-controls label{display:flex;flex-direction:column;gap:5px;font-size:12px;color:#486977}
 .dash-mc-controls input,.dash-mc-controls select{width:100%;min-width:0;padding:8px;border:1px solid #d8e6eb;border-radius:7px;background:white;color:#234a60}
@@ -264,9 +263,6 @@ body{color:var(--dash-ink);background:linear-gradient(150deg,#edf9fa 0%,#f6f8fb 
 #mc-data-details{font-size:12px;line-height:1.7;margin:12px 0;color:#486977}
 #mc-provenance{margin-top:8px;font-size:11px}
 @media(max-width:540px){.mc-diagnostics-grid{grid-template-columns:1fr}.dash-chart-tabs{flex-wrap:wrap}.dash-mc-controls{grid-template-columns:1fr}}
-.dash-scenario-controls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:10px 0}
-.dash-scenario-controls label{font-size:10px;color:#507382;font-weight:680;display:flex;flex-direction:column;gap:5px}
-.dash-scenario-controls input{width:100%;min-width:0;border:1px solid #d8e6eb;border-radius:7px;padding:7px;background:#fff;color:#234a60;font-size:12px;font-variant-numeric:tabular-nums}
 .dash-scenario-legend{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0;font-size:10px;color:#66808b}
 .dash-scenario-key:before{content:"";display:inline-block;width:14px;height:3px;vertical-align:middle;margin-right:5px;border-radius:2px}
 .dash-scenario-key.low:before{background:#d38d42}
@@ -279,8 +275,6 @@ body{color:var(--dash-ink);background:linear-gradient(150deg,#edf9fa 0%,#f6f8fb 
  .dash-guardrail-layout{grid-template-columns:105px minmax(0,1fr);gap:8px}
  .dash-policy-card .dash-policy-ring{width:104px;height:104px}
  .dash-policy-card .dash-policy-ring-inner{width:81px;height:81px}
- .dash-scenario-controls{gap:5px}
- .dash-scenario-controls label{font-size:9px}
 }
 
 /* Per-user annual expenses: separate research profile, never a fixed policy claim. */
@@ -400,7 +394,7 @@ body{color:var(--dash-ink);background:linear-gradient(150deg,#edf9fa 0%,#f6f8fb 
 
 /* Inspection is presentation-only. Hover, touch tap and keyboard focus share
    one escaped, accessible point description across the three asset charts. */
-#dash-asset-chart,#dash-scenario-chart,#mc-chart{position:relative}
+#dash-asset-chart,#mc-chart{position:relative}
 .chart-point-hit{cursor:pointer;pointer-events:all;outline:none}
 .chart-point-hit:hover,.chart-point-hit:focus-visible,.chart-point-hit.is-active{
  stroke:#245d71;stroke-width:2.2;
