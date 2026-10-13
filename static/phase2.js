@@ -11,7 +11,7 @@ function basis(){const nominal=$('expense-basis').value==='nominal_year';$('expe
 async function mutation(action,entry){await request('/api/expense-schedule',{action,entry});await refresh();}
 function scheduleRender(){
  const s=state?.expense_schedule;if(!s)return;
- $('expense-inflation-saved').textContent='目前支出換算情境：年通膨 '+s.inflation_pct+'%。未來名目金額由最後已知決策CPI延伸，不是官方未來預測。';
+ $('expense-inflation-saved').textContent='目前支出換算情境：年通膨 '+s.inflation_pct+'%。未來名目金額依最新已存CPI參考延伸；結算後採年末CPI作下一年價格錨點，不是官方未來預測。';
  $('expense-default-cars').textContent=s.default_car_years.length?'凍結定期換車年度：'+s.default_car_years.join('、')+'（不可重複新增同年度購車）。':'退休起點尚未確定：定期換車重複檢查會在年度核准前完成。';
  const resolved=new Map(s.resolved.map(x=>[x.id,x]));
  if(!s.entries.length){$('expense-schedule-list').textContent='尚無手動排程；原政策定期換車仍保留。';return;}

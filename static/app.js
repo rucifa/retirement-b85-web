@@ -309,7 +309,7 @@ $('demo-close-btn').addEventListener('click',async()=>{try{const x=await request
 $('export-btn').addEventListener('click',async()=>{try{downloadJson(await request('/api/export',{}));flash('JSON 備份已下載，請保存到你自己的安全資料夾。','success')}catch(e){flash(e.message)}});
 $('import-btn').addEventListener('click',()=>{if(!engineReady){flash('計算引擎尚未就緒');return;}$('import-file').click();});
 $('import-file').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;
- try{if(file.size>5_000_000)throw Error('備份檔案過大');const imported=JSON.parse(await file.text());
+ try{if(file.size>20_000_000)throw Error('備份檔案超過20MB上限');const imported=JSON.parse(await file.text());
  if(!confirm('匯入備份將覆蓋此瀏覽器目前的年度紀錄。建議先匯出現有資料。確定匯入？'))return;
  await request('/api/import',imported);$('closing-form').dataset.recordYear='';capacityEstimate=null;capacityApprovalId=null;await refresh();display('history');flash('備份 SHA256 與年度連續性已驗證，匯入完成。','success');
  }catch(err){flash('匯入失敗：'+err.message)}finally{e.target.value='';}});

@@ -8,9 +8,12 @@ def validate_chain(record):
     import workflow
     from policy.simple_annual_ledger import YearEndBalances,close_from_balances
     prior=None
+    seen=[]
     for row in record['years']:
         if row.get('large_expense_snapshot') is not None:
-            from large_expenses import validate_snapshot
+            from large_expenses import validate_snapshot,known_cpi,digest
+            expected_indices=known_cpi({'years':seen},row['approval']['opening']['year'],row['cpi_decision'])
+            if digest(expected_indices)!=digest(row['large_expense_snapshot']['known_cpi']):raise ValueError('支出快照混入非當時帳本的CPI資料')
             validate_snapshot(row['large_expense_snapshot'],record['plan'],row)
         approval=workflow.hydrate_approval(row['approval']);o=approval.opening;p=approval.policy_preview
         if row.get('expense_pos_contract') not in (None,CONTRACT):raise ValueError('未知必要支出契約')
@@ -43,3 +46,4 @@ def validate_chain(record):
                     if not isfinite(observed) or not isclose(value,observed,abs_tol=1e-8,rel_tol=0):raise ValueError('結算憑證與金額不一致')
                 elif value!=observed:raise ValueError('結算憑證或狀態不一致')
             prior=c
+        seen.append(row)

@@ -3,6 +3,7 @@ from dataclasses import replace
 from decimal import Decimal, InvalidOperation
 from hashlib import sha256
 import copy, json, math, re, uuid
+from datetime import date
 
 CONTRACT = 'B85_LARGE_EXPENSE_SCHEDULE_V1'
 CATEGORIES = {'car':'購車','housing':'購屋','medical':'醫療','other':'其他'}
@@ -98,13 +99,23 @@ def mutate(raw, action, data, plan=None, locked_year=None):
 
 def known_cpi(record, current_year=None, current_cpi=None):
     values={str(r['approval']['opening']['year']):r['cpi_decision'] for r in record.get('years',[])}
+    closed=[r for r in record.get('years',[]) if r.get('close')]
+    if closed and current_year is None and record.get('years',[])[-1].get('close'):
+        last=closed[-1]
+        values['__forecast_anchor__']={'year':last['approval']['opening']['year']+1,
+            'cpi':last['closing_cpi'],'asof':last['closing_date']}
     if current_year is not None:values[str(current_year)]=current_cpi
     return values
 
 def resolve(raw,plan,indices,from_year=None):
-    schedule=validate(raw,plan);indices={int(k):float(v) for k,v in indices.items()}
+    schedule=validate(raw,plan);anchor=indices.get('__forecast_anchor__')
+    indices={int(k):float(v) for k,v in indices.items() if k!='__forecast_anchor__'}
     if not indices or any(not math.isfinite(v) or not 10<v<500 for v in indices.values()):raise ValueError('支出換算需要有效CPI參考')
     latest=max(indices);ci=indices[latest];rate=1+schedule['inflation_pct']/100
+    if anchor is not None:
+        if not isinstance(anchor,dict) or set(anchor)!={'year','cpi','asof'} or isinstance(anchor['year'],bool) or not isinstance(anchor['year'],int):raise ValueError('年末CPI預測錨點格式不正確')
+        if anchor['year']!=date.fromisoformat(anchor['asof']).year+1 or not math.isfinite(anchor['cpi']) or not 10<anchor['cpi']<500:raise ValueError('年末CPI預測錨點不正確')
+        if anchor['year']>latest:latest=anchor['year'];ci=anchor['cpi']
     resolved=[];by_age={}
     for e in schedule['entries']:
         if from_year is not None and e['year']<from_year:continue
@@ -113,6 +124,8 @@ def resolve(raw,plan,indices,from_year=None):
         else:
             price_ci=indices.get(e['price_year'])
             source='SAVED_DECISION_CPI' if price_ci is not None else 'EXPLICIT_INFLATION_SCENARIO'
+            if price_ci is None and e['price_year']==2026:
+                price_ci=plan['cpi_2026'];source='KNOWN_2026_REFERENCE_CPI'
             if price_ci is None:price_ci=ci*rate**(e['price_year']-latest)
             real=e['amount_twd']*plan['cpi_2026']/price_ci
         if not math.isfinite(real) or not 0<real<=1e12:raise ValueError('換算後支出超出研究範圍')
@@ -137,6 +150,20 @@ def capture(raw,plan,indices,current_year,ad_hoc_twd):
     data={'contract':CONTRACT,'schedule':schedule,'known_cpi':indices,'year':current_year,
           'ad_hoc_twd':money(ad_hoc_twd),'resolved':items}
     return {**data,'sha256':digest(data)}
+
+def validate_record(record):
+    raw=record.get('expense_schedule');plan=record.get('plan');schedule=validate(raw,plan)
+    rows=record.get('years',[])
+    if raw is None and any(r.get('large_expense_snapshot') for r in rows):raise ValueError('含排程核准快照的備份不可遺失排程')
+    if not rows:return
+    locked=rows[-1]['approval']['opening']['year']
+    approved={}
+    for row in rows:
+        if row.get('large_expense_snapshot'):
+            snap=row['large_expense_snapshot']
+            approved.update({e['id']:e for e in snap['schedule']['entries'] if e['year']==row['approval']['opening']['year']})
+    current={e['id']:e for e in schedule['entries'] if e['year']<=locked}
+    if digest(current)!=digest(approved):raise ValueError('已核准年度排程與快照不一致，不可回溯刪改')
 
 def validate_snapshot(snapshot,plan,row):
     if not isinstance(snapshot,dict):raise ValueError('支出核准快照格式不正確')

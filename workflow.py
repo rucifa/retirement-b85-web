@@ -192,6 +192,11 @@ class AnnualWorkflow:
               'locked_through_year':self._state['years'][-1]['approval']['opening']['year'] if self._state['years'] else None}
         if self._state.get('plan'):
             _,view['resolved']=large.resolve(schedule,self._state['plan'],large.known_cpi(self._state))
+            historical={}
+            for row in self._state['years']:
+                snap=row.get('large_expense_snapshot')
+                if snap:historical.update({x['id']:x for x in snap['resolved'] if x['year']==row['approval']['opening']['year']})
+            view['resolved']=[historical.get(x['id'],x) for x in view['resolved']]
             p=self._state['plan']
             view['default_car_years']=[p['first_year']+a-p['start_age'] for a in (60,70,80,90) if a>=p['start_age']]
         else:view['default_car_years']=[]

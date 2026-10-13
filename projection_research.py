@@ -244,6 +244,8 @@ def project_saved(state, *, paths=2048, inner_paths=512, seed=SEED, inflation_pc
     from large_expenses import bind,known_cpi,digest as schedule_digest,validate as schedule_validate
     engine = research if plan.get('spending_profile') else frozen
     stored_open = row['approval']['opening']
+    if row.get('close') and stored_open['age']>=104:
+        raise ValueError('已結算104歲，沒有剩餘退休年度可模擬')
     cfg,resolved_schedule=bind(cfg,state.get('expense_schedule'),plan,known_cpi(state),stored_open['year']+(1 if row.get('close') else 0))
     locked = None; fraction=1.
     if row.get('close'):

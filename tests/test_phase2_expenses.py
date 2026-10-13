@@ -49,6 +49,21 @@ class Phase2Expenses(unittest.TestCase):
         self.assertEqual(future['conversion_source'],'EXPLICIT_INFLATION_SCENARIO');self.assertAlmostEqual(future['nominal_due_twd'],2000000)
     def test_2026_real_cpi_conversion(self):
         self.save(item(2036,1100000));r=self.approve()['data']['approval'];self.assertAlmostEqual(r['extra_authorized_twd'],1250000)
+    def test_nominal_2026_uses_known_reference_not_reverse_forecast(self):
+        self.save(item(2036,1100000,basis='nominal_year',price=2026))
+        r=self.approve()['data']['approval'];self.assertAlmostEqual(r['extra_authorized_twd'],1250000)
+    def test_year_end_cpi_anchors_future_nominal_and_current_decision_overrides(self):
+        self.save(item(2037,1500000,basis='nominal_year',price=2037));self.approve()
+        closing=self.op('demo-close')['data'];closing['closing_cpi']='150';self.op('close',closing)
+        item_=bridge.ENGINE.overview()['expense_schedule']['resolved'][0]
+        self.assertAlmostEqual(item_['real_2026_twd'],1100000)
+        r=self.approve(decision_date='2037-01-15',decision_cpi='132',decision_cpi_release='2037-01-07')['data']['approval']
+        self.assertAlmostEqual(r['extra_authorized_twd'],1500000,delta=.01)
+    def test_past_display_uses_approval_snapshot_after_inflation_change(self):
+        self.save(item(2036,1000000,basis='nominal_year',price=2040));self.approve()
+        before=bridge.ENGINE.overview()['expense_schedule']['resolved'][0]
+        self.op('expense-schedule',{'action':'inflation','entry':{'inflation_pct':10}})
+        self.assertEqual(before,bridge.ENGINE.overview()['expense_schedule']['resolved'][0])
     def test_no_schedule_keeps_original_approval_exact(self):
         plain=self.approve()['record']['years'][0];bridge.initialize(None)
         self.op('expense-schedule',{'action':'inflation','entry':{'inflation_pct':2}})
@@ -97,6 +112,12 @@ class Phase2Expenses(unittest.TestCase):
         s=b['payload']['years'][0]['large_expense_snapshot'];s['resolved'][0]['activation_real_m']+=1;s['sha256']=large.digest({k:v for k,v in s.items() if k!='sha256'});b['sha256']=workflow.digest(b['payload'])
         with self.assertRaisesRegex(workflow.InputError,'快照'):self.op('import',b)
         self.assertEqual(old,bridge.STATE_PATH.read_bytes())
+    def test_backdated_edit_in_backup_or_wrong_allocation_rejected(self):
+        self.save(item(2036,100000));self.approve();b=self.op('export')['data']
+        bad=copy.deepcopy(b);bad['payload']['expense_schedule']['entries'][0]['amount_twd']+=1;bad['sha256']=workflow.digest(bad['payload'])
+        with self.assertRaisesRegex(workflow.InputError,'回溯'):self.op('import',bad)
+        bad=copy.deepcopy(b);bad['payload']['plan']['stock_weight']=.65;bad['sha256']=workflow.digest(bad['payload'])
+        with self.assertRaisesRegex(workflow.InputError,'比例'):self.op('import',bad)
     def test_schedule_backup_before_retirement_is_accepted(self):
         self.save(item());b=self.op('export')['data'];bridge.initialize(None);self.op('import',b)
         self.assertEqual(len(bridge.ENGINE._state['expense_schedule']['entries']),1)

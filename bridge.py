@@ -32,7 +32,7 @@ def _validate_import(export: dict):
     years=record['years']
     try:
         import large_expenses
-        large_expenses.validate(record.get('expense_schedule'),record.get('plan'))
+        large_expenses.validate_record(record)
         from execution_planning import validate_saved_plans
         validate_saved_plans(record)
     except (ValueError,TypeError,KeyError) as exc:raise InputError('排程或出售規劃備份不正確：'+str(exc)) from exc
@@ -54,6 +54,9 @@ def _validate_import(export: dict):
             raise InputError('原始政策備份不得混入研究版生活費設定')
         if plan.get('stock_bond') not in ('70/30','65/35'):
             raise InputError('備份股債配置異常')
+        weight=plan.get('stock_weight')
+        if isinstance(weight,bool) or not isinstance(weight,(int,float)) or weight not in (.70,.65) or weight!=(.70 if plan['stock_bond']=='70/30' else .65):
+            raise InputError('備份股債比例與配置標籤不一致')
         for key in ('cpi_2026','activation_cpi'):
             if not isinstance(plan.get(key),(int,float)) or not 10 < plan[key] < 500:
                 raise InputError('備份 CPI 值異常')
@@ -109,7 +112,7 @@ def initialize(raw: str | None):
     global ENGINE
     STATE_PATH.parent.mkdir(parents=True,exist_ok=True)
     if raw:
-        if len(raw)>5_000_000:raise InputError('既有本機帳務資料異常過大')
+        if len(raw)>20_000_000:raise InputError('既有本機帳務資料超過20MB上限')
         try:
             saved=json.loads(raw)
             if not isinstance(saved,dict):raise ValueError('bad record')
