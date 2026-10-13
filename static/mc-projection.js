@@ -28,18 +28,26 @@ function draw(){
  const xx=j=>l+(rows.length===1?.5:j/(rows.length-1))*pw;
  const yy=v=>top+(1-v/max)*ph;
  const path=k=>rows.map((x,j)=>(j?'L':'M')+xx(j).toFixed(2)+' '+yy(x.q[k]).toFixed(2)).join(' ');
- let svg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+w+' '+h+'" role="img" aria-label="'+esc(asset+'，'+label+'，年末 P10 P50 P90')+'">';
+ let svg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+w+' '+h+'" role="group" aria-label="'+esc(asset+'，'+label+'，年末 P10 P50 P90，點位可選取查看年度資產分位數')+'">';
  for(let i=0;i<=4;i++){const y=top+ph*i/4;svg+='<line x1="'+l+'" x2="'+(w-r)+'" y1="'+y+'" y2="'+y+'" stroke="#e2ecf0"/><text x="'+(l-8)+'" y="'+(y+4)+'" text-anchor="end" fill="#607f8c" font-size="11">'+money(max*(1-i/4)/10000)+'</text>';}
  const band=rows.map((x,j)=>xx(j).toFixed(2)+','+yy(x.q[2]).toFixed(2)).concat([...rows].reverse().map((x,j)=>xx(rows.length-1-j).toFixed(2)+','+yy(x.q[0]).toFixed(2))).join(' ');
  svg+='<polygon points="'+band+'" fill="#bde7dd" opacity="0.45"/>';
  ['#b67937','#118368','#3986b0'].forEach((color,k)=>{
   svg+='<path data-percentile="'+[10,50,90][k]+'" d="'+path(k)+'" stroke="'+color+'" stroke-width="'+(k===1?3:2)+'" fill="none"/>';
-  rows.forEach((x,j)=>{svg+='<circle tabindex="0" cx="'+xx(j).toFixed(2)+'" cy="'+yy(x.q[k]).toFixed(2)+'" r="3.5" fill="'+color+'"><title>'+x.year+' 年（'+x.age+' 歲）P'+[10,50,90][k]+'：NT$ '+money(x.q[k])+'；'+esc(label)+'</title></circle>';});
+  rows.forEach((x,j)=>{
+   svg+=window.B85_CHART_POINTS.marker({x:xx(j),y:yy(x.q[k]),color,
+    title:x.year+' 年・'+x.age+' 歲',series:asset+' P'+[10,50,90][k],
+    value:x.q[k],basis:label+'・該年年底',
+    detail:'該年度所有模擬路徑的資產分位數',
+    note:'P10／P50／P90 是資產分布，並非 PoS 或退休成功率'});
+  });
  });
  const ticks=new Set([0,rows.length-1]);for(let j=0;j<rows.length;j+=Math.max(1,Math.ceil(rows.length/5)))ticks.add(j);
  for(const j of ticks)svg+='<text x="'+xx(j)+'" y="'+(h-20)+'" font-size="11" fill="#607f8c" text-anchor="middle">'+rows[j].year+'</text>';
  svg+='<text x="'+(l-6)+'" y="12" font-size="10" text-anchor="end" fill="#607f8c">萬元</text></svg>';
  $('mc-chart').innerHTML='<div class="mc-chart-label">'+esc(asset+'・'+label+'・各年年末')+'</div>'+svg+'<div class="dash-scenario-legend"><span class="dash-scenario-key low">P10</span><span class="dash-scenario-key mid">P50</span><span class="dash-scenario-key high">P90</span></div>';
+ window.B85_CHART_POINTS.bind($('mc-chart'));
+ window.B85_CHART_POINTS.clear($('mc-chart'));
  const pct=x=>(x*100).toFixed(2)+'%',d=result.diagnostics;
  $('mc-diagnostics').innerHTML='<div class="mc-diagnostics-grid">'+[['完整動態計畫成功率',d.plan_success],['終生最低生活費達成率',d.lifetime_floor_success],['必要大額支出達成率',d.required_expense_success]].map(([s,p])=>'<div><small>'+s+'</small><strong>'+pct(p)+'</strong></div>').join('')+'</div><p class="dash-scenario-disclaimer">以上為此批模型抽樣結果。完整計畫／最低生活費／必要支出的單側 95% 信賴下界分別為 '+pct(d.plan_success_wilson_lower_95)+'／'+pct(d.lifetime_floor_success_wilson_lower_95)+'／'+pct(d.required_expense_success_wilson_lower_95)+'；與年度內層 PoS 不同，不是實際退休保證。</p>';
  $('mc-provenance').textContent='亂數種子 '+result.seed+'；'+result.paths+' 外層／'+result.inner_paths+' 內層；運算 '+result.seconds.toFixed(2)+' 秒。固定市場模型與費用情境 net_central_2026ref；截止 104 歲。'+(result.first_approval_locked?'第一個年度沿用已核准預算，後續年度重新依政策決策。':'從最新已結算年度的結轉資產開始。')+(result.legacy_first_pos_excludes_extra?' 舊年度原 PoS 未包含另列必要支出，本次保留原核准，該費用仍只扣一次。':'');
