@@ -84,6 +84,10 @@ async function compare(){
 }
 function render(){
  const current=key();if(lastKey&&lastKey!==current){
+  if(!state?.plan&&state?.expense_schedule?.revision===0&&!state.expense_schedule.entries.length){
+   clearEditor();hydrated=null;planning=null;$('execution-holdings').replaceChildren();
+   for(const id of ['execution-asof','execution-fx','execution-broker-cash','execution-fee','expense-inflation'])$(id).value='';
+  }
   if(running)cancel('排程或年度已更新，研究已取消。');
   if(comparison&&comparisonKey!==current){comparison=null;$('expense-comparison-result').replaceChildren();$('expense-compare-export').classList.add('hidden');compareStatus('排程或年度已更新，請重新研究。','stale');}
  }

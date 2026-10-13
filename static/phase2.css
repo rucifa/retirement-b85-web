@@ -17,3 +17,4 @@
 .phase2-warning{background:#fff5df;border-radius:10px;padding:12px;color:#725617!important}
 @media(max-width:800px){.execution-holding .grid-form{grid-template-columns:repeat(2,minmax(0,1fr))}.phase2-inflation{align-items:flex-start}}
 @media(max-width:480px){.execution-holding .grid-form{grid-template-columns:1fr}.phase2-card{padding:16px}}
+@media(max-width:700px){.sidebar{max-width:100vw;overflow-x:auto;overscroll-behavior-x:contain}}

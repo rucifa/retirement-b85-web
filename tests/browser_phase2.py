@@ -116,7 +116,9 @@ async def main():
             assert abs(raw['years'][1]['approval']['opening']['investment_m']-raw['years'][0]['close']['investment_next_m'])<1e-8
             print('PHASE2_BROWSER_BACKUP_BEFORE_RELOAD_AND_SECOND_YEAR_ONCE_PASS')
             await restored.set_viewport_size({'width':390,'height':844});await restored.wait_for_timeout(150)
-            assert await restored.evaluate('document.documentElement.scrollWidth<=window.innerWidth+1')
+            overflow=await restored.evaluate('() => ({width:innerWidth,scroll:document.documentElement.scrollWidth,elements:[...document.querySelectorAll("body *")].map(e=>({tag:e.tagName,id:e.id,class:e.className,left:e.getBoundingClientRect().left,right:e.getBoundingClientRect().right,width:e.getBoundingClientRect().width})).filter(e=>e.right>innerWidth+1||e.left< -1).slice(0,50)})')
+            print('PHASE2_MOBILE_LAYOUT',json.dumps(overflow,ensure_ascii=False))
+            assert overflow['scroll']<=overflow['width']+1
             assert not errors,errors
             print('PHASE2_BROWSER_MOBILE_AND_ALL_CHECKS_PASS')
         except Exception:
