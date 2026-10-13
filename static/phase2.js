@@ -171,5 +171,9 @@ $('execution-planning-form').addEventListener('submit',async e=>{e.preventDefaul
 $('expense-compare-run').addEventListener('click',compare);$('expense-compare-cancel').addEventListener('click',()=>cancel());
 $('expense-compare-export').addEventListener('click',()=>{if(!comparison)return;const url=URL.createObjectURL(new Blob([JSON.stringify(comparison,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='B85_大額支出成對研究_'+comparison.start_year+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),10000);});
 $('expense-jump-to-schedule').addEventListener('click',()=>$('phase2-schedule-panel').scrollIntoView({behavior:'smooth',block:'start'}));
+$('nav-expenses').addEventListener('click',()=>{
+ display('opening');
+ requestAnimationFrame(()=>$('phase2-schedule-panel').scrollIntoView({behavior:'smooth',block:'start'}));
+});
 window.B85_PHASE2=Object.freeze({render,updateYearSummary,getComparison:()=>comparison,getPlanning:()=>planning,isComparing:()=>running});basis();
 })();
