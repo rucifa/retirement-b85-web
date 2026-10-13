@@ -40,6 +40,43 @@ class Phase2Expenses(unittest.TestCase):
         self.assertAlmostEqual(r['extra_authorized_twd'],1100000*125/110+200000,delta=.01)
         lines=r['large_expense_sources']['items'];self.assertEqual(len(lines),2)
         self.assertAlmostEqual(sum(x['total_twd'] for x in lines),r['extra_authorized_twd'],delta=.03)
+    def test_schedule_only_contract_prevents_duplicate_amount_and_preserves_record(self):
+        self.save(item(2036,1100000))
+        before=bridge.STATE_PATH.read_bytes()
+        with self.assertRaisesRegex(workflow.InputError,'只允許透過下方排程'):
+            self.approve(expense_entry_source='SCHEDULE_ONLY_V1',planned_extra_twd='200000')
+        self.assertEqual(before,bridge.STATE_PATH.read_bytes())
+        with self.assertRaisesRegex(workflow.InputError,'未知'):
+            self.approve(expense_entry_source='SCHEDULE_ONLY_V2')
+        approved=self.approve(expense_entry_source='SCHEDULE_ONLY_V1')['data']['approval']
+        self.assertAlmostEqual(approved['extra_authorized_twd'],1250000)
+        saved=self.op('export')['data']
+        self.assertEqual(saved['payload']['years'][0]['large_expense_snapshot']['ad_hoc_twd'],0)
+        self.assertAlmostEqual(saved['payload']['years'][0]['approval']['opening']['planned_extra_m'],1.25)
+        bridge.initialize(None)
+        restored=self.op('import',saved)
+        self.assertAlmostEqual(restored['data']['years'][0]['extra_authorized_twd'],1250000)
+
+    def test_legacy_double_entry_backup_remains_exact_and_next_year_schedule_only(self):
+        self.save(item(2036,1100000))
+        old=self.approve(planned_extra_twd='200000')
+        old_backup=self.op('export')['data']
+        old_approval=copy.deepcopy(old_backup['payload']['years'][0])
+        self.assertEqual(old_approval['large_expense_snapshot']['ad_hoc_twd'],200000)
+        self.assertEqual(len(old['data']['approval']['large_expense_sources']['items']),2)
+        bridge.initialize(None)
+        imported=self.op('import',old_backup)
+        self.assertEqual(imported['record']['years'][0],old_approval)
+        self.assertEqual(len(imported['data']['years'][0]['large_expense_sources']['items']),2)
+        self.op('close',self.op('demo-close')['data'])
+        next_year=self.approve(decision_date='2037-01-15',
+            decision_cpi='132',decision_cpi_release='2037-01-07',
+            expense_entry_source='SCHEDULE_ONLY_V1',planned_extra_twd='0')['data']['approval']
+        self.assertEqual(next_year['extra_authorized_twd'],0)
+        self.assertEqual(bridge.ENGINE._state['years'][0]['approval'],old_approval['approval'])
+        self.assertEqual(bridge.ENGINE._state['years'][0]['large_expense_snapshot'],
+                         old_approval['large_expense_snapshot'])
+
     def test_nominal_due_year_is_exact_and_future_is_disclosed_scenario(self):
         self.save(item(2036,1500000,basis='nominal_year',price=2036));r=self.approve()['data']['approval']
         self.assertAlmostEqual(r['extra_authorized_twd'],1500000,delta=.01)
