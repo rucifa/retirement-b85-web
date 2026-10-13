@@ -24,3 +24,52 @@
 @media(max-width:800px){.execution-holding .grid-form{grid-template-columns:repeat(2,minmax(0,1fr))}.phase2-inflation{align-items:flex-start}}
 @media(max-width:480px){.execution-holding .grid-form{grid-template-columns:1fr}.phase2-card{padding:16px}}
 @media(max-width:700px){.sidebar{max-width:100vw;overflow-x:auto;overscroll-behavior-x:contain}}
+
+/* 年度工作流程：先輸入→大額支出→核准，再看提款／分析。
+   只調整視覺與操作位置，不影響既有表單欄位及財務政策。 */
+#panel-opening>.annual-flow-steps,
+#panel-opening>#annual-approval-step,
+#panel-opening>#phase2-schedule-panel,
+#panel-opening>#phase2-execution-panel,
+#panel-opening>#phase2-comparison-panel{grid-column:1/-1;min-width:0}
+.annual-flow-steps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.annual-flow-steps li{min-width:0;border:1px solid #dae6e4;background:#f5faf8;border-radius:12px;padding:12px 15px}
+.annual-flow-steps strong{display:block;font-size:13px;color:#244e49;line-height:1.5}
+.annual-flow-steps small{display:block;color:#67837d;font-size:11px;line-height:1.6;margin-top:4px}
+.form-step-label{font-size:12px;color:#427867;font-weight:800;margin-bottom:13px}
+#phase2-schedule-panel{border-color:#cae0d5;border-left:4px solid #47856b;scroll-margin-top:22px}
+#phase2-schedule-panel .hrow{gap:12px;flex-wrap:wrap}
+#expense-schedule-form{grid-template-columns:repeat(3,minmax(0,1fr));gap:14px 17px}
+#expense-schedule-form>.phase2-actions{margin:4px 0}
+#expense-schedule-list{margin-top:14px}
+.phase2-guidance,.phase2-inflation-advanced{border:1px solid #dae8e2;border-radius:10px;margin:14px 0;padding:12px 16px;background:#fbfdfa}
+.phase2-guidance summary,.phase2-inflation-advanced summary{font-size:12px;color:#3e6e61;font-weight:750;cursor:pointer;line-height:1.5}
+.phase2-guidance p{font-size:12px;line-height:1.7;margin:10px 0 0}
+.phase2-inflation-advanced .phase2-inflation{border-top:0;padding:10px 0 0;margin:4px 0 0}
+.annual-approval-card{scroll-margin-top:22px;display:flex;align-items:center;justify-content:space-between;gap:24px;background:#eaf5ee;border-color:#c6dfce;padding:20px 24px}
+.annual-approval-copy{flex:1;min-width:0}
+.annual-approval-copy .form-step-label{margin-bottom:6px}
+.annual-approval-copy h3{font-size:17px;color:#214d3b;margin:0 0 8px}
+.annual-approval-copy p{font-size:12px;color:#4b6f5c;line-height:1.75;margin:0}
+.annual-approval-actions{width:min(100%,300px);flex:0 0 300px;display:flex;flex-direction:column;gap:10px;align-items:stretch}
+.annual-approval-actions .tiny-info{max-width:none;margin:0}
+.annual-approval-actions .primary-btn{width:100%}
+#phase2-execution-panel{scroll-margin-top:22px}
+.phase2-research-card{background:#fafdfe;border-color:#dce7ec}
+.phase2-research-card .hrow{flex-wrap:wrap;gap:10px}
+.phase2-research-card .phase2-actions{margin-bottom:4px}
+.nav-expense-shortcut .nav-no{color:#b3dbbc}
+@media(max-width:950px){
+ #expense-schedule-form{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .annual-approval-card{flex-direction:column;align-items:stretch}
+ .annual-approval-actions{width:100%;flex:auto}
+}
+@media(max-width:630px){
+ .annual-flow-steps{grid-template-columns:1fr;gap:7px}
+ .annual-flow-steps li{padding:9px 13px}
+ .annual-flow-steps small{margin-top:0}
+ #expense-schedule-form{grid-template-columns:minmax(0,1fr)}
+ .annual-approval-card{padding:17px}
+ #phase2-schedule-panel .tag{white-space:normal}
+}
+@media(prefers-reduced-motion:reduce){#phase2-schedule-panel{scroll-behavior:auto}}
