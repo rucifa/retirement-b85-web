@@ -1,4 +1,7 @@
 #panel-opening>.phase2-card{grid-column:1/-1;margin:0;min-width:0}
+#panel-opening{grid-template-columns:minmax(0,1fr)}
+#panel-opening>.section-head,#panel-opening>#opening-result{min-width:0;max-width:100%}
+#panel-opening>.section-head>div{min-width:0;flex:1}
 .phase2-card p{line-height:1.7;color:#416171}
 .phase2-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;grid-column:1/-1;margin:14px 0}
 .phase2-inflation{display:flex;align-items:center;flex-wrap:wrap;gap:14px;padding:15px 0;border-top:1px solid #dbe7e6;margin-top:18px}
