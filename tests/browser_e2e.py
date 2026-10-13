@@ -73,7 +73,7 @@ async def main():
             assert await page.locator('#decision_date').input_value()==today
             assert await page.locator('#first_year').input_value()==today[:4]
             assert await page.locator('#start_age').input_value()==''
-            for field in ['start_age','investment_twd','cash_twd','planned_extra_twd',
+            for field in ['start_age','investment_twd','cash_twd',
                           'floor_spend_2026_twd','normal_spend_2026_twd','core_spend_2026_twd']:
                 assert await page.locator('#'+field).input_value()=='', field
                 assert await page.locator('#'+field).get_attribute('placeholder'), field
@@ -303,7 +303,8 @@ async def main():
             await page.locator('#runtime-status.ready').wait_for(timeout=180000)
             await page.locator('#opening-form').wait_for()
             assert '2037-01-15' == await page.locator('#decision_date').input_value()
-            assert await page.locator('#planned_extra_twd').input_value()==''
+            assert await page.locator('#planned_extra_twd').count()==0
+            assert await page.locator('#expense-year-summary').count()==1
             assert await page.locator('#decision_cpi_release').input_value()!='2037-01-10', 'Fabricated future CPI publication date'
             print('BROWSER_CPI_NEXT_YEAR_NO_FABRICATED_RELEASE_DATE_PASS')
             await page.locator('#dash-asset-chart svg').wait_for(timeout=15000)
@@ -355,7 +356,7 @@ async def main():
             await page.locator('#dash-years').filter(has_text='0 年').wait_for(timeout=180000)
             assert '還沒有年度紀錄' in (await page.locator('#history-list').inner_text())
             for field in ['start_age','investment_twd','cash_twd','floor_spend_2026_twd',
-                          'normal_spend_2026_twd','core_spend_2026_twd','planned_extra_twd']:
+                          'normal_spend_2026_twd','core_spend_2026_twd']:
                 assert await page.locator('#'+field).input_value()=='',field
             print('BROWSER_RESET_RESTORES_EMPTY_PERSONAL_INPUTS_PASS')
             print('BROWSER_RESET_BY_CONFIRM_BUTTON_AND_AUTO_JSON_BACKUP_PASS')
@@ -428,7 +429,17 @@ async def main():
                 await extra_page.locator('#investment_twd').fill('27000000')
                 await extra_page.locator('#cash_twd').fill('2400000')
                 await extra_page.locator('#floor_spend_2026_twd').fill('700000')
-                await extra_page.locator('#planned_extra_twd').fill('1500000')
+                assert await extra_page.locator('#planned_extra_twd').count()==0
+                await extra_page.locator('#expense-year').fill('2026')
+                await extra_page.locator('#expense-category').select_option('medical')
+                await extra_page.locator('#expense-amount').fill('1500000')
+                await extra_page.locator('#expense-basis').select_option('nominal_year')
+                await extra_page.locator('#expense-price-year').fill('2026')
+                await extra_page.locator('#expense-save').click()
+                await extra_page.wait_for_function("state?.expense_schedule?.entries?.length===1")
+                assert '1,500,000' in await extra_page.locator('#expense-year-summary').inner_text()
+                assert (await extra_page.evaluate('initPayload()'))['planned_extra_twd']=='0'
+                assert (await extra_page.evaluate('initPayload()'))['expense_entry_source']=='SCHEDULE_ONLY_V1'
                 await extra_page.locator('#approve-btn').click()
                 await extra_page.locator('#opening-tag').filter(has_text='等待年末結算').wait_for(timeout=180000)
                 annual=await extra_page.evaluate('() => state.years.at(-1)')
