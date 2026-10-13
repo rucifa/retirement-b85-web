@@ -20,6 +20,65 @@ function scheduleRender(){
   return '<tr data-expense-id="'+esc(e.id)+'"><td>'+e.year+'／'+categories[e.category]+'<small>'+esc(e.title||'未另填說明')+'</small></td><td>'+money(e.amount_twd)+'<small>'+(e.basis==='real_2026'?'2026年固定購買力':e.price_year+'年名目金額')+'</small></td><td>'+(r?money(r.real_2026_twd)+'<small>2026購買力；'+(r.conversion_source==='EXPLICIT_INFLATION_SCENARIO'?'使用通膨情境':'使用已存基準')+'</small>':'退休起點確定後換算')+'</td><td>'+(locked?'已核准年度・唯讀':'<button type="button" class="dash-text-link" data-expense-edit="'+esc(e.id)+'">修改</button> <button type="button" class="danger-link" data-expense-delete="'+esc(e.id)+'">刪除</button>')+'</td></tr>';
  }).join('')+'</tbody></table>';
 }
+// One read-only annual display, never a second editable expense source.
+// Before any plan exists, CPI inputs are needed for an exact current-year
+// nominal preview; otherwise show "pending", not a fictitious TWD total.
+function updateYearSummary(){
+ const out=$('expense-year-summary'),note=$('expense-year-summary-note');
+ if(!out||!note)return;
+ const last=state?.years?.at(-1);
+ const year=Number($('decision_date')?.value?.slice(0,4));
+ const schedule=state?.expense_schedule;
+ if(!Number.isInteger(year)||year<2026||!schedule){
+  out.textContent='請先確認決策年度';note.textContent='尚未有可彙總的排程資料。';return;
+ }
+ const entries=schedule.entries.filter(e=>e.year===year);
+ const approved=state?.years?.find(y=>y.year===year);
+ // Old snapshots may contain a historical "ad_hoc_twd". Never silently
+ // migrate, delete, rewrite or add that amount a second time.
+ if(approved){
+  const details=approved.large_expense_sources;
+  const legacy=details?.items?.filter(x=>x.id==='annual-ad-hoc')||[];
+  const scheduled=details?.items?.filter(x=>x.id!=='annual-ad-hoc')||[];
+  if(details?.status==='RECONCILED'){
+   out.textContent=twMoney(scheduled.reduce((v,x)=>v+x.total_twd,0));
+   note.textContent='已核准 '+year+' 年排程 '+scheduled.length+' 筆（使用核准時快照，唯讀）。'+
+    (legacy.length?'另有舊版年度臨時費用 '+twMoney(legacy.reduce((v,x)=>v+x.total_twd,0))+'，僅保留原核准紀錄，不再提供新增入口。':'政策定期換車及一般生活費另計。');
+  }else{
+   out.textContent='核准明細待核對';
+   note.textContent='既有核准結果保持不變；不能由現在的排程猜測當年的資金來源。';
+  }
+  return;
+ }
+ if(!entries.length){
+  out.textContent=twMoney(0);
+  note.textContent=year+' 年尚無手動大額支出排程；政策定期換車另計。新增請使用下方唯一入口。';return;
+ }
+ const resolved=new Map((schedule.resolved||[]).map(x=>[x.id,x]));
+ const base=Number(state?.plan?.cpi_2026??$('cpi_2026').value);
+ const decision=Number($('decision_cpi').value);
+ const hasCpi=Number.isFinite(base)&&base>0&&
+              Number.isFinite(decision)&&decision>0&&
+              $('cpi_2026').value!==''&&$('decision_cpi').value!=='';
+ const rate=1+Number(schedule.inflation_pct)/100;
+ const amounts=entries.map(e=>{
+  const r=resolved.get(e.id);
+  if(r&&Number.isFinite(Number(r.nominal_due_twd)))return Number(r.nominal_due_twd);
+  if(e.basis==='nominal_year'&&e.price_year===year)return Number(e.amount_twd);
+  if(!hasCpi||!Number.isFinite(rate)||rate<=0)return null;
+  if(e.basis==='real_2026'||e.price_year===2026)return Number(e.amount_twd)*decision/base;
+  return Number(e.amount_twd)/Math.pow(rate,e.price_year-year);
+ });
+ if(amounts.some(x=>x===null||!Number.isFinite(x)||x<0)){
+  out.textContent=entries.length+' 筆，金額待換算';
+  note.textContent='需先有一致的2026 CPI基準及本年決策 CPI，才能換算不同物價基準的合計。排程已保存，不會遺失。';return;
+ }
+ const total=amounts.reduce((a,b)=>a+b,0);
+ out.textContent=twMoney(total);
+ note.textContent='共 '+entries.length+' 筆，'+year+' 年名目金額'+
+   (state?.plan?'（依已保存CPI及通膨情境推估，須以核准時計算為準）':'（依目前輸入的CPI／通膨情境預覽，尚未核准）')+
+   '；政策定期換車及生活費另計。不需在上方再次輸入。';
+}
 function holdingRow(value={}){
  const el=document.createElement('fieldset');el.className='execution-holding';
  const field=(label,k,type,placeholder,extra='')=>'<label class="field"><span>'+label+'</span><input data-holding="'+k+'" type="'+type+'" '+extra+' placeholder="'+placeholder+'" required/></label>';
@@ -91,7 +150,7 @@ function render(){
   if(running)cancel('排程或年度已更新，研究已取消。');
   if(comparison&&comparisonKey!==current){comparison=null;$('expense-comparison-result').replaceChildren();$('expense-compare-export').classList.add('hidden');compareStatus('排程或年度已更新，請重新研究。','stale');}
  }
- lastKey=current;scheduleRender();planningRender();
+ lastKey=current;scheduleRender();planningRender();updateYearSummary();
 }
 $('expense-basis').addEventListener('change',basis);$('expense-cancel-edit').addEventListener('click',clearEditor);
 $('expense-schedule-form').addEventListener('submit',async e=>{e.preventDefault();const button=$('expense-save');button.disabled=true;
@@ -111,5 +170,6 @@ $('execution-planning-form').addEventListener('submit',async e=>{e.preventDefaul
  }catch(err){flash(err.message);}finally{button.disabled=false;}});
 $('expense-compare-run').addEventListener('click',compare);$('expense-compare-cancel').addEventListener('click',()=>cancel());
 $('expense-compare-export').addEventListener('click',()=>{if(!comparison)return;const url=URL.createObjectURL(new Blob([JSON.stringify(comparison,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='B85_大額支出成對研究_'+comparison.start_year+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),10000);});
-window.B85_PHASE2=Object.freeze({render,getComparison:()=>comparison,getPlanning:()=>planning,isComparing:()=>running});basis();
+$('expense-jump-to-schedule').addEventListener('click',()=>$('phase2-schedule-panel').scrollIntoView({behavior:'smooth',block:'start'}));
+window.B85_PHASE2=Object.freeze({render,updateYearSummary,getComparison:()=>comparison,getPlanning:()=>planning,isComparing:()=>running});basis();
 })();
