@@ -13,6 +13,33 @@ async def main():
         try:
             await page.goto('http://127.0.0.1:8766/',wait_until='domcontentloaded')
             await page.locator('#runtime-status.ready').wait_for(timeout=180000)
+            # New document order: finish retirement inputs, schedule expenses, then
+            # confirm approval; execution and advanced research come after.
+            layout=await page.evaluate('''() => ({
+              ids:[...document.querySelectorAll('#panel-opening > *')].map(e=>e.id),
+              approvalForm:document.getElementById('approve-btn').form?.id,
+              approvalInside:document.getElementById('opening-form').contains(document.getElementById('approve-btn')),
+              scheduleInsideOpening:document.getElementById('opening-form').contains(document.getElementById('expense-schedule-form'))
+            })''')
+            ids=layout['ids']
+            for left,right in [('opening-form','phase2-schedule-panel'),
+                               ('phase2-schedule-panel','annual-approval-step'),
+                               ('annual-approval-step','phase2-execution-panel'),
+                               ('phase2-execution-panel','dashboard-rail'),
+                               ('dashboard-lower','phase2-comparison-panel')]:
+                assert ids.index(left)<ids.index(right),(left,right,ids)
+            assert layout['approvalForm']=='opening-form',layout
+            assert not layout['approvalInside'] and not layout['scheduleInsideOpening']
+            assert await page.locator('#annual-approval-step').is_visible()
+            await page.locator('#expense-jump-to-schedule').click()
+            await page.wait_for_timeout(550)
+            position=await page.locator('#phase2-schedule-panel').bounding_box()
+            assert position is not None and position['y']<650,position
+            await page.locator('[data-go="closing"]').first.click()
+            await page.locator('#nav-expenses').click()
+            assert await page.locator('#panel-opening').is_visible()
+            assert await page.locator('#phase2-schedule-panel').is_visible()
+            print('PHASE2_BROWSER_EXPENSE_FIRST_NAVIGATION_AND_SEPARATE_FORM_SUBMIT_PASS')
             for id in ['expense-year','expense-amount','expense-price-year','execution-asof','execution-fx','execution-broker-cash','execution-fee']:
                 assert await page.locator('#'+id).input_value()==''
             for id in ['expense-year','expense-amount','expense-price-year']:
@@ -45,6 +72,10 @@ async def main():
             await page.locator('#approve-btn').click();await page.locator('#opening-result:not(.hidden)').wait_for(timeout=180000)
             assert await page.locator('#planned_extra_twd').count()==0
             assert (await page.evaluate('initPayload()'))['planned_extra_twd']=='0'
+            assert await page.locator('#annual-approval-step').is_hidden()
+            assert await page.locator('#annual-flow-steps').is_hidden()
+            assert await page.locator('#phase2-schedule-panel').is_visible()
+            assert await page.locator('#phase2-execution-panel').is_visible()
             first=await page.evaluate('state.years.at(-1)')
             assert '1,500,000' in await page.locator('#expense-year-summary').inner_text()
             assert '已核准' in await page.locator('#expense-year-summary-note').inner_text()

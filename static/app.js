@@ -237,6 +237,8 @@ function render(){
  const sp=state?.plan?.spending_profile;
  const pending=!!(last && !last.closing);
  $('opening-form').classList.toggle('hidden',pending||!!(last&&last.age>=104));
+ $('annual-approval-step').classList.toggle('hidden',pending||!!(last&&last.age>=104));
+ $('annual-flow-steps').classList.toggle('hidden',pending||!!(last&&last.age>=104));
  $('opening-tag').textContent=pending?'等待年末結算':last?.closing?'可開始下一年':'準備建立';
  $('closing-tag').textContent=pending?'可進行結算':last?.closing?'已完成結算':'尚未核准';
  $('closing-readiness').classList.toggle('hidden',pending||!!(last?.closing));
