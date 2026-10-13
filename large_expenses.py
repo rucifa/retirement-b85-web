@@ -74,6 +74,7 @@ def validate(raw, plan=None):
 def mutate(raw, action, data, plan=None, locked_year=None):
     value=validate(raw,plan);new=copy.deepcopy(value)
     if action=='inflation':
+        if isinstance(data.get('inflation_pct'),bool):raise ValueError('通膨情境不可為布林值')
         try:new['inflation_pct']=float(data['inflation_pct'])
         except (ValueError,TypeError,KeyError):raise ValueError('請填支出換算通膨假設')
     elif action=='delete':

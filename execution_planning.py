@@ -44,7 +44,7 @@ def normalize_input(data,approval_id):
         raise ValueError('出售規劃輸入格式不正確')
     if data.get('approval_id',approval_id)!=approval_id:raise ValueError('核准版本已變更，請重新規劃')
     asof=valid_date(data.get('asof_date'),'規劃日期')
-    if not isinstance(data.get('holdings'),list) or not 1<=len(data['holdings'])<=40:raise ValueError('請填1至40筆持倉')
+    if not isinstance(data.get('holdings'),list) or not 0<=len(data['holdings'])<=40:raise ValueError('持倉格式不正確，最多40筆')
     holdings=[];keys=set()
     for raw in data['holdings']:
         if not isinstance(raw,dict) or set(raw)-{'ticker','broker','sleeve','currency','units','price','lot_step','quote_date'}:raise ValueError('持倉欄位格式不正確')
@@ -68,6 +68,7 @@ def normalize_input(data,approval_id):
                          'units':units,'price':price,'lot_step':step,'quote_date':quote.isoformat()})
     usd=any(x['currency']=='USD' for x in holdings)
     fx=data.get('fx_twd_per_usd')
+    if isinstance(fx,bool):raise ValueError('換匯估算不可為布林值')
     if usd:
         if isinstance(fx,bool):raise ValueError('換匯估算不可為布林值')
         try:fx=float(fx)
@@ -93,6 +94,7 @@ def prepare(data,annual,plan):
         raise ValueError('規劃日期須在核准後且同一年度')
     needed=sources['total']['invest_twd']+sources['cash_refill_transfer_twd']
     liquid=max(0.,needed-inputs['broker_cash_twd']);fee=inputs['fee_estimate_twd'] if liquid else 0.
+    if liquid>0 and not inputs['holdings']:raise ValueError('尚需出售投資資產，請填人工持倉與報價；不會猜測ETF')
     gross=liquid+fee
     items=[]
     for h in inputs['holdings']:
@@ -131,6 +133,7 @@ def prepare(data,annual,plan):
             'estimated_after_stock_weight':stock_after/after if after else None,'target_stock_weight':plan['stock_weight'],'orders':items,
             'pending_checks':['報價及股票／債券分類','券商可賣股數、零股與最小交易單位','交易費、稅費及實際換匯','交割與可提款日、銀行轉帳時程','持倉與年度資產對帳，安全現金用途確認'],
             'fee_estimate_provided':inputs['fee_estimate_provided'],
+            'holdings_provided':bool(items),'full_holdings_not_verified':True,
             'warning':'僅為人工輸入資料的出售候選，沒有下單、換匯、轉帳或付款。費用只用於出售淨額估算，不再扣退休模型摩擦。'}
     saved={'contract':CONTRACT,'mode':'PLANNING_ONLY_NO_TRANSACTIONS','input':inputs}
     saved['sha256']=digest(saved)

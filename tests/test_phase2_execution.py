@@ -31,6 +31,13 @@ class ExecutionTests(unittest.TestCase):
         data=payload();data.update(broker_cash_twd=3000000,fee_estimate_twd=1000)
         p,_=execution.prepare(data,annual(),{'stock_weight':.7})
         self.assertEqual(p['estimated_gross_sell_twd'],0);self.assertEqual(p['estimated_fees_twd'],0)
+    def test_cash_covered_needs_no_invented_holdings(self):
+        data=payload();data.update(broker_cash_twd=2500000,holdings=[])
+        p,_=execution.prepare(data,annual(),{'stock_weight':.7})
+        self.assertEqual(p['orders'],[]);self.assertEqual(p['liquidity_shortfall_twd'],0);self.assertFalse(p['holdings_provided'])
+    def test_missing_positions_when_sale_required_rejected(self):
+        data=payload();data['holdings']=[]
+        with self.assertRaisesRegex(ValueError,'不會猜測'):execution.prepare(data,annual(),{'stock_weight':.7})
     def test_different_configuration_changes_sale_allocation(self):
         a,_=execution.prepare(payload(),annual(),{'stock_weight':.7});b,_=execution.prepare(payload(),annual(),{'stock_weight':.65})
         self.assertGreater(b['orders'][0]['sell_units'],a['orders'][0]['sell_units'])

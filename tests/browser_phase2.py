@@ -90,6 +90,7 @@ async def main():
             assert await page.evaluate('window.B85_PHASE2.getComparison()===null')
             assert await page.evaluate('(async()=>JSON.stringify((await request("/api/export")).payload.years))()')==before
             # 真瀏覽器JSON.stringify數值轉型，無須reload先備份亦能還原。
+            await page.locator('[data-go="history"]').first.click()
             async with page.expect_download() as download:await page.locator('#export-btn').click()
             backup=await download.value;backup_path=await backup.path();saved=json.loads(Path(backup_path).read_text())
             assert saved['sha256_contract']=='B85_NUMERIC_CANONICAL_JSON_V1';assert 'execution_plans' in saved['payload']
