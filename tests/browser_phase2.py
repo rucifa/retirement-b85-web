@@ -38,16 +38,20 @@ async def main():
             assert await page.evaluate("state.expense_schedule.entries.at(-1).amount_twd")==10000000
             data={'decision_date':'2036-01-15','start_age':'54','investment_twd':'27000000','cash_twd':'2400000',
                   'floor_spend_2026_twd':'500000','normal_spend_2026_twd':'650000','cpi_2026':'110',
-                  'decision_cpi':'125','decision_cpi_release':'2036-01-07','planned_extra_twd':'200000'}
+                  'decision_cpi':'125','decision_cpi_release':'2036-01-07'}
             await page.locator('details.cpi-manual-input summary').click()
             for id,value in data.items():await page.locator('#'+id).fill(value)
             await page.evaluate("document.getElementById('decision_cpi').dataset.autoSource='MANUAL'")
             await page.locator('#approve-btn').click();await page.locator('#opening-result:not(.hidden)').wait_for(timeout=180000)
+            assert await page.locator('#planned_extra_twd').count()==0
+            assert (await page.evaluate('initPayload()'))['planned_extra_twd']=='0'
             first=await page.evaluate('state.years.at(-1)')
-            assert first['extra_authorized_twd']==1700000,first['extra_authorized_twd']
+            assert '1,500,000' in await page.locator('#expense-year-summary').inner_text()
+            assert '已核准' in await page.locator('#expense-year-summary-note').inner_text()
+            assert first['extra_authorized_twd']==1500000,first['extra_authorized_twd']
             assert first['large_expense_sources']['status']=='RECONCILED'
-            assert len(first['large_expense_sources']['items'])==2
-            assert await page.locator('#expense-current-sources tbody tr').count()==2
+            assert len(first['large_expense_sources']['items'])==1
+            assert await page.locator('#expense-current-sources tbody tr').count()==1
             print('PHASE2_BROWSER_MULTIPLE_SCHEDULE_CPI_AND_CURRENT_SOURCES_PASS')
             # 原凍結車年重複檢查，錯誤時無部分寫入。
             before=await page.evaluate('(async()=>JSON.stringify((await request("/api/export")).payload.years))()')

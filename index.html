@@ -34,7 +34,7 @@
  <div id="opening-result" class="results hidden"></div>
  <form id="opening-form" class="form-card">
  <h3>年度基本資料</h3><div class="grid-form"><label class="field"><span>決策日期 <em>必填</em></span><input id="decision_date" type="date" required/><small>首次進入使用瀏覽器時鐘換算為台灣今天（非伺服器授時）；已儲存的年度接續日期不會覆寫。可自行選擇試算日期。</small><small id="decision-month-guidance" class="decision-month-guidance" role="status">首年可自選日期，生活費按剩餘曆年天數計算。</small><button type="button" id="use-january-date" class="dash-text-link" hidden>舊版一月試算快捷鍵</button></label>
- <label class="field"><span>預計額外必要支出（新台幣）<small>選填</small></span><input id="planned_extra_twd" type="number" min="0" step="0.01" placeholder="例如：1500000（沒有可留空）"/><small>只填下方排程以外、本年另外確定的必要費用。已排程項目與政策定期換車請勿再次輸入。此金額會納入本年度 PoS 與必要支出預算，實際付款只扣一次；留空視為無額外支出（0 元）。</small></label></div>
+ <div class="field" id="expense-summary-field"><span>本年度額外必要支出（排程自動彙總）</span><output id="expense-year-summary" for="decision_date" aria-live="polite">尚未設定排程</output><small id="expense-year-summary-note">只需在下方「未來大額支出排程」新增本年度或未來的購車、購屋、醫療等費用，無須重複輸入。政策定期換車另計。</small><button type="button" class="dash-text-link" id="expense-jump-to-schedule">前往新增或修改支出排程 ↓</button></div></div>
  <div id="first-year-fields"><div class="inner-divider"></div><h3>首次建立：退休起始條件</h3><div class="grid-form"><label class="field"><span>退休開始年</span><input id="first_year" type="number" readonly/><small>與上方決策日期年份相同。</small></label>
  <label class="field"><span>退休開始年齡</span><input id="start_age" type="number" min="45" max="90" placeholder="例如：54" required/><small>請自行填入預計退休年齡。65 歲是勞保老年年金請領年齡的參考，不是系統替你設定的退休年齡。</small></label>
  <label class="field"><span>投資資產總市值（新台幣）</span><input id="investment_twd" type="number" min="0" step="0.01" placeholder="例如：27000000" required/><small>股票＋債券，與安全現金分開。</small></label>
@@ -130,7 +130,7 @@
  </div>
  <section id="phase2-schedule-panel" class="form-card phase2-card" aria-labelledby="expense-title">
   <div class="hrow"><h3 id="expense-title">未來大額支出排程</h3><span class="tag subdued">先設定，再核准年度</span></div>
-  <p>可先新增購車、購屋、醫療及其他必要支出，再試算年度預算。排程會納入資產需求與蒙地卡羅，不是只有畫面備註。已核准年度保留原快照，只能編輯未來年度。</p>
+  <p>包含<strong>本年度與未來年度</strong>的額外費用，都請在這裡新增；上方只顯示本年度自動彙總，不再另設金額輸入。排程會納入資產需求與蒙地卡羅，不是只有畫面備註。已核准年度保留原快照，只能編輯未來年度。</p>
   <p id="expense-default-cars" role="status">設定退休起點後，會檢查60、70、80、90歲的政策定期換車；不能重複新增同年購車。</p>
   <form id="expense-schedule-form" class="grid-form">
    <label class="field"><span>支出年度</span><input id="expense-year" type="number" min="2026" max="2200" step="1" placeholder="例如：2040" required/></label>

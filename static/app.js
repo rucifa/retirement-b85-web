@@ -220,7 +220,6 @@ function fillNext(){
  $('decision_date').value=(last.year+1)+'-01-15';
  $('decision_cpi').value='';$('decision_cpi_release').value='';
  $('decision_cpi').dataset.autoSource='';
- $('planned_extra_twd').value='';
  $('decision_date').dispatchEvent(new Event('change',{bubbles:true}));
 }
 }
@@ -284,7 +283,7 @@ function updateDecisionMonthHelp(){
 
 const fieldVal=id=>$(id).value;
 function initPayload(){return {
- decision_date:fieldVal('decision_date'),planned_extra_twd:fieldVal('planned_extra_twd')||'0',start_age:fieldVal('start_age'),
+ decision_date:fieldVal('decision_date'),expense_entry_source:'SCHEDULE_ONLY_V1',planned_extra_twd:'0',start_age:fieldVal('start_age'),
  investment_twd:fieldVal('investment_twd'),cash_twd:fieldVal('cash_twd'),stock_bond:fieldVal('stock_bond'),
  cpi_2026:fieldVal('cpi_2026'),decision_cpi:fieldVal('decision_cpi'),decision_cpi_release:fieldVal('decision_cpi_release'),
  decision_cpi_source:$('decision_cpi').dataset.autoSource||'MANUAL',
@@ -322,7 +321,7 @@ $('reset-btn').addEventListener('click',async()=>{
   downloadJson(backup);
   await request('/api/reset',{confirm:'清除演練'});
   capacityEstimate=null;capacityApprovalId=null;
-  for(const id of ['planned_extra_twd','start_age','investment_twd','cash_twd',
+  for(const id of ['start_age','investment_twd','cash_twd',
                    'floor_spend_2026_twd','normal_spend_2026_twd','core_spend_2026_twd'])$(id).value='';
   $('core_spend_2026_twd').dataset.userEdited='';
   $('closing-form').dataset.recordYear='';
@@ -341,7 +340,7 @@ document.addEventListener('click',e=>{
 document.addEventListener('toggle',e=>{
  if(e.target.id==='capacity-research-details'&&e.target.open&&capacityEstimate===null)void showCapacity();
 },true);
-$('decision_date').addEventListener('change',()=>{$('first_year').value=$('decision_date').value.slice(0,4);updateDecisionMonthHelp();});
+$('decision_date').addEventListener('change',()=>{$('first_year').value=$('decision_date').value.slice(0,4);updateDecisionMonthHelp();window.B85_PHASE2?.updateYearSummary();});
 function renderSpendingProfileInput(){
  const floorEl=$('floor_spend_2026_twd'),wishEl=$('normal_spend_2026_twd'),
        coreEl=$('core_spend_2026_twd'),out=$('spending-profile-preview');
@@ -380,7 +379,7 @@ $('core_spend_2026_twd').addEventListener('input',e=>{
 });
 renderSpendingProfileInput();
 for(const id of ['decision_date','cpi_2026','decision_cpi']){
- $(id).addEventListener('input',renderInflationPreview);
+ $(id).addEventListener('input',()=>{renderInflationPreview();window.B85_PHASE2?.updateYearSummary();});
 }
 renderInflationPreview();
 updateDecisionMonthHelp();
