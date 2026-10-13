@@ -82,7 +82,6 @@ function updateKpis(){
  }
  drawHistory(years);
  updateGuardrail(y);
- drawScenario(y);
  updateChartMode(y,years);
 }
 function drawHistory(years){
@@ -243,109 +242,26 @@ function updateGuardrail(y){
  }
 }
 let assetMode='actual',assetModeChanged=false;
-function updateChartMode(y,years){
+function updateChartMode(){
  if(!assetModeChanged)assetMode='actual';
- const scenario=assetMode==='scenarios';
  const mc=assetMode==='mc';
- const history=$('dash-asset-chart'),pane=$('dash-scenario-pane');
- if(!history||!pane)return;
- history.classList.toggle('hidden',scenario||mc);
- pane.classList.toggle('hidden',!scenario);
+ const history=$('dash-asset-chart');
+ if(!history)return;
+ history.classList.toggle('hidden',mc);
  $('dash-mc-pane')?.classList.toggle('hidden',!mc);
- for(const [id,chosen] of [['dash-actual-tab',!scenario&&!mc],['dash-scenario-tab',scenario],['dash-mc-tab',mc]]){
+ for(const [id,chosen] of [['dash-actual-tab',!mc],['dash-mc-tab',mc]]){
   const btn=$(id);if(!btn)continue;
   btn.classList.toggle('selected',chosen);
   btn.setAttribute('aria-pressed',chosen?'true':'false');
  }
 }
-for(const [id,mode] of [['dash-actual-tab','actual'],['dash-scenario-tab','scenarios'],['dash-mc-tab','mc']]){
+for(const [id,mode] of [['dash-actual-tab','actual'],['dash-mc-tab','mc']]){
  $(id)?.addEventListener('click',()=>{
   assetModeChanged=true;assetMode=mode;
-  updateChartMode(lastAnnual(),stateRead()?.years||[]);
-  for(const chart of ['dash-asset-chart','dash-scenario-chart','mc-chart'])
+  updateChartMode();
+  for(const chart of ['dash-asset-chart','mc-chart'])
    window.B85_CHART_POINTS.clear($(chart));
-  if(mode==='scenarios')drawScenario(lastAnnual());
  });
-}
-for(const id of ['dash-return-low','dash-return-mid','dash-return-high']){
- $(id)?.addEventListener('input',()=>drawScenario(lastAnnual()));
-}
-function forecastScenario(y,annualPct){
- const annual=Number(y.full_year_living_reference_twd??y.living_authorized_twd);
- // Include THIS year's known approved one-off expenses in the first year.
- // Future car/emergency/extra spending and annual B+85 decisions are NOT forecast.
- const first=Number(y.living_authorized_twd)+Number(y.car_authorized_twd??0)+Number(y.extra_authorized_twd??0);
- const opening=Number(y.investment_open_twd)+Number(y.cash_open_twd);
- const firstShare=y.calendar_first_year?Number(y.calendar_fraction):1;
- if(!Number.isFinite(opening)||opening<=0||!Number.isFinite(annual)||annual<0||
-    !Number.isFinite(first)||first<0||!Number.isFinite(firstShare)||firstShare<=0||firstShare>1)
-   return [];
- const periods=clamp(104-Number(y.age),1,49);
- const points=[{year:Number(y.year),assets:opening/10000}];
- let total=opening;
- for(let i=0;i<periods;i++){
-  const spending=i===0?first:annual;
-  const fraction=i===0?firstShare:1;
-  // Constant real total-asset return; NOT original B+85 market path, future
-  // Guardrail, cash/stock split or dynamically recalculated cash bridge.
-  total=Math.max(0,total-spending)*Math.pow(1+annualPct/100,fraction);
-  if(!Number.isFinite(total))return [];
-  points.push({year:Number(y.year)+i+1,assets:total/10000});
- }
- return points;
-}
-// Pure, read-only QA hook to verify first-year known expenses are not omitted.
-window.B85_FIXED_RETURN_PREVIEW=Object.freeze({forecastScenario});
-function drawScenario(y){
- const box=$('dash-scenario-chart');if(!box)return;
- if(!y){box.textContent='完成年度試算後，才可自行比較三組固定報酬率假設；此圖不代表模型預測。';return;}
- const names=[['dash-return-low','假設 A'],['dash-return-mid','假設 B'],['dash-return-high','假設 C']];
- const rates=names.map(([id])=>Number($(id)?.value));
- if(rates.some((rate,i)=>!$(names[i][0])?.value||!Number.isFinite(rate)||rate< -99||rate>30)
-      || !(rates[0]<rates[1]&&rates[1]<rates[2])){
-  box.textContent='請輸入 −99%～＋30% 的固定實質年報酬率，並保持 A ＜ B ＜ C。';return;
- }
- const lines=rates.map(rate=>forecastScenario(y,rate));
- if(lines.some(line=>line.length<2)||lines[0].length!==lines[1].length){
-  box.textContent='目前的年度資料不足以建立可核對的情境對照。';return;
- }
- const width=640,height=244,left=58,right=14,top=15,bottom=36;
- const plotW=width-left-right,plotH=height-top-bottom;
- const count=lines[0].length;
- const maximum=Math.max(100,...lines.flatMap(line=>line.map(p=>p.assets)))*1.06;
- const xx=i=>left+i/(count-1)*plotW;
- const yy=value=>top+(1-value/maximum)*plotH;
- const P=(line)=>line.map((p,i)=>(i?'L':'M')+xx(i).toFixed(2)+' '+yy(p.assets).toFixed(2)).join(' ');
- // Deliberately no shaded band: these are three chosen inputs, not probability intervals.
- let svg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+width+' '+height+'" role="group" aria-label="固定報酬率假設 A、B、C 的簡易資產情境示意，點位可選取，非蒙地卡羅預測">';
- for(let i=0;i<=4;i++){
-  const v=maximum*(1-i/4),yPx=top+plotH*i/4;
-  svg+='<line x1="'+left+'" x2="'+(width-right)+'" y1="'+yPx+'" y2="'+yPx+'" stroke="#e2ecf0"/>'+
-   '<text x="'+(left-7)+'" y="'+(yPx+4)+'" text-anchor="end" fill="#7b929c" font-size="11">'+safe(fmt(v))+'</text>';
- }
- // No polygon: the gap between fixed inputs must not appear as a confidence band.
- const colors=['#d38d42','#159268','#4b9fda'];
- for(let k=0;k<3;k++){
-  const line=lines[k];
-  svg+='<path d="'+P(line)+'" stroke="'+colors[k]+'" fill="none" stroke-width="'+(k===1?3:2)+'" stroke-linejoin="round" '+(k===1?'':'stroke-dasharray="5 4"')+'/>';
-  const at=Math.max(1,Math.floor(count/6));
-  for(let i=0;i<count;i+=at){
-   const p=line[i],age=Number(y.age)+(p.year-Number(y.year));
-   svg+=window.B85_CHART_POINTS.marker({x:xx(i),y:yy(p.assets),color:colors[k],
-     title:p.year+' 年・'+age+' 歲',series:names[k][1]+'（'+(rates[k]>0?'+':'')+rates[k]+'% 固定年實質報酬）',
-     value:p.assets*10000,basis:'2026 年固定購買力',
-     detail:i===0?'起始年度期初資產':'前一年度支出與固定報酬後資產',
-     note:'任意固定報酬示意，未模擬未來 Guardrail／現金橋接，非機率預測'});
-  }
- }
- for(let i=0;i<count;i+=Math.max(1,Math.ceil((count-1)/5))){
-  const yr=lines[0][i].year;
-  svg+='<text x="'+xx(i).toFixed(2)+'" y="'+(height-11)+'" font-size="11" text-anchor="middle" fill="#6a8795">'+yr+'</text>';
- }
- svg+='<text x="'+(left-7)+'" y="10" font-size="10" text-anchor="end" fill="#698c99">萬元</text></svg>';
- box.innerHTML=svg;
- window.B85_CHART_POINTS.bind(box);
- window.B85_CHART_POINTS.clear(box);
 }
 
 async function loadOfficialSummary(){
