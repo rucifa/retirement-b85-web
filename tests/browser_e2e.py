@@ -265,37 +265,22 @@ async def main():
             assert 'Guardrail 後全年額度' in (await page.locator('#dash-guardrail-breakdown').inner_text())
             assert '正常生活費參考' in (await page.locator('#dash-guardrail-breakdown').inner_text())
             assert await page.locator('#dash-actual-tab').get_attribute('aria-pressed')=='true'
-            assert await page.locator('#dash-scenario-pane').is_hidden()
-            assert '固定報酬情境（進階示意）' in (await page.locator('#dash-scenario-tab').inner_text())
-            await page.locator('#dash-scenario-tab').click()
-            await page.locator('#dash-scenario-chart svg').wait_for(timeout=15000)
-            assert await page.locator('#dash-scenario-pane').is_visible()
-            assert await page.locator('#dash-scenario-tab').get_attribute('aria-pressed')=='true'
-            assert await page.locator('#dash-scenario-chart svg polygon').count()==0
-            assert '任意預填的數學示例' in (await page.locator('#dash-scenario-pane .dash-scenario-disclaimer').inner_text())
-            await page.locator('#dash-return-low').fill('-3')
-            assert await page.locator('#dash-scenario-chart svg path').count()==3
-            assert '不是 B＋85 蒙地卡羅 P10／P50／P90' in (await page.locator('#dash-scenario-pane .dash-scenario-disclaimer').inner_text())
-            fixed_points=page.locator('#dash-scenario-chart .chart-point-hit')
-            assert await fixed_points.count()>=12
-            await fixed_points.last.hover()
-            fixed_tip=page.locator('#dash-scenario-chart .chart-point-tooltip')
-            await fixed_tip.wait_for(state='visible')
-            assert '假設 C' in await fixed_tip.inner_text()
-            assert 'NT$' in await fixed_tip.inner_text()
-            assert '固定購買力' in await fixed_tip.inner_text()
-            await fixed_points.first.focus()
-            assert '假設 A' in await fixed_tip.inner_text()
-            assert '54 歲' in await fixed_tip.inner_text()
-            await fixed_points.first.press('Enter')
-            assert await fixed_tip.is_visible()
-            await fixed_points.first.press('Escape')
-            assert await fixed_tip.is_hidden()
-            print('BROWSER_FIXED_SCENARIO_HOVER_FOCUS_KEYBOARD_DETAILS_PASS')
+            assert await page.locator('#dash-scenario-tab').count()==0
+            assert await page.locator('#dash-scenario-pane').count()==0
+            assert await page.locator('#dash-scenario-chart').count()==0
+            assert await page.locator('#dash-return-low').count()==0
+            assert await page.locator('#dash-return-mid').count()==0
+            assert await page.locator('#dash-return-high').count()==0
+            assert await page.locator('.dash-chart-tabs button').count()==2
+            await page.locator('#dash-mc-tab').click()
+            assert await page.locator('#dash-mc-tab').get_attribute('aria-pressed')=='true'
+            assert await page.locator('#dash-mc-pane').is_visible()
+            assert await page.locator('#dash-asset-chart').is_hidden()
             await page.locator('#dash-actual-tab').click()
+            assert await page.locator('#dash-actual-tab').get_attribute('aria-pressed')=='true'
             assert await page.locator('#dash-asset-chart').is_visible()
-            await page.locator('#dash-scenario-tab').click()
-            print('BROWSER_GUARDRAIL_REAL_POLICY_AND_USER_EDITABLE_SCENARIOS_PASS')
+            assert await page.locator('#dash-mc-pane').is_hidden()
+            print('BROWSER_ONLY_ACTUAL_AND_MC_TABS_WITH_ACCESSIBLE_SWITCH_PASS')
             print('BROWSER_OCTOBER_FIRST_YEAR_ACTUAL_DAY_PRORATION_PASS')
             assert await page.locator('#dashboard-baseline').count()==0
             print('BROWSER_SPENDING_BASELINE_REMOVED_TO_AVOID_DUPLICATION_PASS')
@@ -478,19 +463,16 @@ async def main():
                 assert annual['extra_included_in_pos']
                 assert '已納入本年必要支出' in (await extra_page.locator('#dash-pos-sub').inner_text())
                 assert await extra_page.locator('#dash-actual-tab').get_attribute('aria-pressed')=='true'
-                first_scenario=await extra_page.evaluate('''() => {
-                  const y=state.years.at(-1);
-                  const normal=window.B85_FIXED_RETURN_PREVIEW.forecastScenario({...y,extra_authorized_twd:0},2);
-                  const extra=window.B85_FIXED_RETURN_PREVIEW.forecastScenario(y,2);
-                  return {normal:normal[1].assets,extra:extra[1].assets,annual:y.extra_authorized_twd,fraction:y.calendar_fraction};
-                }''')
-                import math
-                expected_drop=first_scenario['annual']/10000*math.pow(1.02,first_scenario['fraction'])
-                assert abs(first_scenario['normal']-first_scenario['extra']-expected_drop)<.05,first_scenario
+                # The schedule remains included in the real B85 annual model.
+                # Do not use the removed simplified fixed-return preview to
+                # validate spending, PoS or the saved funding decision.
+                assert annual['extra_authorized_twd']>=1499999
+                assert annual['extra_included_in_pos']
+                assert await extra_page.locator('#dash-scenario-tab').count()==0
                 if annual['pos_pct']>75:
                     assert annual['bridge_from_cash_twd']==0
                     assert '高於橋接門檻 75%' in (await extra_page.locator('#opening-result').inner_text())
-                print('BROWSER_KNOWN_EXPENSE_POS_AND_SCENARIO_FIRST_YEAR_DEDUCTION_PASS')
+                print('BROWSER_KNOWN_EXPENSE_POS_AND_SCHEDULED_PAYMENT_PASS')
                 from policy import personalized_research_engine as model
                 from dataclasses import replace
                 from projection_research import project_saved
