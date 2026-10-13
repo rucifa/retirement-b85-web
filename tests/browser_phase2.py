@@ -39,6 +39,7 @@ async def main():
             data={'decision_date':'2036-01-15','start_age':'54','investment_twd':'27000000','cash_twd':'2400000',
                   'floor_spend_2026_twd':'500000','normal_spend_2026_twd':'650000','cpi_2026':'110',
                   'decision_cpi':'125','decision_cpi_release':'2036-01-07','planned_extra_twd':'200000'}
+            await page.locator('details.cpi-manual-input summary').click()
             for id,value in data.items():await page.locator('#'+id).fill(value)
             await page.evaluate("document.getElementById('decision_cpi').dataset.autoSource='MANUAL'")
             await page.locator('#approve-btn').click();await page.locator('#opening-result:not(.hidden)').wait_for(timeout=180000)
@@ -104,6 +105,8 @@ async def main():
             await restored.locator('[data-go="closing"]').first.click();await restored.locator('#demo-close-btn').click();await restored.locator('#close-btn').click()
             await restored.locator('#closing-result:not(.hidden)').wait_for(timeout=180000)
             await restored.locator('[data-go="opening"]').first.click()
+            if await restored.locator('details.cpi-manual-input').get_attribute('open') is None:
+                await restored.locator('details.cpi-manual-input summary').click()
             await restored.locator('#decision_cpi').fill('132');await restored.locator('#decision_cpi_release').fill('2037-01-07')
             await restored.evaluate("document.getElementById('decision_cpi').dataset.autoSource='MANUAL'")
             await restored.locator('#approve-btn').click();await restored.wait_for_function('state.years.length===2')

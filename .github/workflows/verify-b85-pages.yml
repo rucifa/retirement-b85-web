@@ -57,7 +57,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: b85-pages-browser-failure-${{ github.run_id }}
-          path: /tmp/b85_pages_browser_failure.png
+          path: |
+            /tmp/b85_pages_browser_failure.png
+            phase2-browser-failure.png
           if-no-files-found: ignore
           retention-days: 7
 # No repository CPI / ACTIVE modifications; browser-only research execution.

@@ -28,6 +28,7 @@ function capacityHtml(result){
   '<div class="capacity-heading"><h3>資產可支持的起始生活費（研究候選）</h3><span>2026 年實質金額 · 非核准提款</span></div>'+
   '<div class="capacity-grid">'+tile(result.results.p95,'95%')+tile(result.results.p99,'99%')+'</div>'+
   '<p>最低必要生活費 '+twMoney(result.floor_2026_real_twd)+' 固定不變。雙金額只是「初始、固定 Sticky 的必要資產 PoS」容量，<strong>不是經完整動態驗證的最高安全提領額</strong>，不能直接領走。實際年度預算請以上方 B＋85 試算結果為準。</p>'+
+  '<p>此區以首年核准當時的支出快照為準，不回溯混入事後新增排程；查看目前排程的影響，請使用下方大額支出成對研究與最新蒙地卡羅。</p>'+
   '<button id="capacity-audit-btn" class="secondary-btn" type="button">追加獨立動態 MC 研究驗證（初步樣本）</button></section>';
 }
 function capacityAdvancedHtml(result){
