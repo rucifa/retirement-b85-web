@@ -212,6 +212,8 @@ function closeHtml(y){if(!y?.closing)return '';
 }
 function fillNext(){
  const last=lastYear();
+ for(const input of $('first-year-fields').querySelectorAll('input,select'))input.disabled=!!last;
+ $('cpi_2026').disabled=!!last;
  if(!last){$('first-year-fields').classList.remove('hidden');$('reference_cpi_field').classList.remove('hidden');return;}
  $('first-year-fields').classList.add('hidden');$('reference_cpi_field').classList.add('hidden');
  if(last.closing&&$('decision_date').value.slice(0,4)!==String(last.year+1)){

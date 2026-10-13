@@ -121,6 +121,9 @@ async def main():
             print('PHASE2_BROWSER_MOBILE_AND_ALL_CHECKS_PASS')
         except Exception:
             await page.screenshot(path='phase2-browser-failure.png',full_page=True)
+            if 'restored' in locals():
+                print('PHASE2_RESTORED_ALERT',await restored.locator('#alert').inner_text())
+                print('PHASE2_RESTORED_FORM',await restored.locator('#opening-form').evaluate('(form)=>({valid:form.checkValidity(),invalid:[...form.querySelectorAll("input")].filter(x=>!x.checkValidity()).map(x=>({id:x.id,value:x.value,disabled:x.disabled}))})'))
             print('PHASE2_BROWSER_ERRORS',errors);print('PHASE2_ALERT',await page.locator('#alert').inner_text());raise
         finally:await browser.close()
 
