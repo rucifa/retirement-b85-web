@@ -18,6 +18,8 @@ import json
 import math
 import os
 import tempfile
+from dataclasses import replace
+import large_expenses as large
 
 from policy.retirement_model_v340 import ModelConfig, FRICTIONS, normal_living_spend
 from policy.simple_annual_ledger import (
@@ -89,8 +91,14 @@ def copy_json(d:dict)->dict:
     return json.loads(json.dumps(d,ensure_ascii=False,allow_nan=False))
 
 
-def digest(obj)->str:
+def legacy_digest(obj)->str:
     return sha256(json.dumps(obj,ensure_ascii=False,sort_keys=True,separators=(',',':'),allow_nan=False).encode()).hexdigest()
+
+
+def digest(obj)->str:
+    # JavaScript JSON將1.0寫成1；新備份以相同數值的標準表示計算指紋。
+    # 不修改任何歷史年度核准ID或結算憑證，舊備份原始指紋仍接受。
+    return large.digest(obj)
 
 
 def policy_config(base:dict)->ModelConfig:
@@ -174,7 +182,29 @@ class AnnualWorkflow:
                 'has_data':bool(self._state['years']),
                 'has_pending_close':bool(self._state['years'] and self._state['years'][-1]['close'] is None),
                 'policy_active':False,
+                'expense_schedule':self._schedule_view(),
+                'execution_plans':self._state.get('execution_plans',{}),
             })
+
+    def _schedule_view(self):
+        schedule=large.validate(self._state.get('expense_schedule'),self._state.get('plan'))
+        view={**schedule,'sha256':large.digest(schedule),'resolved':[],
+              'locked_through_year':self._state['years'][-1]['approval']['opening']['year'] if self._state['years'] else None}
+        if self._state.get('plan'):
+            _,view['resolved']=large.resolve(schedule,self._state['plan'],large.known_cpi(self._state))
+            p=self._state['plan']
+            view['default_car_years']=[p['first_year']+a-p['start_age'] for a in (60,70,80,90) if a>=p['start_age']]
+        else:view['default_car_years']=[]
+        return view
+
+    def change_schedule(self,data):
+        with self.lock:
+            last=self._state['years'][-1]['approval']['opening']['year'] if self._state['years'] else None
+            try:
+                schedule=large.mutate(self._state.get('expense_schedule'),data.get('action'),data.get('entry',{}),self._state.get('plan'),last)
+            except (ValueError,TypeError,KeyError) as e:raise InputError(str(e)) from e
+            new=copy.deepcopy(self._state);new['expense_schedule']=schedule;self._commit(new)
+            return self.overview()
 
     def _public_year(self,y:dict)->dict:
         approval=hydrate_approval(y['approval'])
@@ -225,6 +255,8 @@ class AnnualWorkflow:
         # Derived on read; does not alter approval SHA, stored events, or policy.
         from withdrawal_sources import attribution
         result['withdrawal_sources']=attribution(approval,decision_cpi,activation_cpi)
+        from execution_planning import expense_sources
+        result['large_expense_sources']=expense_sources(approval,y.get('large_expense_snapshot'),decision_cpi,activation_cpi)
         meta=y.get('calendar_first_year')
         if meta:
             result.update({
@@ -344,6 +376,21 @@ class AnnualWorkflow:
                 # Beginning-of-year nominal values are reference previews only;
                 # no unverified external contributions/transfers are inferred.
             cfg=policy_config(plan)
+            snapshot=None
+            if self._state.get('expense_schedule') is not None:
+                try:
+                    indices=large.known_cpi(self._state,decision.year,current_cpi)
+                    cfg,resolved=large.bind(cfg,self._state['expense_schedule'],plan,indices,decision.year)
+                    ad_hoc=amt(data,'planned_extra_twd')
+                    scheduled=cfg.extra_mandatory_expense_by_age.get(opening.age,0.)
+                    total=opening.planned_extra_m+scheduled
+                    opening=replace(opening,planned_extra_m=total)
+                    schedule=dict(cfg.extra_mandatory_expense_by_age)
+                    if total:schedule[opening.age]=total
+                    cfg=replace(cfg,extra_mandatory_expense_by_age=schedule)
+                    if self._state['expense_schedule']['entries']:
+                        snapshot=large.capture(self._state['expense_schedule'],plan,indices,decision.year,ad_hoc)
+                except (ValueError,TypeError,KeyError,OverflowError) as e:raise InputError('大額支出排程無法核准：'+str(e)) from e
             try:
                 approval_fun=research_approve_year if plan.get('spending_profile') else approve_year
                 approval=approval_fun(opening,cfg,n_inner=INNER_DRAWS,seed=SEED,prior_close=prior_close)
@@ -360,11 +407,25 @@ class AnnualWorkflow:
             }
             if first_calendar is not None:
                 row['calendar_first_year']=first_calendar
+            if snapshot is not None:row['large_expense_snapshot']=snapshot
 
             new=copy.deepcopy(self._state)
             new['plan']=plan;new['years'].append(row)
             self._commit(new)
             return {'approval':self._public_year(row),'overview':self.overview()}
+
+    def execution_plan(self,data):
+        from execution_planning import prepare
+        with self.lock:
+            if not self._state['years']:raise InputError('請先核准年度預算')
+            row=self._state['years'][-1]
+            if row['close'] is not None:raise InputError('該年度已結算；出售規劃只供尚待結算年度')
+            try: result,normalized=prepare(data,self._public_year(row),self._state['plan'])
+            except (ValueError,TypeError,KeyError,OverflowError) as e:raise InputError('出售規劃無法完成：'+str(e)) from e
+            new=copy.deepcopy(self._state)
+            new.setdefault('execution_plans',{})[row['approval']['approval_id']]=normalized
+            self._commit(new)
+            return {'planning':result,'overview':self.overview()}
 
     def close(self,data:dict)->dict:
         with self.lock:
@@ -432,7 +493,7 @@ class AnnualWorkflow:
         with self.lock:
             payload=copy_json(self._state)
             return {'mode':'SIMULATION_SHADOW_ONLY','file_kind':'local_yearly_research_export',
-                    'payload':payload,'sha256':digest(payload)}
+                    'payload':payload,'sha256':digest(payload),'sha256_contract':'B85_NUMERIC_CANONICAL_JSON_V1'}
 
     def reset(self,word: str):
         if word!='清除演練':raise InputError('請輸入指定的重設確認文字')

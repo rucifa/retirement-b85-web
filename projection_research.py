@@ -62,6 +62,12 @@ def trace_paths(cfg, *, engine, paths=2048, inner_paths=512, seed=SEED,
     prev = np.full(n, opening.get('prior_completed_net_real_return') or 0. if opening else 0.,dtype=float)
     success, floor_failure, mandatory_failure = np.ones(n,bool), np.zeros(n,bool), np.zeros(n,bool)
     ever_cut = np.zeros(n,bool)
+    first_floor_age=np.full(n,-1,dtype=int)
+    first_mandatory_age=np.full(n,-1,dtype=int)
+    first_gap_age=np.full(n,-1,dtype=int)
+    first_gap_amount=np.zeros(n)
+    first_gap_cash_before=np.zeros(n)
+    first_gap_cash_after=np.zeros(n)
     bridge_total, consumption = np.zeros(n), np.zeros(n)
     bridge_years = np.zeros(n,int)
     bridge_min_cash = cash.copy()
@@ -75,6 +81,8 @@ def trace_paths(cfg, *, engine, paths=2048, inner_paths=512, seed=SEED,
             raise ValueError('計算超過時間上限；請改用快速研究模式')
         age = int(age)
         pre = invest + cash
+        cash_before=cash.copy()
+        car_gap=np.zeros(n);extra_gap=np.zeros(n)
         live_fraction = fraction if j==0 else 1.
         if locked is not None and j==0:
             pos = np.full(n, locked['pos'])
@@ -127,11 +135,13 @@ def trace_paths(cfg, *, engine, paths=2048, inner_paths=512, seed=SEED,
             invest,cash,unpaid = engine._pay(invest,cash,car,'invest')
             success &= unpaid<=1e-12
             mandatory_failure |= unpaid>1e-12
+            car_gap=unpaid.copy()
             car_paid = car-unpaid
             extra = cfg.extra_mandatory_expense_by_age.get(age,0.)
             invest,cash,unpaid = engine._pay(invest,cash,extra,'invest')
             success &= unpaid<=1e-12
             mandatory_failure |= unpaid>1e-12
+            extra_gap=unpaid.copy()
             extra_paid = extra-unpaid
             refill = np.zeros(n)
         # Unlike canonical floor flags (which stop monitoring failed plans),
@@ -143,12 +153,21 @@ def trace_paths(cfg, *, engine, paths=2048, inner_paths=512, seed=SEED,
         emergency_paid = em_due-unpaid
         success &= unpaid<=1e-12
         mandatory_failure |= unpaid>1e-12
+        mandatory_gap=car_gap+extra_gap+unpaid
         pending[em] = False
         if not (locked is not None and j==0):
             refill_ok = success&(cash<cfg.safety_cash_target*cfg.safety_cash_tolerance)&(pos>cfg.guardrail_low)
             refill = np.where(refill_ok,np.minimum(invest,np.minimum(cfg.annual_cash_refill_cap*engine._activation_scale(cfg),np.maximum(0.,cfg.safety_cash_target-cash))),0.)
             invest -= refill
             cash += refill
+        floor_gap=np.maximum(0.,cfg.floor_spend*engine._activation_scale(cfg)*live_fraction-living)
+        first_floor_age[(first_floor_age<0)&(floor_gap>1e-10)]=age
+        first_mandatory_age[(first_mandatory_age<0)&(mandatory_gap>1e-12)]=age
+        newly=(first_gap_age<0)&((floor_gap>1e-10)|(mandatory_gap>1e-12))
+        first_gap_age[newly]=age
+        first_gap_amount[newly]=(floor_gap+mandatory_gap)[newly]
+        first_gap_cash_before[newly]=cash_before[newly]
+        first_gap_cash_after[newly]=cash[newly]
         paid = living+car_paid+extra_paid+emergency_paid
         error = pre-paid-invest-cash
         max_error = max(max_error,float(np.max(np.abs(error))))
@@ -166,6 +185,7 @@ def trace_paths(cfg, *, engine, paths=2048, inner_paths=512, seed=SEED,
         prev = rp[:,j]
         investment_hist[:,j],cash_hist[:,j] = invest,cash
         annual.append({'age':age,'plan_paid_fraction':float(np.mean(success)),
+            'floor_and_required_fraction':float(np.mean(~floor_failure&~mandatory_failure)),
             'no_floor_breach_fraction':float(np.mean(~floor_failure)),
             'required_expense_paid_fraction':float(np.mean(~mandatory_failure)),
             'extra_paid_median_m':float(np.median(extra_paid)),
@@ -176,8 +196,22 @@ def trace_paths(cfg, *, engine, paths=2048, inner_paths=512, seed=SEED,
             'depleted_fraction':float(np.mean(invest+cash<=1e-10))})
         if progress: progress(j+1,t)
     terminal = invest+cash
+    def conditional(arr,mask,p=.5):return float(np.quantile(arr[mask],p)) if mask.any() else None
+    failed=first_gap_age>=0
     return {'investment':investment_hist,'cash':cash_hist,'ages':ages,'annual':annual,
+        'path_outcomes':{'plan':success,'floor':~floor_failure,'mandatory':~mandatory_failure},
+        'first_shortfall':{'floor_age':first_floor_age,'mandatory_age':first_mandatory_age,'joint_age':first_gap_age,
+            'amount_m':first_gap_amount,'cash_before_m':first_gap_cash_before,'cash_after_m':first_gap_cash_after},
         'diagnostics':{'plan_success':float(np.mean(success)),
+            'floor_and_required_success':float(np.mean(~floor_failure&~mandatory_failure)),
+            'first_gap_rate':float(np.mean(failed)),
+            'first_gap_age_p50':conditional(first_gap_age,failed),
+            'first_floor_age_p50':conditional(first_floor_age,first_floor_age>=0),
+            'first_mandatory_age_p50':conditional(first_mandatory_age,first_mandatory_age>=0),
+            'first_gap_amount_median_m':conditional(first_gap_amount,failed),
+            'first_gap_amount_p90_m':conditional(first_gap_amount,failed,.9),
+            'first_gap_cash_before_median_m':conditional(first_gap_cash_before,failed),
+            'first_gap_cash_after_median_m':conditional(first_gap_cash_after,failed),
             'lifetime_floor_success':float(np.mean(~floor_failure)),
             'required_expense_success':float(np.mean(~mandatory_failure)),
             'ever_cut':float(np.mean(ever_cut)), 'recovery_events':recovery_events,
@@ -207,8 +241,10 @@ def project_saved(state, *, paths=2048, inner_paths=512, seed=SEED, inflation_pc
         raise ValueError('通膨情境須為 −5%～15%')
     plan = state['plan']; row = state['years'][-1]
     cfg = workflow.policy_config(plan)
+    from large_expenses import bind,known_cpi,digest as schedule_digest,validate as schedule_validate
     engine = research if plan.get('spending_profile') else frozen
     stored_open = row['approval']['opening']
+    cfg,resolved_schedule=bind(cfg,state.get('expense_schedule'),plan,known_cpi(state),stored_open['year']+(1 if row.get('close') else 0))
     locked = None; fraction=1.
     if row.get('close'):
         c = row['close']; age0=stored_open['age']+1; year0=stored_open['year']+1
@@ -222,7 +258,8 @@ def project_saved(state, *, paths=2048, inner_paths=512, seed=SEED, inflation_pc
         opening=dict(stored_open); age0=opening['age']; year0=opening['year']
         locked=dict(row['approval']['policy_preview'])
         fraction=float(row.get('calendar_first_year',{}).get('calendar_fraction',1.))
-        cfg=bind_current_expense(cfg,age0,opening['planned_extra_m'])
+        schedule=dict(cfg.extra_mandatory_expense_by_age);schedule.pop(age0,None)
+        cfg=bind_current_expense(replace(cfg,extra_mandatory_expense_by_age=schedule),age0,opening['planned_extra_m'])
         nominal_anchor=row['cpi_decision']/plan['activation_cpi']
         asof=opening['decision_date']
     # The last completed year's required outflow has already left its pools.
@@ -243,9 +280,13 @@ def project_saved(state, *, paths=2048, inner_paths=512, seed=SEED, inflation_pc
             entry[name+'_nominal_twd']=(q*nominal_factor*1_000_000).tolist()
         rows.append(entry)
     d=trace['diagnostics']
-    for key in ('plan_success','lifetime_floor_success','required_expense_success'):
+    for key in ('plan_success','lifetime_floor_success','required_expense_success','floor_and_required_success'):
         d[key+'_wilson_lower_95']=_lower_wilson(round(d[key]*paths),paths)
+    for key in ('first_gap_amount_median_m','first_gap_amount_p90_m','first_gap_cash_before_median_m','first_gap_cash_after_median_m'):
+        d[key[:-2]+'_real2026_twd']=None if d[key] is None else d[key]/real_scale*1e6
     return {'contract':CONTRACT,'status':'VALIDATED_CODE_RESEARCH_NOT_EXTERNALLY_CALIBRATED',
+        'large_expense_schedule_sha256':schedule_digest(schedule_validate(state.get('expense_schedule'),plan)),
+        'large_expense_schedule_resolved':resolved_schedule,
         'policy_sha256':'54dd2718a098c7f8182fcc44db980c523c2859fdaa276c50e81e8f8ea8712f10',
         'research_engine_sha256':hashlib.sha256(Path(engine.__file__).read_bytes()).hexdigest(),
         'projection_source_sha256':hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),

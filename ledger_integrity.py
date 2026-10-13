@@ -9,6 +9,9 @@ def validate_chain(record):
     from policy.simple_annual_ledger import YearEndBalances,close_from_balances
     prior=None
     for row in record['years']:
+        if row.get('large_expense_snapshot') is not None:
+            from large_expenses import validate_snapshot
+            validate_snapshot(row['large_expense_snapshot'],record['plan'],row)
         approval=workflow.hydrate_approval(row['approval']);o=approval.opening;p=approval.policy_preview
         if row.get('expense_pos_contract') not in (None,CONTRACT):raise ValueError('未知必要支出契約')
         amounts=[o.investment_m,o.safety_cash_m,o.planned_extra_m,approval.spending_reserved_m,

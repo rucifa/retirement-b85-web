@@ -59,7 +59,7 @@ function dbRead(){return new Promise((res,rej)=>{const t=database.transaction(db
 function dbWrite(record){return new Promise((res,rej)=>{const t=database.transaction(dbStore,'readwrite');t.objectStore(dbStore).put(JSON.stringify(record),dbKey);t.oncomplete=()=>res();t.onerror=()=>rej(t.error);t.onabort=()=>rej(t.error||Error('瀏覽器資料儲存被拒絕'));});}
 function callWorker(op,data={}){return new Promise((resolve,reject)=>{if(!worker){reject(Error('計算引擎尚未啟動'));return;}const id=++seq;pending.set(id,{resolve,reject});worker.postMessage({id,op,data});});}
 function downloadJson(data){const a=document.createElement('a'),u=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json;charset=utf-8'}));a.href=u;a.download='B85_年度研究備份_'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),10000);}
-async function request(path,data={}){if(!engineReady)throw Error('瀏覽器計算環境尚未完成載入');const op=({'/api/state':'state','/api/approve':'approve','/api/close':'close','/api/demo-close':'demo-close','/api/export':'export','/api/reset':'reset','/api/import':'import','/api/capacity':'capacity'})[path];if(!op)throw Error('未允許的請求');return await callWorker(op,data);}
+async function request(path,data={}){if(!engineReady)throw Error('瀏覽器計算環境尚未完成載入');const op=({'/api/state':'state','/api/approve':'approve','/api/close':'close','/api/demo-close':'demo-close','/api/export':'export','/api/reset':'reset','/api/import':'import','/api/capacity':'capacity','/api/expense-schedule':'expense-schedule','/api/execution-plan':'execution-plan'})[path];if(!op)throw Error('未允許的請求');return await callWorker(op,data);}
 const runtimeStages={engine:{state:'loading',percent:0,text:'等待載入 Python 與政策模型'},storage:{state:'loading',percent:0,text:'等待讀取此瀏覽器內的年度紀錄'},cpi:{state:'loading',percent:0,text:'等待驗證已公布的官方 CPI 資料'}};
 function setRuntimeStage(name,stateName,percent,text){
  const stage=runtimeStages[name];if(!stage)return;
@@ -263,6 +263,7 @@ function render(){
  fillNext();
  renderInflationPreview();
  renderHistory();
+ window.B85_PHASE2?.render();
 }
 function renderHistory(){
  const list=$('history-list');if(!state?.years?.length){list.innerHTML='<div class="empty-state"><span class="empty-icon">▤</span><h3>還沒有年度紀錄</h3><p>先從年初核准建立第一個年度。</p></div>';return}

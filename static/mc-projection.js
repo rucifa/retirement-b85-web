@@ -4,7 +4,7 @@
 const $=id=>document.getElementById(id),money=n=>new Intl.NumberFormat('zh-TW',{maximumFractionDigits:0}).format(n);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  let result=null,lastDiagnostic=null,sourceKey=null,runningKey=null,simulationWorker=null,timer=null,generation=0,running=false;
-const currentKey=()=>{const y=state?.years?.at(-1);return y?y.approval_id+'|'+(y.closing?.sha256||'pending'):null;};
+const currentKey=()=>{const y=state?.years?.at(-1);return y?y.approval_id+'|'+(y.closing?.sha256||'pending')+'|'+(state.expense_schedule?.sha256||''):null;};
 function status(message,mode){$('mc-status').textContent=message;$('mc-status').dataset.state=mode;}
  function finish(){simulationWorker?.terminate();simulationWorker=null;clearTimeout(timer);timer=null;running=false;runningKey=null;$('mc-run').disabled=false;$('mc-cancel').classList.add('hidden');}
 function cancel(message='已取消計算；年度紀錄保持原狀。'){generation++;finish();status(message,'cancelled');}

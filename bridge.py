@@ -8,7 +8,7 @@ import copy
 import json
 from pathlib import Path
 from datetime import date
-from workflow import AnnualWorkflow, InputError, digest, hydrate_approval, hydrate_close
+from workflow import AnnualWorkflow, InputError, digest, legacy_digest, hydrate_approval, hydrate_close
 from calendar_first_year import MODE as CALENDAR_MODE, validate_metadata
 import spending_profile as personal
 
@@ -21,11 +21,21 @@ def _validate_import(export: dict):
     if not isinstance(export, dict) or export.get('file_kind') != 'local_yearly_research_export':
         raise InputError('只接受本工具產生的年度研究 JSON 備份')
     record=export.get('payload')
-    if not isinstance(record, dict) or digest(record)!=export.get('sha256'):
+    contract=export.get('sha256_contract')
+    if contract not in (None,'B85_NUMERIC_CANONICAL_JSON_V1'):raise InputError('未知的備份指紋版本')
+    accepted={digest(record)} if isinstance(record,dict) else set()
+    if contract is None and isinstance(record,dict):accepted.add(legacy_digest(record))
+    if not isinstance(record, dict) or export.get('sha256') not in accepted:
         raise InputError('匯入檔案的 SHA256 不一致，已拒絕還原')
     if record.get('schema')!=1 or not isinstance(record.get('years'),list):
         raise InputError('備份版本或年度結構不相容')
     years=record['years']
+    try:
+        import large_expenses
+        large_expenses.validate(record.get('expense_schedule'),record.get('plan'))
+        from execution_planning import validate_saved_plans
+        validate_saved_plans(record)
+    except (ValueError,TypeError,KeyError) as exc:raise InputError('排程或出售規劃備份不正確：'+str(exc)) from exc
     if len(years)>60:raise InputError('年度數量超出 104 歲模型範圍')
     if bool(years)!=bool(record.get('plan')):
         raise InputError('退休計畫與年度紀錄不一致')
@@ -136,7 +146,13 @@ def dispatch(source: str):
                 validation_inner=int(data.get('validation_inner',256)))
         except (ValueError,OverflowError) as e:
             raise InputError('研究容量計算無法執行：'+str(e)) from e
+    elif op=='expense-comparison':
+        from expense_comparison import compare_saved
+        try:result=compare_saved(ENGINE._state,paths=data.get('paths',2048),inner_paths=data.get('inner_paths',512),seed=data.get('seed',20261112),progress=PROJECTION_PROGRESS)
+        except (ValueError,ArithmeticError,OverflowError) as e:raise InputError('支出成對研究未完成：'+str(e)) from e
     elif op=='approve':result=ENGINE.approve(data)
+    elif op=='expense-schedule':result=ENGINE.change_schedule(data)
+    elif op=='execution-plan':result=ENGINE.execution_plan(data)
     elif op=='close':result=ENGINE.close(data)
     elif op=='demo-close':result=ENGINE.demo_closing_balances()
     elif op=='export':result=ENGINE.export_data()
@@ -154,5 +170,5 @@ def dispatch(source: str):
             else:STATE_PATH.unlink(missing_ok=True)
             raise
     else:raise InputError('未允許的操作')
-    changed=op in ('approve','close','reset','import')
+    changed=op in ('approve','close','reset','import','expense-schedule','execution-plan')
     return json.dumps({'data':result, 'record':copy.deepcopy(ENGINE._state) if changed else None},ensure_ascii=False,allow_nan=False)
