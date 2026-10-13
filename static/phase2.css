@@ -1,3 +1,6 @@
+#expense-summary-field{min-width:0}
+#expense-year-summary{display:block;padding:12px 14px;margin:8px 0 5px;border:1px solid #dbe7e6;border-radius:10px;background:#f1f7f5;color:#21514d;font-size:clamp(1rem,1.6vw,1.3rem);font-weight:700;overflow-wrap:anywhere;min-height:45px}
+#expense-summary-field #expense-jump-to-schedule{margin-top:9px;align-self:flex-start}
 #panel-opening>.phase2-card{grid-column:1/-1;margin:0;min-width:0}
 #panel-opening{grid-template-columns:minmax(0,1fr)}
 #panel-opening>.section-head,#panel-opening>#opening-result{min-width:0;max-width:100%}
